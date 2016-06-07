@@ -1,15 +1,19 @@
 // nvcc hello-world.cu -L /usr/local/cuda/lib -lcudart -o hello-world
 
-#include <stdio.h>
-#include <math.h>
+#include "Viscosity.cuh"
 
 const int blocksize = 32;
 const int nrad = 128;
 const int nsec = 384;
 const int size_grid = nrad*nsec;
 const float OmegaFrame = 0.12871;
+const bool ZMPlus = 0;
+const float IMPOSEDDISKDRIFT = 0.0;
+const float SIGMASLOPE = 0.0;
+
+
 __global__ void substep1(float *press, float *rho, float *vradint, float *invdiffRmed, float *pot,
-   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float dt)
+   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float *vtheta, float dt)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -19,7 +23,8 @@ __global__ void substep1(float *press, float *rho, float *vradint, float *invdif
 
   // i=1->nrad , j=0->nsec
 
-  if (i<nrad && j<nsec){
+  if (i<nrad && j<nsec)
+  {
     gradp = 2.0*(press[i*nsec + j] - press[(i-1)*nsec + j])/(rho[i*nsec + j] + rho[(i-1)*nsec + j])*invdiffRmed[i];
     gradphi = (pot[i*nsec + j]-pot[(i-1)*nsec + j])*invdiffRmed[i];
     vt2 = press[i*nsec + j] + press[(i-1)*nsec + j] + press[i*nsec + (j+1)%nsec] + press[(i-1)*nsec + (j+1)%nsec];
@@ -31,12 +36,18 @@ __global__ void substep1(float *press, float *rho, float *vradint, float *invdif
 
   // i=0->nrad , j=0->nsec
 
-  if (i<nrad && j<nsec){
+  if (i<nrad && j<nsec)
+  {
     gradp = 2.0*(press[i*nsec + j] - press[i*nsec + ((j-1)+nsec)%nsec])/(rho[i*nsec +j] +rho[i*nsec + ((j-1)+nsec)%nsec]) \
     *1.0/(2.0*M_PI/nsec*Rmed[i]);
+    if (ZMPlus)
+    {
+      gradp *= 1; //gradp *= SG_aniso_coeff;  Definir mas adelante SG_aniso_coeff
+    }
 
-    vthetaint[i*nsec + j] = gradp;
-    //gradp = (press[i*nsec + j] - press)
+    gradphi = (pot[i*nsec+ j] - pot[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*M_PI/nsec*Rmed[i]);
+    vthetaint[i*nsec + j] = vtheta[i*nsec + j] -dt*(gradp+gradphi);
+    vthetaint[i*nsec + j] += dt*IMPOSEDDISKDRIFT*0.5*powf(Rmed[i],-2.5+SIGMASLOPE);
   }
 
 }
@@ -46,22 +57,24 @@ __host__ long NearestPowerOf2(long n)
   if(!n) return n; //(0 ==2^0)
 
   int x=1;
-  while (x < n) {
+  while (x < n)
+  {
     x<<=1;
   }
   return x;
 }
 
-bool isPow2(unsigned int x)
+__host__ bool isPow2(unsigned int x)
 {
   return ((x&(x-1)==0));
 }
 
 
-int main(){
-  float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *Rinf, *vrad, *vthetaint, *Rmed;
-  float *press_d,*rho_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *Rmed_d;
-  int i, nrad2pot, nsec2pot;
+__host__ int main()
+{
+  float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *Rinf, *vrad, *vthetaint, *vtheta, *Rmed;
+  float *press_d,*rho_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
+  int nrad2pot, nsec2pot;
 
   float dt = 0.999;
   press = (float *) malloc(sizeof(float)*size_grid);
@@ -70,16 +83,18 @@ int main(){
   pot = (float *) malloc(sizeof(float)*size_grid);
   vrad = (float *) malloc(sizeof(float)*size_grid);
   vthetaint = (float *) malloc(sizeof(float)*size_grid);
+  vtheta = (float *) malloc(sizeof(float)*size_grid);
   invdiffRmed = (float *) malloc(sizeof(float)*nrad);
   invRinf = (float *) malloc(sizeof(float)*nrad);
   Rinf = (float *) malloc(sizeof(float)*nrad);
   Rmed = (float *) malloc(sizeof(float)*nrad);
 
-  for (i  = 0; i < size_grid; i++) {
+  for (int i  = 0; i < size_grid; i++) {
     press[i] = i;
     rho[i] = 2*i;
     pot[i] = 0.001*i;
     vrad[i] = 0.212*i;
+    vtheta[i] = 0.1;
     if (i < nrad) {
       invdiffRmed[i]= 0.002;
       Rinf[i] = 0.001;
@@ -97,6 +112,7 @@ int main(){
   cudaMalloc((void**)&pot_d, size_grid*sizeof(float));
   cudaMalloc((void**)&vrad_d, size_grid*sizeof(float));
   cudaMalloc((void**)&vthetaint_d, size_grid*sizeof(float));
+  cudaMalloc((void**)&vtheta_d, size_grid*sizeof(float));
   cudaMalloc((void**)&invdiffRmed_d, nrad*sizeof(float));
   cudaMalloc((void**)&invRinf_d,nrad*sizeof(float));
   cudaMalloc((void**)&Rinf_d,nrad*sizeof(float));
@@ -109,6 +125,7 @@ int main(){
   cudaMemcpy(pot_d, pot, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vthetaint_d, vthetaint, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(vtheta_d, vtheta, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(invdiffRmed_d, invdiffRmed, nrad*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(invRinf_d, invRinf, nrad*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(Rinf_d, Rinf, nrad*sizeof(float), cudaMemcpyHostToDevice);
@@ -119,7 +136,7 @@ int main(){
 	dim3 dimBlock( blocksize, blocksize );
 
 	substep1<<<dimGrid, dimBlock>>>(press_d, rho_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
-    invRinf_d, vrad_d, vthetaint_d, Rmed_d,  dt);
+    invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt);
 
 	cudaMemcpy(vradint, vradint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
   cudaMemcpy(vthetaint, vthetaint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
@@ -134,12 +151,23 @@ int main(){
   cudaFree(Rinf_d);
   cudaFree(vrad_d);
   cudaFree(vthetaint_d);
+  cudaFree(vtheta_d);
   cudaFree(Rmed_d);
 
+  /*if (SelfGravity){
+    selfgravityupdate = YES;
+    compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
+  }
+  ComputeViscousTerms (VradInt, VthetaInt, Rho);*/
+  UpdateVelocitiesWithViscosity(vradint, vthetaint, rho, dt);
+/*
+  if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
+*/
   FILE *f;
   f = fopen("datos.txt","w");
 
-  for (i = nsec; i < size_grid; i++) {
+  for (int i = nsec; i < size_grid; i++)
+  {
     fprintf(f, "%f\n",vthetaint[i] );
   }
 
