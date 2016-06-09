@@ -1,5 +1,6 @@
 #include "kernels.cuh"
 
+using namespace std;
 extern int nrad;
 extern int nsec;
 extern float OmegaFrame;

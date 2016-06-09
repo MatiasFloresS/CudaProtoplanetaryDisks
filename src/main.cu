@@ -2,16 +2,20 @@
 
 #include "main.cuh"
 #include "kernels.cuh"
+#include "readfiles.cuh"
+
+using namespace std;
 
 int blocksize = 32;
 int nrad = 128;
 int nsec = 384;
 int size_grid = nrad*nsec;
 float OmegaFrame = 0.12871;
-bool ZMPlus = 0;
-float IMPOSEDDISKDRIFT = 0.0;
-float SIGMASLOPE = 0.0;
+bool ZMPlus = false, verbose = false, Adiabatic = false, Restart = false;
+static int StillWriteOneOutput;
+int NbRestart = 0;
 
+float ScalingFactor = 1.0;
 
 __host__ long NearestPowerOf2(long n)
 {
@@ -33,13 +37,94 @@ __host__ bool isPow2(unsigned int x)
 
 __host__ int main(int argc, char *argv[])
 {
+
+  bool disable = false, TimeInfo = false, Profiling = false;
+  bool Stockholm = false;
+  char ParameterFile[256];
+
   float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *Rinf, *vrad, *vthetaint, *vtheta, *Rmed;
   float *press_d,*rho_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
   int nrad2pot, nsec2pot;
 
-  printf("%s\n",argv[0]);
-  
-  ReadFile();
+
+  if (argc == 1) PrintUsage (argv[0]);
+
+  strcpy (ParameterFile, "");
+  for (int i = 1; i < argc; i++) {
+    if (*(argv[i]) == '-') {
+      if (strspn (argv[i], "-secndovtpfamzib0123456789") != strlen (argv[i]))
+	PrintUsage (argv[0]);
+      if (strchr (argv[i], 'n'))
+	disable = true;
+      if (strchr (argv[i], 'e'))
+	Stockholm = true;
+      if (strchr (argv[i], 'v'))
+	verbose = true;
+      if (strchr (argv[i], 't'))
+	TimeInfo = true;
+      if (strchr (argv[i], 'c'))
+	SloppyCFL = true;
+      if (strchr (argv[i], 'p'))
+	Profiling = true;
+      if (strchr (argv[i], 'd'))
+	debug = true;
+      if (strchr (argv[i], 'b'))
+	CentrifugalBalance = true;
+      if (strchr (argv[i], 'm'))
+	Merge = true;
+      if (strchr (argv[i], 'a'))
+	MonitorIntegral = true;
+      if (strchr (argv[i], 'z'))
+	FakeSequential = true;
+      if (strchr (argv[i], 'i')) {
+	StoreSigma = true;
+	if (Adiabatic)
+	  StoreEnergy = true;
+      }
+      if (strchr (argv[i], '0'))
+	OnlyInit = true;
+      if ((argv[i][1] >= '1') && (argv[i][1] <= '9')) {
+	GotoNextOutput = true;
+	StillWriteOneOutput = (int)(argv[i][1]-'0');
+      }
+      if (strchr (argv[i], 's')) {
+	Restart = true;
+	i++;
+	NbRestart = atoi(argv[i]);
+	if ((NbRestart < 0)) {
+	  printf ("Incorrect restart number\n");
+	  PrintUsage (argv[0]);
+	}
+      }
+      if (strchr (argv[i], 'o')) {
+	OverridesOutputdir = true;
+	i++;
+	sprintf (NewOutputdir, "%s", argv[i]);
+      } else {
+	if (strchr (argv[i], 'f')) {
+	  i++;
+	  ScalingFactor = atof(argv[i]);
+	  printf ("Scaling factor = %g\n", ScalingFactor);
+	  if ((ScalingFactor <= 0)) {
+	    printf ("Incorrect scaling factor\n");
+	    PrintUsage (argv[0]);
+	  }
+	}
+      }
+    }
+    else strcpy (ParameterFile, argv[i]);
+  }
+
+  if ( (StoreSigma || StoreEnergy) && !(Restart)) {
+    printf ("You cannot use tabulated surface density\n");
+    printf ("or surface internal energy in a non-restart run.\n");
+    printf ("Aborted\n");
+    exit (0);
+  }
+  if (ParameterFile[0] == 0) PrintUsage (argv[0]);
+
+
+  ReadFile(ParameterFile);
 
   float dt = 0.999;
   press = (float *) malloc(sizeof(float)*size_grid);
@@ -125,7 +210,6 @@ __host__ int main(int argc, char *argv[])
     compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
   }
   ComputeViscousTerms (VradInt, VthetaInt, Rho);*/
-  printf("%d\n", nsec);
   UpdateVelocitiesWithViscosity(vradint, vthetaint, rho, dt);
 /*
   if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);

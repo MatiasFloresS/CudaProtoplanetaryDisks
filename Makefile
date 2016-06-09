@@ -24,3 +24,9 @@ build/kernels.o: src/kernels.cu
 build/readfiles.o: src/readfiles.cu
 	@ echo "Building readfiles"
 	@ nvcc $(CFLAGS) $(INC_DIRS) $(LDFLAGS) src/readfiles.cu -o build/readfiles.o
+
+clean:
+	@ clear
+	@ echo "Cleaning folders..."
+	@ rm -rf build/*
+	@ rm -rf bin/*

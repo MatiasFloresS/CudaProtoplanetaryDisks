@@ -1,12 +1,13 @@
 #include "main.cuh"
 #include "kernels.cuh"
+
+using namespace std;
 extern int nsec;
 
 
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT)
 {
 
-  printf("nsec: %d\n", nsec);
   /*UpdateVelocities<<<dimGrid, dimBlock>>>(vt_d,vr_d,invRmed_d,Rmed_d, Rsup_d, Rinf_d,
     invdiffRmed_d, invdiffSup_d,  rho_d, invRinf_d, Trr_d, Tpp_d, DeltaT, nrad, nsec);
 
