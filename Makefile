@@ -3,7 +3,7 @@ CFLAGS = -c -w
 LDFLAGS = -lcuda -lcudart
 INC_DIRS = -Iinclude
 
-main: build/main.o build/Viscosity.o build/kernels.o build/readfiles.o
+main: build/main.o build/Viscosity.o build/kernels.o build/readfiles.o build/SourceEuler.o
 	@ echo "Linking"
 	@ mkdir -p bin
 	@ nvcc $(LDFLAGS) build/*.o -o bin/fargoGPU
@@ -25,6 +25,10 @@ build/readfiles.o: src/readfiles.cu
 	@ echo "Building readfiles"
 	@ nvcc $(CFLAGS) $(INC_DIRS) $(LDFLAGS) src/readfiles.cu -o build/readfiles.o
 
+build/SourceEuler.o: src/SourceEuler.cu
+	@ echo "Builing SourceEuler"
+	@ nvcc $(CFLAGS) $(INC_DIRS) $(LDFLAGS) src/SourceEuler.cu -o build/SourceEuler.o
+	
 clean:
 	@ clear
 	@ echo "Cleaning folders..."
