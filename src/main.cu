@@ -5,14 +5,14 @@
 //#include "readfiles.cuh"
 #include "fondam.cuh"
 #include "SourceEuler.cuh"
+#include "Psys.cuh"
 
 using namespace std;
 
+extern int NRAD, NSEC;
+float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf;
+float *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
 
-extern int NRAD;
-extern int NSEC;
-float *Rinf;
-float *Rmed;
 int blocksize = 32;
 int size_grid = NRAD*NSEC;
 float OmegaFrame = 0.12871;
@@ -46,6 +46,8 @@ __host__ int main(int argc, char *argv[])
   bool disable = false, TimeInfo = false, Profiling = false;
   bool Stockholm = false;
   char ParameterFile[256];
+
+  PlanetarySystem *sys;
 
   float *gas_density, *gas_v_rad, *gas_v_theta, *gas_energy, *gas_label;
   float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *vrad, *vthetaint, *vtheta;
@@ -145,6 +147,14 @@ __host__ int main(int argc, char *argv[])
 
   FillPolar1DArray();
 
+  // force = AllocateForce (dimfxy);
+
+  char configplanet[100];
+  strncpy(configplanet, PLANETCONFIG.c_str(), sizeof(configplanet));
+  configplanet[sizeof(configplanet)-1]=0;
+
+  sys = InitPlanetarySystem(configplanet);
+
   float dt = 0.999;
   press = (float *) malloc(sizeof(float)*size_grid);
   rho = (float *) malloc(sizeof(float)*size_grid );
@@ -153,10 +163,6 @@ __host__ int main(int argc, char *argv[])
   vrad = (float *) malloc(sizeof(float)*size_grid);
   vthetaint = (float *) malloc(sizeof(float)*size_grid);
   vtheta = (float *) malloc(sizeof(float)*size_grid);
-  invdiffRmed = (float *) malloc(sizeof(float)*NRAD);
-  invRinf = (float *) malloc(sizeof(float)*NRAD);
-
-  printf("%f\n",Rmed[1]);
 
   for (int i  = 0; i < size_grid; i++) {
     press[i] = i;
@@ -164,13 +170,8 @@ __host__ int main(int argc, char *argv[])
     pot[i] = 0.001*i;
     vrad[i] = 0.212*i;
     vtheta[i] = 0.1;
-    if (i < NRAD) {
-      invdiffRmed[i]= 0.002;
-      //Rinf[i] = 0.001;
-      invRinf[i] = 1/Rinf[i];
-      //Rmed[i] = 1/invdiffRmed[i];
-    }
   }
+
 
   if(!isPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
   if(!isPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
@@ -187,7 +188,6 @@ __host__ int main(int argc, char *argv[])
   cudaMalloc((void**)&Rinf_d,NRAD*sizeof(float));
   cudaMalloc((void**)&Rmed_d,NRAD*sizeof(float));
 
-
 	cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice );
 	cudaMemcpy(rho_d, rho, size_grid*sizeof(float), cudaMemcpyHostToDevice );
   cudaMemcpy(vradint_d, vradint, size_grid*sizeof(float), cudaMemcpyHostToDevice);
@@ -195,11 +195,10 @@ __host__ int main(int argc, char *argv[])
   cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vthetaint_d, vthetaint, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vtheta_d, vtheta, size_grid*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(invdiffRmed_d, invdiffRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(invRinf_d, invRinf, NRAD*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(Rinf_d, Rinf, NRAD*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
-
+  cudaMemcpy(invdiffRmed_d, invdiffRmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(invRinf_d, invRinf, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(Rinf_d, Rinf, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(Rmed_d, Rmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
 
 	dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
 	dim3 dimBlock( blocksize, blocksize );

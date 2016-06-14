@@ -1,0 +1,3 @@
+CFLAGS	/home/matias/Desktop/CudaProtoplanetaryDisks/Makefile	/^CFLAGS = -c -w$/;"	macro	line:2
+LDFLAGS	/home/matias/Desktop/CudaProtoplanetaryDisks/Makefile	/^LDFLAGS = -lcuda -lcudart$/;"	macro	line:3
+INC_DIRS	/home/matias/Desktop/CudaProtoplanetaryDisks/Makefile	/^INC_DIRS = -Iinclude$/;"	macro	line:4

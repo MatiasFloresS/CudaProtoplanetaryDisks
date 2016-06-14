@@ -201,7 +201,6 @@ __host__ void ReadFile(char *ParameterFile)
         for (int i = 0; i < strlen(nm); i++) {
   	nm[i] = (char) toupper(nm[i]);
         }
-        printf("%s\n",nm );
         searchVariable(nm, stringval);
       }
     }
