@@ -41,6 +41,7 @@ float SIGMASLOPE = 0.0;
 float RELEASERADIUS = 0.0;
 float RELEASEDATE = 0.0;
 float OMEGAFRAME = 0.0;
+float OmegaFrame1;
 string DISK = "YES";
 string FRAME = "FIXED";
 string OUTERSOURCEMASS = "NO";

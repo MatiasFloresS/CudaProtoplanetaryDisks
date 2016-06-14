@@ -54,9 +54,9 @@ PlanetarySystem *InitPlanetarySystem (char *filename)
     }
   }
   HillRadius = sys->x[0] * powf( sys->mass[0]/3., 1./3. );
-  printf("%f\n",sys->x[0] );
-  printf("%f\n",sys->mass[0] );
-  printf("%f\n", HillRadius);
+  // printf("%f\n",sys->x[0] );
+  // printf("%f\n",sys->mass[0] );
+  // printf("%f\n", HillRadius);
   return sys;
 }
 
@@ -119,4 +119,32 @@ PlanetarySystem *AllocPlanetSystem (int nb)
     feeldisk[i] = feelothers[i] = YES;
   }
   return sys;
+}
+
+void ListPlanets (PlanetarySystem *sys)
+{
+  int nb;
+  int i;
+  nb = sys->nb;
+  for (i = 0; i < nb; i++) {
+    printf ("Planet number %d\n", i);
+    printf ("---------------\n");
+    printf ("x = %f\ty = %f\n", sys->x[i],sys->y[i]);
+    printf ("vx = %f\tvy = %f\n", sys->vx[i],sys->vy[i]);
+    if (sys->acc[i] == 0.0)
+      printf ("Non-accreting.\n");
+    else
+      printf ("accretion time = %f\n", 1.0/(sys->acc[i]));
+    if (sys->FeelDisk[i] == YES) {
+      printf ("Feels the disk potential\n");
+    } else {
+      printf ("Doesn't feel the disk potential\n");
+    }
+    if (sys->FeelOthers[i] == YES) {
+      printf ("Feels the other planets potential\n");
+    } else {
+      printf ("Doesn't feel the other planets potential\n");
+    }
+    printf ("\n");
+  }
 }

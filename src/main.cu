@@ -6,17 +6,22 @@
 #include "fondam.cuh"
 #include "SourceEuler.cuh"
 #include "Psys.cuh"
+#include "Pframeforce.cuh"
 
 using namespace std;
 
 extern int NRAD, NSEC;
 float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf;
 float *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
-
+float *SigmaMed, *SigmaInf, *dens, *EnergyMed, *energy;
+extern int SelfGravity;
+extern float OMEGAFRAME;
+extern float OmegaFrame1;
 int blocksize = 32;
-int size_grid = NRAD*NSEC;
+int size_grid;
 float OmegaFrame = 0.12871;
-bool ZMPlus = false, verbose = false, Adiabatic = false, Restart = false;
+bool ZMPlus = false, verbose = false, Restart = false;
+extern int Adiabaticc;
 static int StillWriteOneOutput;
 int NbRestart = 0;
 
@@ -49,7 +54,7 @@ __host__ int main(int argc, char *argv[])
 
   PlanetarySystem *sys;
 
-  float *gas_density, *gas_v_rad, *gas_v_theta, *gas_energy, *gas_label;
+  float *gas_v_rad, *gas_v_theta, *gas_label;
   float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *vrad, *vthetaint, *vtheta;
   float *press_d,*rho_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
   int nrad2pot, nsec2pot;
@@ -86,7 +91,7 @@ __host__ int main(int argc, char *argv[])
 	FakeSequential = true;
       if (strchr (argv[i], 'i')) {
 	StoreSigma = true;
-	if (Adiabatic)
+	if (Adiabaticc)
 	  StoreEnergy = true;
       }
       if (strchr (argv[i], '0'))
@@ -133,16 +138,22 @@ __host__ int main(int argc, char *argv[])
 
 
   ReadFile(ParameterFile);
+  size_grid = NRAD*NSEC;
   if (verbose == YES) TellEverything();
   if (disable == YES) exit(0);
   printf("Allocating arrays...\n");
   fflush(stdout);
 
-  gas_density = (float *) malloc(sizeof(float)*size_grid);
+  dens = (float *) malloc(sizeof(float)*size_grid);
+  energy = (float *) malloc(sizeof(float)*size_grid);
+
   gas_v_rad = (float *) malloc(sizeof(float)*size_grid);
   gas_v_theta = (float *) malloc(sizeof(float)*size_grid);
-  gas_energy = (float *) malloc(sizeof(float)*size_grid);
   gas_label = (float *) malloc(sizeof(float)*size_grid);
+
+  EnergyMed = (float *) malloc(sizeof(float)*(NRAD+1));
+  SigmaMed = (float *) malloc(sizeof(float)*(NRAD+1));
+  SigmaInf = (float *) malloc(sizeof(float)*(NRAD+1));
   printf("done.\n");
 
   FillPolar1DArray();
@@ -153,9 +164,35 @@ __host__ int main(int argc, char *argv[])
   strncpy(configplanet, PLANETCONFIG.c_str(), sizeof(configplanet));
   configplanet[sizeof(configplanet)-1]=0;
 
+  /* Here planets are initialized feeling star potential but they do
+     not feel disk potential  */
+
   sys = InitPlanetarySystem(configplanet);
 
+  /* Gas density initialization */
+  InitGasDensity ();
+
+  /* If energy equation is taken into account, we initialize the gas
+     thermal energy  */
+  if ( Adiabaticc ) {
+      InitGasEnergy ();
+  }
+
+  if ( SelfGravity ) {
+    /* If SelfGravity = YES or Z, planets are initialized feeling disk
+       potential. Only the surface density is required to calculate
+       the radial self-gravity acceleration. The disk radial and
+       azimutal velocities are not updated */
+
+    //compute_selfgravity (gas_density, gas_v_rad, gas_v_theta, foostep, updatevelocities);
+    //init_planetarysys_withSG (sys);
+  }
+  ListPlanets (sys);
+  OmegaFrame1 = OMEGAFRAME;
   float dt = 0.999;
+
+
+
   press = (float *) malloc(sizeof(float)*size_grid);
   rho = (float *) malloc(sizeof(float)*size_grid );
   vradint = (float *) malloc(sizeof(float)*size_grid);

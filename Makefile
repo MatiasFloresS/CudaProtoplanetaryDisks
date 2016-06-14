@@ -3,7 +3,8 @@ CFLAGS = -c -w
 LDFLAGS = -lcuda -lcudart
 INC_DIRS = -Iinclude
 
-main: build/main.o build/Viscosity.o build/kernels.o build/readfiles.o build/SourceEuler.o build/Psys.o
+main: build/main.o build/Viscosity.o build/kernels.o build/readfiles.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
+	build/Theo.o
 	@ echo "Linking"
 	@ mkdir -p bin
 	@ nvcc $(LDFLAGS) build/*.o -o bin/fargoGPU
@@ -32,6 +33,14 @@ build/SourceEuler.o: src/SourceEuler.cu
 build/Psys.o: src/Psys.cu
 	@ echo "Building Psys"
 	@ nvcc $(CFLAGS) $(INC_DIRS) $(LDFLAGS) src/Psys.cu -o build/Psys.o
+
+build/Pframeforce.o: src/Pframeforce.cu
+	@ echo "Building Pframeforce"
+	@ nvcc $(CFLAGS) $(INC_DIRS) $(LDFLAGS) src/Pframeforce.cu -o build/Pframeforce.o
+
+build/Theo.o: src/Theo.cu
+	@ echo "Building Theo"
+	@ nvcc $(CFLAGS) $(INC_DIRS) $(LDFLAGS) src/Theo.cu -o build/Theo.o
 
 clean:
 	@ clear

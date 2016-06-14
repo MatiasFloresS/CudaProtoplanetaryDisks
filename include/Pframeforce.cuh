@@ -1,0 +1,2 @@
+void InitGasDensity ();
+void InitGasEnergy ();
