@@ -1,12 +1,12 @@
 #include "main.cuh"
 #include "Theo.cuh"
+
 extern int NRAD;
 extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0;
-extern float *SigmaMed, *SigmaInf, *EnergyMed;
-extern float ScalingFactor;
+extern float *SigmaMed, *SigmaInf, *EnergyMed, ScalingFactor;
 extern float R, MU, ASPECTRATIO, FLARINGINDEX, ADIABATICINDEX;
 
-void FillSigma ()
+__host__ void FillSigma ()
 {
     for (int i = 0; i < NRAD; i++) {
       SigmaMed[i] = Sigma(Rmed[i]);
@@ -14,7 +14,7 @@ void FillSigma ()
     }
 }
 
-void FillEnergy ()
+__host__ void FillEnergy ()
 {
   for (int i = 0; i < NRAD; i++) {
     EnergyMed[i] = Energy(Rmed[i]);
@@ -22,7 +22,7 @@ void FillEnergy ()
 }
 
 /* Thermal energy */
-float Energy(float r)
+__host__ float Energy(float r)
 {
   float energy0;
   if (ADIABATICINDEX == 1.0) {
@@ -36,7 +36,7 @@ float Energy(float r)
 }
 
 /* Surface density */
-float Sigma(float r)
+__host__ float Sigma(float r)
 {
   float cavity = 1.0;
   if (r < CAVITYRADIUS) cavity = 1.0/CAVITYRATIO;

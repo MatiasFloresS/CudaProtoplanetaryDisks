@@ -1,6 +1,7 @@
 #include "types.cuh"
 
-int FindNumberOfPlanets (char *filename);
-void ListPlanets (PlanetarySystem *sys);
-PlanetarySystem *InitPlanetarySystem(char *filename);
-PlanetarySystem *AllocPlanetSystem(int nb);
+__host__ int FindNumberOfPlanets (char *filename);
+__host__ void ListPlanets (PlanetarySystem *sys);
+__host__ PlanetarySystem *InitPlanetarySystem(char *filename);
+__host__ PlanetarySystem *AllocPlanetSystem(int nb);
+__host__ float GetPsysInfo (PlanetarySystem *sys, int action);

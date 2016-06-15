@@ -4,7 +4,6 @@
 using namespace std;
 extern int nsec;
 
-
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT)
 {
 

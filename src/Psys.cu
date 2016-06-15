@@ -1,11 +1,12 @@
 #include "main.cuh"
 #include "Psys.cuh"
 
-extern int YES, NO;
+extern int YES, NO, GET, MARK, FREQUENCY, GuidingCenter;
 extern float *Rmed,  G,  *Radii;
 extern bool CICPlanet, ForcedCircular;
-extern float ECCENTRICITY;
+extern float ECCENTRICITY, PI;
 float HillRadius;
+static float Xplanet, Yplanet;
 PlanetarySystem *InitPlanetarySystem (char *filename)
 {
   int nb, i=0, j;
@@ -147,4 +148,74 @@ void ListPlanets (PlanetarySystem *sys)
     }
     printf ("\n");
   }
+}
+
+float GetPsysInfo (PlanetarySystem *sys, int action)
+{
+  float d1, d2, cross;
+  float x,y, vx, vy, m, h, d, Ax, Ay, e, a, E, M;
+  float xc, yc, vxc, vyc, omega;
+  float arg, PerihelionPA;
+  xc = x = sys->x[0];
+  yc = y = sys->y[0];
+  vxc = vx= sys->vx[0];
+  vyc = vy= sys->vy[0];
+  m = sys->mass[0]+1.;
+  h = x*vy-y*vx;
+  d = sqrtf(x*x+y*y);
+
+  Ax = x*vy*vy-y*vx*vy-G*m*x/d;
+  Ay = y*vx*vx-x*vx*vy-G*m*y/d;
+  e = sqrtf(Ax*Ax+Ay*Ay)/m;
+  a = h*h/G/m/(1.-e*e);
+  if (e == 0.0) {
+    arg = 1.0;
+  } else {
+    arg = (1.0-d/a)/e;
+  }
+  if (fabsf(arg) >= 1.0)
+    E = PI*(1.-arg/fabsf(arg))/2.;
+  else
+    E = acosf((1.0-d/a)/e);
+
+  if ((x*y*(vy*vy-vx*vx)+vx*vy*(x*x-y*y)) < 0) E= -E;
+  M = E-e*sinf(E);
+
+  omega = sqrtf(m/a/a/a);
+  PerihelionPA=atan2f(Ay,Ax);
+  if (GuidingCenter == YES) {
+    xc = a*cosf(M+PerihelionPA);
+    yc = a*sinf(M+PerihelionPA);
+    vxc = -a*omega*sinf(M+PerihelionPA);
+    vyc =  a*omega*cosf(M+PerihelionPA);
+  }
+  if (e < 1e-8) {
+    xc = x;
+    yc = y;
+    vxc = vx;
+    vyc = vy;
+  }
+  switch (action) {
+  case 0:
+    Xplanet = xc;
+    Yplanet = yc;
+    return 0.;
+    break;
+  case 1:
+    x = xc;
+    y = yc;
+    vx = vxc;
+    vy = vyc;
+    d2 = sqrtf(x*x+y*y);
+    d1 = sqrtf(Xplanet*Xplanet+Yplanet*Yplanet);
+    cross = Xplanet*y-x*Yplanet;
+    Xplanet = x;
+    Yplanet = y;
+    return asinf(cross/(d1*d2));
+    break;
+  case 2:
+    return omega;
+    break;
+  }
+  return 0.0;
 }

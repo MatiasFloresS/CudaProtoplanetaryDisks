@@ -1,5 +1,3 @@
-
-
 struct planetary_system {
   int nb;			/* Number of planets */
   float *mass;			/* their masses */

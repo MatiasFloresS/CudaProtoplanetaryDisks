@@ -1,8 +1,10 @@
-
 __global__ void substep1(float *press, float *rho, float *vradint, float *invdiffRmed, float *pot,
   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float *vtheta, float dt,
-  int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE);
+  int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
 
 __global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
   float *Trp, float *Tpp, float DeltaT, int nrad, int nsec);
+
+__global__ void InitComputeAccel(float *CellAbscissa, float *CellOrdinate, float *Rmed,
+   float *cosns, float *sinns, int nsec, int nrad);

@@ -1,4 +1,4 @@
-void FillSigma();
-void FillEnergy ();
-float Sigma(float r);
-float Energy(float r);
+__host__ void FillSigma();
+__host__ void FillEnergy ();
+__host__ float Sigma(float r);
+__host__ float Energy(float r);

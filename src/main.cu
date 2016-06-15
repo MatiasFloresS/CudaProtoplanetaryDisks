@@ -2,11 +2,12 @@
 
 #include "main.cuh"
 #include "kernels.cuh"
-//#include "readfiles.cuh"
 #include "fondam.cuh"
 #include "SourceEuler.cuh"
 #include "Psys.cuh"
 #include "Pframeforce.cuh"
+#include "Init.cuh"
+#include "cuda_runtime.h"
 
 using namespace std;
 
@@ -14,9 +15,12 @@ extern int NRAD, NSEC;
 float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf;
 float *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
 float *SigmaMed, *SigmaInf, *dens, *EnergyMed, *energy;
-extern int SelfGravity;
-extern float OMEGAFRAME;
-extern float OmegaFrame1;
+extern int SelfGravity, Corotating, FREQUENCY;
+extern float OMEGAFRAME, OmegaFrame1;
+float *cosns, *sinns;
+int nrad2pot, nsec2pot;
+
+
 int blocksize = 32;
 int size_grid;
 float OmegaFrame = 0.12871;
@@ -57,7 +61,7 @@ __host__ int main(int argc, char *argv[])
   float *gas_v_rad, *gas_v_theta, *gas_label;
   float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *vrad, *vthetaint, *vtheta;
   float *press_d,*rho_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
-  int nrad2pot, nsec2pot;
+  float *powRmed, *powRmed_d;
 
 
   if (argc == 1) PrintUsage (argv[0]);
@@ -189,6 +193,13 @@ __host__ int main(int argc, char *argv[])
   }
   ListPlanets (sys);
   OmegaFrame1 = OMEGAFRAME;
+
+
+  if (Corotating) OmegaFrame1 = GetPsysInfo (sys, FREQUENCY);
+
+  /* Only gas velocities remain to be initialized */
+
+  Initialization (dens, gas_v_rad, gas_v_theta, energy, gas_label, sys);
   float dt = 0.999;
 
 
@@ -200,6 +211,7 @@ __host__ int main(int argc, char *argv[])
   vrad = (float *) malloc(sizeof(float)*size_grid);
   vthetaint = (float *) malloc(sizeof(float)*size_grid);
   vtheta = (float *) malloc(sizeof(float)*size_grid);
+  powRmed = (float *) malloc(sizeof(float)*(NRAD+1));
 
   for (int i  = 0; i < size_grid; i++) {
     press[i] = i;
@@ -209,6 +221,9 @@ __host__ int main(int argc, char *argv[])
     vtheta[i] = 0.1;
   }
 
+ for (int i = 0; i < NRAD; i++) {
+   powRmed[i] = powf(Rmed[i],-2.5+SIGMASLOPE);
+ }
 
   if(!isPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
   if(!isPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
@@ -224,6 +239,7 @@ __host__ int main(int argc, char *argv[])
   cudaMalloc((void**)&invRinf_d,NRAD*sizeof(float));
   cudaMalloc((void**)&Rinf_d,NRAD*sizeof(float));
   cudaMalloc((void**)&Rmed_d,NRAD*sizeof(float));
+  cudaMalloc((void**)&powRmed_d,NRAD*sizeof(float));
 
 	cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice );
 	cudaMemcpy(rho_d, rho, size_grid*sizeof(float), cudaMemcpyHostToDevice );
@@ -236,14 +252,27 @@ __host__ int main(int argc, char *argv[])
   cudaMemcpy(invRinf_d, invRinf, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(Rinf_d, Rinf, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(Rmed_d, Rmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(powRmed_d, powRmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
 
 	dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
 	dim3 dimBlock( blocksize, blocksize );
 
+  cudaEvent_t start, stop;
+  float time;
+
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start,0);
 	substep1<<<dimGrid, dimBlock>>>(press_d, rho_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
     invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame, ZMPlus,
-    IMPOSEDDISKDRIFT, SIGMASLOPE);
+    IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
 
+
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&time, start, stop);
+  printf("CUDA execution time = %f ms\n",time);
 	cudaMemcpy(vradint, vradint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
   cudaMemcpy(vthetaint, vthetaint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -259,6 +288,7 @@ __host__ int main(int argc, char *argv[])
   cudaFree(vthetaint_d);
   cudaFree(vtheta_d);
   cudaFree(Rmed_d);
+  cudaFree(powRmed_d);
 
   /*if (SelfGravity){
     selfgravityupdate = YES;
