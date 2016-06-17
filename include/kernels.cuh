@@ -1,3 +1,5 @@
+#include "math_constants.h"
+
 __global__ void substep1(float *press, float *rho, float *vradint, float *invdiffRmed, float *pot,
   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float *vtheta, float dt,
   int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
@@ -8,3 +10,6 @@ __global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rm
 
 __global__ void InitComputeAccel(float *CellAbscissa, float *CellOrdinate, float *Rmed,
    float *cosns, float *sinns, int nsec, int nrad);
+
+__global__ void ComputeSoundSpeed(float *SoundSpeed, float *dens, float *Rmed, float *energy, int nsec, int nrad,
+   int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed);

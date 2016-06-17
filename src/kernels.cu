@@ -1,6 +1,5 @@
 #include "kernels.cuh"
-#include "math_constants.h"
-
+#include <stdio.h>
 using namespace std;
 
 __global__ void substep1(float *press, float *rho, float *vradint, float *invdiffRmed, float *pot,
@@ -10,7 +9,6 @@ __global__ void substep1(float *press, float *rho, float *vradint, float *invdif
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
   float gradp, gradphi, vt2;
-
   i+= 1;
   // i=1->nrad , j=0->nsec
 
@@ -21,7 +19,6 @@ __global__ void substep1(float *press, float *rho, float *vradint, float *invdif
     vt2 = press[i*nsec + j] + press[(i-1)*nsec + j] + press[i*nsec + (j+1)%nsec] + press[(i-1)*nsec + (j+1)%nsec];
     vt2 = vt2/4.0+Rinf[i]*OmegaFrame;
     vradint[i*nsec + j] = vrad[i*nsec + j] + dt*(-gradp - gradphi + vt2*vt2*invRinf[i]);
-
   }
 
   i-=1;
@@ -82,22 +79,25 @@ __global__ void InitComputeAccel(float *CellAbscissa, float *CellOrdinate, float
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<nrad && nsec)
+  if (i<nrad && j<nsec)
   {
-    CellAbscissa[j+i*nsec]= Rmed[i] * cosns[j];
-    CellOrdinate[j+i*nsec]= Rmed[i] * cosns[j];
+    CellAbscissa[i*nsec+j]= Rmed[i] * cosns[j];
+    CellOrdinate[i*nsec+j]= Rmed[i] * sinns[j];
   }
 }
 
-/*
-__global__ void ComputeSoundSpeed(float *CellAbscissa, float *CellOrdinate, float *Rmed, float *cosns, float *sinns, int nsec, int nrad)
+
+__global__ void ComputeSoundSpeed(float *SoundSpeed, float *dens, float *Rmed, float *energy, int nsec, int nrad,
+int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<nrad && nsec)
+  if (i<nrad && j<nsec)
   {
-    CellAbscissa[j+i*nsec]= Rmed[i] * cosns[j];
-    CellOrdinate[j+i*nsec]= Rmed[i] * cosns[j];
+    if (~Adiabaticc){
+      SoundSpeed[j+i*nsec] = AspectRatioRmed[i]*sqrtf(1.0*1.0/Rmed[i])*powf(Rmed[i], FLARINGINDEX);
+    }
+    else SoundSpeed[j+i*nsec] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec]);
   }
-}*/
+}

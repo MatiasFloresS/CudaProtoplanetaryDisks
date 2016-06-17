@@ -59,10 +59,9 @@ __host__ int main(int argc, char *argv[])
   PlanetarySystem *sys;
 
   float *gas_v_rad, *gas_v_theta, *gas_label;
-  float *press, *rho, *vradint, *invdiffRmed, *pot, *invRinf, *vrad, *vthetaint, *vtheta;
-  float *press_d,*rho_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
+  float *press, *rho, *vradint, *pot, *vrad, *vthetaint, *vtheta;
+  float *press_d,*dens_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
   float *powRmed, *powRmed_d;
-
 
   if (argc == 1) PrintUsage (argv[0]);
 
@@ -143,6 +142,9 @@ __host__ int main(int argc, char *argv[])
 
   ReadFile(ParameterFile);
   size_grid = NRAD*NSEC;
+  if(!isPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
+  if(!isPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
+
   if (verbose == YES) TellEverything();
   if (disable == YES) exit(0);
   printf("Allocating arrays...\n");
@@ -155,9 +157,9 @@ __host__ int main(int argc, char *argv[])
   gas_v_theta = (float *) malloc(sizeof(float)*size_grid);
   gas_label = (float *) malloc(sizeof(float)*size_grid);
 
-  EnergyMed = (float *) malloc(sizeof(float)*(NRAD+1));
-  SigmaMed = (float *) malloc(sizeof(float)*(NRAD+1));
-  SigmaInf = (float *) malloc(sizeof(float)*(NRAD+1));
+  EnergyMed = (float *) malloc(sizeof(float)*(NRAD));
+  SigmaMed = (float *) malloc(sizeof(float)*(NRAD));
+  SigmaInf = (float *) malloc(sizeof(float)*(NRAD));
   printf("done.\n");
 
   FillPolar1DArray();
@@ -211,7 +213,7 @@ __host__ int main(int argc, char *argv[])
   vrad = (float *) malloc(sizeof(float)*size_grid);
   vthetaint = (float *) malloc(sizeof(float)*size_grid);
   vtheta = (float *) malloc(sizeof(float)*size_grid);
-  powRmed = (float *) malloc(sizeof(float)*(NRAD+1));
+  powRmed = (float *) malloc(sizeof(float)*NRAD);
 
   for (int i  = 0; i < size_grid; i++) {
     press[i] = i;
@@ -225,11 +227,9 @@ __host__ int main(int argc, char *argv[])
    powRmed[i] = powf(Rmed[i],-2.5+SIGMASLOPE);
  }
 
-  if(!isPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
-  if(!isPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
 
 	cudaMalloc((void**)&press_d, size_grid*sizeof(float));
-	cudaMalloc((void**)&rho_d, size_grid*sizeof(float) );
+	cudaMalloc((void**)&dens_d, size_grid*sizeof(float) );
   cudaMalloc((void**)&vradint_d, size_grid*sizeof(float));
   cudaMalloc((void**)&pot_d, size_grid*sizeof(float));
   cudaMalloc((void**)&vrad_d, size_grid*sizeof(float));
@@ -242,43 +242,42 @@ __host__ int main(int argc, char *argv[])
   cudaMalloc((void**)&powRmed_d,NRAD*sizeof(float));
 
 	cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice );
-	cudaMemcpy(rho_d, rho, size_grid*sizeof(float), cudaMemcpyHostToDevice );
+	cudaMemcpy(dens_d, rho, size_grid*sizeof(float), cudaMemcpyHostToDevice );
   cudaMemcpy(vradint_d, vradint, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(pot_d, pot, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vthetaint_d, vthetaint, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(vtheta_d, vtheta, size_grid*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(invdiffRmed_d, invdiffRmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(invRinf_d, invRinf, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(Rinf_d, Rinf, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(Rmed_d, Rmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(powRmed_d, powRmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(invdiffRmed_d, invdiffRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(invRinf_d, invRinf, NRAD*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(Rinf_d, Rinf, NRAD*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(powRmed_d, powRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
 
 	dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
 	dim3 dimBlock( blocksize, blocksize );
 
-  cudaEvent_t start, stop;
-  float time;
-
-
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  cudaEventRecord(start,0);
-	substep1<<<dimGrid, dimBlock>>>(press_d, rho_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
+  // cudaEvent_t start, stop;
+  // float time;
+  //
+  //
+  // cudaEventCreate(&start);
+  // cudaEventCreate(&stop);
+  // cudaEventRecord(start,0);
+	substep1<<<dimGrid, dimBlock>>>(press_d, dens_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
     invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame, ZMPlus,
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
 
 
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&time, start, stop);
-  printf("CUDA execution time = %f ms\n",time);
+  // cudaEventRecord(stop, 0);
+  // cudaEventSynchronize(stop);
+  // cudaEventElapsedTime(&time, start, stop);
+  // printf("CUDA execution time = %f ms\n",time);
 	cudaMemcpy(vradint, vradint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
   cudaMemcpy(vthetaint, vthetaint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
 
-
 	cudaFree(press_d );
-	cudaFree(rho_d );
+	cudaFree(dens_d );
   cudaFree(vradint_d);
   cudaFree(pot_d);
   cudaFree(invdiffRmed_d);

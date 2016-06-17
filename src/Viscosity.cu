@@ -3,6 +3,9 @@
 
 using namespace std;
 extern int nsec;
+float PhysicalTime =0.0;
+float PhysicalTimeInitial= 0.0;
+extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
 
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT)
 {
@@ -13,4 +16,20 @@ __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *Azimut
     float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
       float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
       float *Trp, float *Tpp, float DeltaT, int nrad, int nsec*/
+}
+
+float AspectRatio(float r)
+{
+  float aspectratio, rmin, rmax, scale;
+  aspectratio = ASPECTRATIO;
+  rmin = TRANSITIONRADIUS-TRANSITIONWIDTH*ASPECTRATIO;
+  rmax = TRANSITIONRADIUS+TRANSITIONWIDTH*ASPECTRATIO;
+  scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
+  rmin *= scale;
+  rmax *= scale;
+  if (r < rmin) aspectratio *= TRANSITIONRATIO;
+  if ((r >= rmin) && (r <= rmax)) {
+    aspectratio *= expf((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
+  }
+  return aspectratio;
 }
