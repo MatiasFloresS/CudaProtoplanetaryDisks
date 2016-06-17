@@ -13,3 +13,6 @@ __global__ void InitComputeAccel(float *CellAbscissa, float *CellOrdinate, float
 
 __global__ void ComputeSoundSpeed(float *SoundSpeed, float *dens, float *Rmed, float *energy, int nsec, int nrad,
    int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed);
+
+__global__ void ComputePressureField(float *SoundSpeed, float *dens, float *press, int Adiabaticc, int nrad, int nsec,
+   int ADIABATICINDEX, float *energy);

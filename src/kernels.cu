@@ -101,3 +101,19 @@ int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed
     else SoundSpeed[j+i*nsec] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec]);
   }
 }
+
+
+__global__ void ComputePressureField(float *SoundSpeed, float *dens, float *press, int Adiabaticc, int nrad, int nsec,
+  int ADIABATICINDEX, float *energy)
+  {
+    int j = threadIdx.x + blockDim.x*blockIdx.x;
+    int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+    if (i<nrad && j<nsec)
+    {
+      if (~Adiabaticc){
+        press[j+i*nsec] = dens[j+i*nsec]*SoundSpeed[j+i*nsec]*SoundSpeed[j+i*nsec];
+      }
+      else press[j+i*nsec] = (ADIABATICINDEX-1.0)*energy[j+i*nsec];
+    }  
+  }

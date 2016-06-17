@@ -109,8 +109,8 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 
   float *RhoStar, *RhoInt, *VradNew, *VradInt, *VthetaNew, *VthetaInt, *EnergyNew;
   float *EnergyInt, *TemperInt, *Potential, *Pressure, *SoundSpeed, *Temperature, *Qplus;
-  float *CellAbscissa, *CellOrdinate;
-  float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d;
+  float *CellAbscissa, *CellOrdinate, *press;
+  float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d, *press_d;
 
   CellAbscissa = (float *)malloc(sizeof(float)*size_grid);
   CellOrdinate = (float *)malloc(sizeof(float)*size_grid);
@@ -158,6 +158,7 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 
   float *AspectRatioRmed;
   AspectRatioRmed = (float *)malloc(sizeof(float)*NRAD);
+  press = (float *)malloc(sizeof(float)*size_grid);
 
   for (int i = 0; i < NRAD; i++) {
       AspectRatioRmed[i] = AspectRatio(Rmed[i]);
@@ -182,12 +183,30 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   ComputeSoundSpeed<<<dimGrid, dimBlock>>>(SoundSpeed_d, dens_d, Rmed_d, energy_d, NSEC, NRAD,
      Adiabaticc, ADIABATICINDEX, FLARINGINDEX, AspectRatioRmed_d);
 
+  cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
+
   cudaFree(SoundSpeed_d );
   cudaFree(dens_d );
   cudaFree(Rmed_d);
   cudaFree(energy_d);
   cudaFree(AspectRatioRmed_d);
 
-  // ComputePressureSpeed (dens, energy);
+  cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float));
+  cudaMalloc((void**)&energy_d, size_grid*sizeof(float) );
+  cudaMalloc((void**)&press_d, size_grid*sizeof(float));
+  cudaMalloc((void**)&dens_d, size_grid*sizeof(float));
 
+  cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice );
+	cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice );
+  cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+
+  ComputePressureField<<<dimGrid, dimBlock>>>(SoundSpeed, dens, press, Adiabaticc, NRAD, NSEC, ADIABATICINDEX, energy);
+
+  cudaMemcpy(press, press_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
+
+  cudaFree(SoundSpeed_d);
+  cudaFree(dens_d);
+  cudaFree(press_d);
+  cudaFree(energy_d);
 }
