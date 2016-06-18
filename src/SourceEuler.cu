@@ -3,13 +3,15 @@
 #include "SourceEuler.cuh"
 using namespace std;
 
-extern float RMAX, RMIN, PI;
 extern int blocksize, nsec2pot, nrad2pot;
 extern int NRAD, NSEC, YES, LogGrid, size_grid;
+extern float RMAX, RMIN, PI, MU, R;
 extern float *invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup;
 extern float *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns;
-extern string OUTPUTDIR;
 extern float Adiabaticc, ADIABATICINDEX, FLARINGINDEX;
+float *press;
+extern string OUTPUTDIR;
+
 
 __host__ void FillPolar1DArray()
 {
@@ -22,19 +24,18 @@ __host__ void FillPolar1DArray()
   InputName = OUTPUTDIR +"radii.dat";
   OutputName = OUTPUTDIR +"used_rad.dat";
 
-  Rinf = (float *) malloc(sizeof(float)*(NRAD+1));
-  Rmed = (float *) malloc(sizeof(float)*(NRAD+1));
-  Rsup = (float *) malloc(sizeof(float)*(NRAD+1));
-  Surf = (float *) malloc(sizeof(float)*(NRAD+1));
-  invRinf = (float *) malloc(sizeof(float)*(NRAD+1));
-  invSurf = (float *) malloc(sizeof(float)*(NRAD+1));
-  invRmed = (float *) malloc(sizeof(float)*(NRAD+1));
-  invdiffSurf = (float *) malloc(sizeof(float)*(NRAD+1));
-  invdiffRsup = (float *) malloc(sizeof(float)*(NRAD+1));
-  invdiffRmed = (float *) malloc(sizeof(float)*(NRAD+1));
+  Rinf = (float *) malloc(sizeof(float)*(NRAD));
+  Rmed = (float *) malloc(sizeof(float)*(NRAD));
+  Rsup = (float *) malloc(sizeof(float)*(NRAD));
+  Surf = (float *) malloc(sizeof(float)*(NRAD));
+  invRinf = (float *) malloc(sizeof(float)*(NRAD));
+  invSurf = (float *) malloc(sizeof(float)*(NRAD));
+  invRmed = (float *) malloc(sizeof(float)*(NRAD));
+  invdiffSurf = (float *) malloc(sizeof(float)*(NRAD));
+  invdiffRsup = (float *) malloc(sizeof(float)*(NRAD));
+  invdiffRmed = (float *) malloc(sizeof(float)*(NRAD));
 
   float Radii[129];
-  float GlobalRmed[128];
   char inputcharname[100];
   strncpy(inputcharname, InputName.c_str(), sizeof(inputcharname));
   inputcharname[sizeof(inputcharname)-1]=0;
@@ -109,18 +110,33 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 
   float *RhoStar, *RhoInt, *VradNew, *VradInt, *VthetaNew, *VthetaInt, *EnergyNew;
   float *EnergyInt, *TemperInt, *Potential, *Pressure, *SoundSpeed, *Temperature, *Qplus;
-  float *CellAbscissa, *CellOrdinate, *press;
+  float *CellAbscissa, *CellOrdinate, *temperature, *temperature_d;
   float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d, *press_d;
+  float *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *dens_d, *AspectRatioRmed;
 
   CellAbscissa = (float *)malloc(sizeof(float)*size_grid);
   CellOrdinate = (float *)malloc(sizeof(float)*size_grid);
   cosns = (float *)malloc(sizeof(float)*NSEC);
   sinns = (float *)malloc(sizeof(float)*NSEC);
+  AspectRatioRmed = (float *)malloc(sizeof(float)*NRAD);
+  press = (float *)malloc(sizeof(float)*size_grid);
+  SoundSpeed = (float *)malloc(sizeof(float)*size_grid);
+  temperature = (float *)malloc(sizeof(float)*size_grid);
 
   for (int i = 0; i < NSEC; i++) {
       cosns[i] = cos((2.0*CUDART_PI_F*i)/NSEC);
       sinns[i] = sin((2.0*CUDART_PI_F*i)/NSEC);
   }
+
+
+  for (int i = 0; i < NRAD; i++) AspectRatioRmed[i] = AspectRatio(Rmed[i]);
+
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
+
+
+
+  /* <---------     InitComputeAccel()        --------> */
 
   cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(float));
 	cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float) );
@@ -135,15 +151,9 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaMemcpy(cosns_d, cosns, NSEC*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(sinns_d, sinns, NSEC*sizeof(float), cudaMemcpyHostToDevice);
 
-
-  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
-	dim3 dimBlock( blocksize, blocksize );
-
-
-  /*  InitComputeAccel function */
   InitComputeAccel<<<dimGrid, dimBlock>>>(CellAbscissa_d, CellOrdinate_d, Rmed_d, cosns_d,
     sinns_d, NSEC, NRAD);
-
+  gpuErrchk(cudaDeviceSynchronize());
   cudaMemcpy(CellAbscissa, CellAbscissa_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
   cudaMemcpy(CellOrdinate, CellOrdinate_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -153,26 +163,17 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaFree(cosns_d);
   cudaFree(sinns_d);
 
-  /*  Rho and Energy are already initialized: cf main.c */
-  /*  ComputeSoundSpeed  */
+  /* <---------     InitComputeAccel()        --------> */
 
-  float *AspectRatioRmed;
-  AspectRatioRmed = (float *)malloc(sizeof(float)*NRAD);
-  press = (float *)malloc(sizeof(float)*size_grid);
 
-  for (int i = 0; i < NRAD; i++) {
-      AspectRatioRmed[i] = AspectRatio(Rmed[i]);
-  }
 
-  float *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *dens_d;
-  SoundSpeed = (float *)malloc(sizeof(float)*size_grid);
+  /* <---------     ComputeSoundSpeed()        --------> */
 
   cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float));
 	cudaMalloc((void**)&energy_d, size_grid*sizeof(float) );
   cudaMalloc((void**)&Rmed_d, NRAD*sizeof(float));
   cudaMalloc((void**)&AspectRatioRmed_d, NRAD*sizeof(float));
   cudaMalloc((void**)&dens_d, size_grid*sizeof(float));
-
 
 	cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice );
 	cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice );
@@ -182,7 +183,7 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 
   ComputeSoundSpeed<<<dimGrid, dimBlock>>>(SoundSpeed_d, dens_d, Rmed_d, energy_d, NSEC, NRAD,
      Adiabaticc, ADIABATICINDEX, FLARINGINDEX, AspectRatioRmed_d);
-
+  gpuErrchk(cudaDeviceSynchronize());
   cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
 
   cudaFree(SoundSpeed_d );
@@ -190,6 +191,13 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaFree(Rmed_d);
   cudaFree(energy_d);
   cudaFree(AspectRatioRmed_d);
+
+
+  /* <---------     ComputeSoundSpeed()        --------> */
+
+
+
+   /* <---------     ComputePressureField()        --------> */
 
   cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float));
   cudaMalloc((void**)&energy_d, size_grid*sizeof(float) );
@@ -201,12 +209,41 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice);
 
-  ComputePressureField<<<dimGrid, dimBlock>>>(SoundSpeed, dens, press, Adiabaticc, NRAD, NSEC, ADIABATICINDEX, energy);
-
+  ComputePressureField<<<dimGrid, dimBlock>>>(SoundSpeed_d, dens_d, press_d, Adiabaticc, NRAD, NSEC, ADIABATICINDEX, energy_d);
+  gpuErrchk(cudaDeviceSynchronize());
   cudaMemcpy(press, press_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
 
   cudaFree(SoundSpeed_d);
   cudaFree(dens_d);
   cudaFree(press_d);
   cudaFree(energy_d);
+
+ /* <---------     ComputePressureField()        --------> */
+
+
+
+ /* <---------     ComputeTemperatureField()        --------> */
+
+ cudaMalloc((void**)&dens_d, size_grid*sizeof(float));
+ cudaMalloc((void**)&temperature_d, size_grid*sizeof(float));
+ cudaMalloc((void**)&press_d, size_grid*sizeof(float));
+ cudaMalloc((void**)&energy_d, size_grid*sizeof(float));
+
+ cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+ cudaMemcpy(temperature_d, temperature, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+ cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+ cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice);
+
+ ComputeTemperatureField<<<dimGrid, dimBlock>>>(dens_d, temperature_d, press_d, energy_d, MU, R, ADIABATICINDEX, Adiabaticc, NSEC, NRAD);
+ gpuErrchk(cudaDeviceSynchronize());
+ cudaMemcpy(temperature, temperature_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
+
+ cudaFree(dens_d);
+ cudaFree(temperature_d);
+ cudaFree(press_d);
+ cudaFree(energy_d);
+
+ /* <---------     ComputeTemperatureField()        --------> */
+
+
 }

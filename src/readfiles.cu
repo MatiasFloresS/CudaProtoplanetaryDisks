@@ -165,12 +165,12 @@ __host__ void TellEverything()
 
 }
 
-float TellNbOrbits (float time)
+__host__ float TellNbOrbits (float time)
 {
   return time/2.0/PI*sqrt(G*1.0/1.0/1.0/1.0);
 }
 
-float TellNbOutputs (float time)
+__host__ float TellNbOutputs (float time)
 {
   return (time/DT/NINTERM);
 }

@@ -7,7 +7,8 @@ extern bool CICPlanet, ForcedCircular;
 extern float ECCENTRICITY, PI;
 float HillRadius;
 static float Xplanet, Yplanet;
-PlanetarySystem *InitPlanetarySystem (char *filename)
+
+__host__ PlanetarySystem *InitPlanetarySystem (char *filename)
 {
   int nb, i=0, j;
   PlanetarySystem *sys;
@@ -62,7 +63,7 @@ PlanetarySystem *InitPlanetarySystem (char *filename)
 }
 
 
-int FindNumberOfPlanets (char *filename)
+__host__ int FindNumberOfPlanets (char *filename)
 {
   FILE *input;
   char s[512];
@@ -79,7 +80,7 @@ int FindNumberOfPlanets (char *filename)
   return cont;
 }
 
-PlanetarySystem *AllocPlanetSystem (int nb)
+__host__ PlanetarySystem *AllocPlanetSystem (int nb)
 {
   float *mass, *x, *y, *vx, *vy, *acc;
   bool *feeldisk, *feelothers;
@@ -122,7 +123,7 @@ PlanetarySystem *AllocPlanetSystem (int nb)
   return sys;
 }
 
-void ListPlanets (PlanetarySystem *sys)
+__host__ void ListPlanets (PlanetarySystem *sys)
 {
   int nb;
   int i;
@@ -150,7 +151,7 @@ void ListPlanets (PlanetarySystem *sys)
   }
 }
 
-float GetPsysInfo (PlanetarySystem *sys, int action)
+__host__ float GetPsysInfo (PlanetarySystem *sys, int action)
 {
   float d1, d2, cross;
   float x,y, vx, vy, m, h, d, Ax, Ay, e, a, E, M;

@@ -18,7 +18,7 @@ __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *Azimut
       float *Trp, float *Tpp, float DeltaT, int nrad, int nsec*/
 }
 
-float AspectRatio(float r)
+__host__ float AspectRatio(float r)
 {
   float aspectratio, rmin, rmax, scale;
   aspectratio = ASPECTRATIO;

@@ -19,7 +19,7 @@ extern int SelfGravity, Corotating, FREQUENCY;
 extern float OMEGAFRAME, OmegaFrame1;
 float *cosns, *sinns;
 int nrad2pot, nsec2pot;
-
+extern float *press;
 
 int blocksize = 32;
 int size_grid;
@@ -30,6 +30,8 @@ static int StillWriteOneOutput;
 int NbRestart = 0;
 
 float ScalingFactor = 1.0;
+
+
 
 __host__ long NearestPowerOf2(long n)
 {
@@ -59,7 +61,7 @@ __host__ int main(int argc, char *argv[])
   PlanetarySystem *sys;
 
   float *gas_v_rad, *gas_v_theta, *gas_label;
-  float *press, *rho, *vradint, *pot, *vrad, *vthetaint, *vtheta;
+  float *rho, *vradint, *pot, *vrad, *vthetaint, *vtheta;
   float *press_d,*dens_d,*vradint_d,*invdiffRmed_d,*pot_d, *invRinf_d, *Rinf_d, *vrad_d, *vthetaint_d, *vtheta_d, *Rmed_d;
   float *powRmed, *powRmed_d;
 
@@ -206,7 +208,6 @@ __host__ int main(int argc, char *argv[])
 
 
 
-  press = (float *) malloc(sizeof(float)*size_grid);
   rho = (float *) malloc(sizeof(float)*size_grid );
   vradint = (float *) malloc(sizeof(float)*size_grid);
   pot = (float *) malloc(sizeof(float)*size_grid);
@@ -216,9 +217,8 @@ __host__ int main(int argc, char *argv[])
   powRmed = (float *) malloc(sizeof(float)*NRAD);
 
   for (int i  = 0; i < size_grid; i++) {
-    press[i] = i;
     rho[i] = 2*i;
-    pot[i] = 0.001*i;
+    pot[i] = 0.00001*i;
     vrad[i] = 0.212*i;
     vtheta[i] = 0.1;
   }
@@ -228,7 +228,31 @@ __host__ int main(int argc, char *argv[])
  }
 
 
-	cudaMalloc((void**)&press_d, size_grid*sizeof(float));
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
+
+
+    // cudaEvent_t start, stop;
+    // float time;
+    //
+    //
+    // cudaEventCreate(&start);
+    // cudaEventCreate(&stop);
+    // cudaEventRecord(start,0);
+
+    // cuda function
+
+    // cudaEventRecord(stop, 0);
+    // cudaEventSynchronize(stop);
+    // cudaEventElapsedTime(&time, start, stop);
+    // printf("CUDA execution time = %f ms\n",time);
+
+
+
+  /* <-------------------------     substep1()       --------------------------> */
+
+
+  cudaMalloc((void**)&press_d, size_grid*sizeof(float));
 	cudaMalloc((void**)&dens_d, size_grid*sizeof(float) );
   cudaMalloc((void**)&vradint_d, size_grid*sizeof(float));
   cudaMalloc((void**)&pot_d, size_grid*sizeof(float));
@@ -254,25 +278,11 @@ __host__ int main(int argc, char *argv[])
   cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(powRmed_d, powRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
 
-	dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
-	dim3 dimBlock( blocksize, blocksize );
-
-  // cudaEvent_t start, stop;
-  // float time;
-  //
-  //
-  // cudaEventCreate(&start);
-  // cudaEventCreate(&stop);
-  // cudaEventRecord(start,0);
 	substep1<<<dimGrid, dimBlock>>>(press_d, dens_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
     invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame, ZMPlus,
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
 
-
-  // cudaEventRecord(stop, 0);
-  // cudaEventSynchronize(stop);
-  // cudaEventElapsedTime(&time, start, stop);
-  // printf("CUDA execution time = %f ms\n",time);
+  gpuErrchk(cudaDeviceSynchronize());
 	cudaMemcpy(vradint, vradint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
   cudaMemcpy(vthetaint, vthetaint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -289,6 +299,9 @@ __host__ int main(int argc, char *argv[])
   cudaFree(Rmed_d);
   cudaFree(powRmed_d);
 
+
+  /* <-------------------------     substep1()       --------------------------> */
+
   /*if (SelfGravity){
     selfgravityupdate = YES;
     compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
@@ -298,6 +311,7 @@ __host__ int main(int argc, char *argv[])
 /*
   if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
 */
+
   FILE *f;
   f = fopen("datos.txt","w");
 
