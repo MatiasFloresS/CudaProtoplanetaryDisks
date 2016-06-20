@@ -246,4 +246,13 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
  /* <---------     ComputeTemperatureField()        --------> */
 
 
+
+ /* <---------     InitGasVelocities()        --------> */
+
+
+// InitGasVelocities(Vr, Vt);
+
+
+  /* <---------     InitGasVelocities()        --------> */
+
 }

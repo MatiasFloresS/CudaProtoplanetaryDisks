@@ -17,5 +17,7 @@ __global__ void ComputeSoundSpeed(float *SoundSpeed, float *dens, float *Rmed, f
 __global__ void ComputePressureField(float *SoundSpeed, float *dens, float *press, int Adiabaticc, int nrad, int nsec,
    int ADIABATICINDEX, float *energy);
 
-__global__ void ComputeTemperatureField(float *dens, float *temperature, float *press, float *energy, float MU, float R, 
+__global__ void ComputeTemperatureField(float *dens, float *temperature, float *press, float *energy, float MU, float R,
    float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
+
+__global__ void InitLabel (float *label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec);

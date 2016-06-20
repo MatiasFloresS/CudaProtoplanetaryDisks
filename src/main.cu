@@ -28,7 +28,7 @@ bool ZMPlus = false, verbose = false, Restart = false;
 extern int Adiabaticc;
 static int StillWriteOneOutput;
 int NbRestart = 0;
-
+float mdcp0;
 float ScalingFactor = 1.0;
 
 
@@ -204,6 +204,10 @@ __host__ int main(int argc, char *argv[])
   /* Only gas velocities remain to be initialized */
 
   Initialization (dens, gas_v_rad, gas_v_theta, energy, gas_label, sys);
+
+  //mdcp0 = CircumPlanetaryMass (dens, sys);
+  
+
   float dt = 0.999;
 
 

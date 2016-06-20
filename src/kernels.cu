@@ -134,3 +134,32 @@ float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad)
     else temperature[j+i*nsec] = MU/R*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec];
   }
 }
+
+
+__global__ void InitLabel (float *label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  if (i<nrad && j<nsec)
+  {
+    float distance, angle, x, y;
+    angle = 2.0*CUDART_PI_F*j/nsec;
+    x = Rmed[i] * cosf(angle);
+    y = Rmed[i] * sinf(angle);
+    distance = sqrtf( (x - xp) * (x - xp) + (y - yp)*(y -yp) );
+    if (distance < rhill) label[i] = 1.0;
+    else label[i] = 0.0;
+  }
+}
+
+/*__global__ float CircumPlanetaryMass (float *dens, sys)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int y = threadIdx.y + blockDim.y*blockIdx.y;
+
+  if (i<nrad && j<nsec)
+  {
+
+  }
+}*/
