@@ -25,15 +25,15 @@ __host__ void Initialization (float *dens,float *gas_v_rad,float * gas_v_theta,f
 
     /* <---------     InitLabel()        --------> */
 
-  cudaMalloc((void**)&gas_label_d, size_grid*sizeof(float));
-  cudaMalloc((void**)&Rmed_d,NRAD*sizeof(float));
+  gpuErrchk(cudaMalloc((void**)&gas_label_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Rmed_d,NRAD*sizeof(float)));
 
-	cudaMemcpy(gas_label_d, gas_label, size_grid*sizeof(float), cudaMemcpyHostToDevice );
-  cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice);
+	gpuErrchk(cudaMemcpy(gas_label_d, gas_label, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
   InitLabel<<<dimGrid, dimBlock>>>(gas_label_d, xp, yp, rhill, Rmed_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
-  cudaMemcpy(gas_label, gas_label_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost);
+  gpuErrchk(cudaMemcpy(gas_label, gas_label_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
   cudaFree(gas_label_d);
   cudaFree(Rmed_d);

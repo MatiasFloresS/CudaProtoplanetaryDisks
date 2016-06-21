@@ -153,13 +153,192 @@ __global__ void InitLabel (float *label, float xp, float yp, float rhill, float 
   }
 }
 
-/*__global__ float CircumPlanetaryMass (float *dens, sys)
+__global__ void CircumPlanetaryMass (float *dens, float *Surf, float *CellAbscissa, float *CellOrdinate, float xpl, float ypl, int nrad,
+  int nsec, float HillRadius, float *mdcp0)
 {
-  int i = threadIdx.x + blockDim.x*blockIdx.x;
-  int y = threadIdx.y + blockDim.y*blockIdx.y;
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  float dist;
 
   if (i<nrad && j<nsec)
   {
+    dist = sqrtf((CellAbscissa[j+i*nsec]-xpl)*(CellAbscissa[j+i*nsec]-xpl) + (CellOrdinate[j+i*nsec]-ypl)*(CellOrdinate[j+i*nsec]-ypl));
+
+    if (dist < HillRadius) mdcp0[j+i*nsec] =  Surf[i]* dens[j+i*nsec];
 
   }
-}*/
+}
+
+template <bool nIsPow2>
+__global__ void deviceReduceKernel(float *g_idata, float *g_odata, unsigned int n)
+{
+    extern __shared__ float sdata[];
+
+    // perform first level of reduction,
+    // reading from global memory, writing to shared memory
+    unsigned int tid = threadIdx.x;
+    unsigned int blockSize = blockDim.x;
+    unsigned int i = blockIdx.x*blockSize*2 + threadIdx.x;
+    unsigned int gridSize = blockSize*2*gridDim.x;
+
+    float mySum = 0.f;
+
+    // we reduce multiple elements per thread.  The number is determined by the
+    // number of active thread blocks (via gridDim).  More blocks will result
+    // in a larger gridSize and therefore fewer elements per thread
+    while (i < n)
+    {
+        mySum += g_idata[i];
+
+        // ensure we don't read out of bounds -- this is optimized away for powerOf2 sized arrays
+        if (nIsPow2 || i + blockSize < n)
+            mySum += g_idata[i+blockSize];
+
+        i += gridSize;
+    }
+
+    // each thread puts its local sum into shared memory
+    sdata[tid] = mySum;
+    __syncthreads();
+
+
+    // do reduction in shared mem
+    if ((blockSize >= 512) && (tid < 256))
+    {
+        sdata[tid] = mySum = mySum + sdata[tid + 256];
+    }
+
+    __syncthreads();
+
+    if ((blockSize >= 256) &&(tid < 128))
+    {
+            sdata[tid] = mySum = mySum + sdata[tid + 128];
+    }
+
+     __syncthreads();
+
+    if ((blockSize >= 128) && (tid <  64))
+    {
+       sdata[tid] = mySum = mySum + sdata[tid +  64];
+    }
+
+    __syncthreads();
+
+    #if (__CUDA_ARCH__ >= 300 )
+        if ( tid < 32 )
+        {
+            // Fetch final intermediate sum from 2nd warp
+            if (blockSize >=  64) mySum += sdata[tid + 32];
+            // Reduce final warp using shuffle
+            for (int offset = warpSize/2; offset > 0; offset /= 2)
+            {
+                mySum += __shfl_down(mySum, offset);
+            }
+        }
+    #else
+        // fully unroll reduction within a single warp
+        if ((blockSize >=  64) && (tid < 32))
+        {
+            sdata[tid] = mySum = mySum + sdata[tid + 32];
+        }
+
+        __syncthreads();
+
+        if ((blockSize >=  32) && (tid < 16))
+        {
+            sdata[tid] = mySum = mySum + sdata[tid + 16];
+        }
+
+        __syncthreads();
+
+        if ((blockSize >=  16) && (tid <  8))
+        {
+            sdata[tid] = mySum = mySum + sdata[tid +  8];
+        }
+
+        __syncthreads();
+
+        if ((blockSize >=   8) && (tid <  4))
+        {
+            sdata[tid] = mySum = mySum + sdata[tid +  4];
+        }
+
+        __syncthreads();
+
+        if ((blockSize >=   4) && (tid <  2))
+        {
+            sdata[tid] = mySum = mySum + sdata[tid +  2];
+        }
+
+        __syncthreads();
+
+        if ((blockSize >=   2) && ( tid <  1))
+        {
+            sdata[tid] = mySum = mySum + sdata[tid +  1];
+        }
+
+        __syncthreads();
+    #endif
+
+    // write result for this block to global mem
+    if (tid == 0) g_odata[blockIdx.x] = mySum;
+}
+
+
+__host__ long NearestPowerOf2(long n)
+{
+  if(!n) return n; //(0 ==2^0)
+
+  int x=1;
+  while (x < n)
+  {
+    x<<=1;
+  }
+  return x;
+}
+
+__host__ bool isPow2(unsigned int x)
+{
+  return ((x&(x-1)==0));
+}
+
+__host__ float deviceReduce(float *in, int N) {
+  float *device_out;
+  gpuErrchk(cudaMalloc(&device_out, sizeof(float)*1024));
+  gpuErrchk(cudaMemset(device_out, 0, sizeof(float)*1024));
+
+  int threads = 32;
+  int blocks = min((int(NearestPowerOf2(N)) + threads - 1) / threads, 1024);
+  int smemSize = (threads <= 32) ? 2 * threads * sizeof(float) : threads * sizeof(float);
+
+  bool isPower2 = isPow2(N);
+  if(isPower2){
+    deviceReduceKernel<true><<<blocks, threads, smemSize>>>(in, device_out, N);
+    gpuErrchk(cudaDeviceSynchronize());
+  }else{
+    deviceReduceKernel<false><<<blocks, threads, smemSize>>>(in, device_out, N);
+    gpuErrchk(cudaDeviceSynchronize());
+  }
+
+  float *h_odata = (float *) malloc(blocks*sizeof(float));
+  float sum = 0.0;
+
+  gpuErrchk(cudaMemcpy(h_odata, device_out, blocks * sizeof(float),cudaMemcpyDeviceToHost));
+  for (int i=0; i<blocks; i++)
+  {
+    sum += h_odata[i];
+  }
+  cudaFree(device_out);
+  free(h_odata);
+	return sum;
+}
+__global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, int nrad, int nsec, float ScalingFactor)
+
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  if (i<nrad+1 && j<nsec) fieldsrc_d[j+i*nsec] *= ScalingFactor; 
+
+}

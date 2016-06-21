@@ -1,4 +1,16 @@
 #include "math_constants.h"
+#include <stdio.h>
+
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 
 __global__ void substep1(float *press, float *rho, float *vradint, float *invdiffRmed, float *pot,
   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float *vtheta, float dt,
@@ -21,3 +33,16 @@ __global__ void ComputeTemperatureField(float *dens, float *temperature, float *
    float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
 
 __global__ void InitLabel (float *label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec);
+
+__global__ void CircumPlanetaryMass (float *dens, float *Surf, float *CellAbscissa, float *CellOrdinate, float xpl, float ypl, int nrad,
+  int nsec, float HillRadius, float *mdcp0);
+
+__global__ void deviceReduceKernel(float *g_idata, float *g_odata, unsigned int n);
+
+__host__ bool isPow2(unsigned int x);
+
+__host__ long NearestPowerOf2(long n);
+
+__host__ float deviceReduce(float *in, int N) ;
+
+__global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, int nrad, int nsec, float ScalingFactor);
