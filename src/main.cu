@@ -32,8 +32,12 @@ bool ZMPlus = false, verbose = false, Restart = false;
 extern int Adiabaticc;
 static int StillWriteOneOutput;
 int NbRestart = 0;
-float mdcp0;
+float mdcp;
+float exces_mdcp = 0.0;
 float ScalingFactor = 1.0;
+
+int TimeStep = 0;
+int static InnerOutputCounter=0;
 
 
 __host__ int main(int argc, char *argv[])
@@ -186,9 +190,7 @@ __host__ int main(int argc, char *argv[])
   ListPlanets (sys);
   OmegaFrame1 = OMEGAFRAME;
 
-
   if (Corotating) OmegaFrame1 = GetPsysInfo (sys, FREQUENCY);
-
   /* Only gas velocities remain to be initialized */
 
   Initialization (dens, gas_v_rad, gas_v_theta, energy, gas_label, sys);
@@ -257,6 +259,18 @@ __host__ int main(int argc, char *argv[])
 
 
   /* <-------------------------     MultiplyPolarGridbyConstant()       --------------------------> */
+
+  for (int i = 0; i < 20; i++) {
+    InnerOutputCounter++;
+
+    if (InnerOutputCounter == 1) {
+      InnerOutputCounter = 0;
+      WriteBigPlanetSystemFile (sys, TimeStep);
+      //UpdateLog(force, sys, dens, energy, TimeStep, PhysicalTime, dimfxy);
+    }
+
+  }
+
 
   rho = (float *) malloc(sizeof(float)*size_grid );
   vradint = (float *) malloc(sizeof(float)*size_grid);
