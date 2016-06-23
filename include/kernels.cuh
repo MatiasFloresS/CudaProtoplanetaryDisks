@@ -46,3 +46,6 @@ __host__ long NearestPowerOf2(long n);
 __host__ float deviceReduce(float *in, int N) ;
 
 __global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, int nrad, int nsec, float ScalingFactor);
+
+__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
+  int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed);

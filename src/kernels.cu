@@ -339,6 +339,21 @@ __global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, in
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<nrad+1 && j<nsec) fieldsrc_d[j+i*nsec] *= ScalingFactor; 
+  if (i<nrad+1 && j<nsec) fieldsrc_d[j+i*nsec] *= ScalingFactor;
 
 }
+
+/*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
+  int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)
+  {
+
+    int x = threadIdx.x + blockDim.x*blockIdx.x;
+    int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+    if (i<nrad && j<nsec)
+    {
+      for (int k = 0; k < dimfxy; k++) {
+        fxi[k] += i;
+      }
+    }
+  }*/

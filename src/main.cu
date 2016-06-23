@@ -9,7 +9,7 @@
 #include "Init.cuh"
 #include "cuda_runtime.h"
 #include "Output.cuh"
-
+#include "Force.cuh"
 
 using namespace std;
 
@@ -35,6 +35,7 @@ int NbRestart = 0;
 float mdcp;
 float exces_mdcp = 0.0;
 float ScalingFactor = 1.0;
+int dimfxy=11;
 
 int TimeStep = 0;
 int static InnerOutputCounter=0;
@@ -48,6 +49,7 @@ __host__ int main(int argc, char *argv[])
   char ParameterFile[256];
 
   PlanetarySystem *sys;
+  Force *force;
 
   float *gas_v_rad, *gas_v_theta, *gas_label;
   float *rho, *vradint, *pot, *vrad, *vthetaint, *vtheta;
@@ -158,7 +160,7 @@ __host__ int main(int argc, char *argv[])
 
   FillPolar1DArray();
 
-  // force = AllocateForce (dimfxy);
+  force = AllocateForce (dimfxy);
 
   char configplanet[100];
   strncpy(configplanet, PLANETCONFIG.c_str(), sizeof(configplanet));
@@ -260,13 +262,13 @@ __host__ int main(int argc, char *argv[])
 
   /* <-------------------------     MultiplyPolarGridbyConstant()       --------------------------> */
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 1; i++) {
     InnerOutputCounter++;
 
     if (InnerOutputCounter == 1) {
       InnerOutputCounter = 0;
       WriteBigPlanetSystemFile (sys, TimeStep);
-      //UpdateLog(force, sys, dens, energy, TimeStep, PhysicalTime, dimfxy);
+      UpdateLog(force, sys, dens, energy, TimeStep, PhysicalTime, dimfxy);
     }
 
   }

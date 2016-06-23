@@ -12,3 +12,17 @@ struct planetary_system {
 };
 
 typedef struct planetary_system PlanetarySystem;
+
+struct force {
+  float fx_inner;
+  float fy_inner;
+  float fx_ex_inner;
+  float fy_ex_inner;
+  float fx_outer;
+  float fy_outer;
+  float fx_ex_outer;
+  float fy_ex_outer;
+  float *GlobalForce;
+};
+
+typedef struct force Force;
