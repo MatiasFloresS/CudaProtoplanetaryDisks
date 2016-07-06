@@ -16,6 +16,10 @@ __global__ void substep1(float *press, float *rho, float *vradint, float *invdif
   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float *vtheta, float dt,
   int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
 
+  __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint,
+    int nrad, int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *densint, int Adiabaticc, float *Rmed, float dt,
+    float *vradnew, float *vthetanew, float *energy, float *energyint);
+
 __global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
   float *Trp, float *Tpp, float DeltaT, int nrad, int nsec);
@@ -49,3 +53,4 @@ __global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, in
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed);
+  

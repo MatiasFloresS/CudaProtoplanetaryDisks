@@ -303,7 +303,8 @@ __host__ bool isPow2(unsigned int x)
   return ((x&(x-1)==0));
 }
 
-__host__ float deviceReduce(float *in, int N) {
+__host__ float deviceReduce(float *in, int N)
+{
   float *device_out;
   gpuErrchk(cudaMalloc(&device_out, sizeof(float)*1024));
   gpuErrchk(cudaMemset(device_out, 0, sizeof(float)*1024));
@@ -333,15 +334,68 @@ __host__ float deviceReduce(float *in, int N) {
   free(h_odata);
 	return sum;
 }
-__global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, int nrad, int nsec, float ScalingFactor)
 
+__global__ void MultiplyPolarGridbyConstant(float *dens, float *fieldsrc, int nrad, int nsec, float ScalingFactor)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<nrad+1 && j<nsec) fieldsrc_d[j+i*nsec] *= ScalingFactor;
+  if (i<nrad+1 && j<nsec) fieldsrc[j+i*nsec] *= ScalingFactor;
 
 }
+
+__global__ void substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint, int nrad, int nsec, float CVNR,
+  float *invdiffRmed, float *invdiffRsup, float *densint, int Adiabaticc, float *Rmed, float dt, float *vradnew,
+  float *vthetanew, float *energy, float *energyint)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  float dv;
+  if (i<nrad && j<nsec)
+  {
+    dv = vradint[(i+1)*nsec + j] - vradint[i*nsec + j];
+
+    if (dv < 0.0) densint[i*nsec + j] = CVNR*CVNR*dens[i*nsec + j]*dv*dv;
+    else densint[i*nsec + j] = 0.0;
+
+    dv = vthetaint[i*nsec + (j+1)%nsec] - vthetaint[i*nsec + j];
+    if (dv < 0.0) temperatureint[i*nsec + j] = CVNR*CVNR*dens[i*nsec + j]*dv*dv;
+    else temperatureint[i*nsec + j] = 0.0;
+
+  }
+  __syncthreads();
+  i+=1;
+
+  if (i<nrad && j<nsec)
+  {
+    vradnew[i*nsec + j] = vradint[i*nsec + j] - dt*2.0/(dens[i*nsec + j] + dens[(i-1)*nsec + j])*(densint[i*nsec + j] - densint[(i-1)*nsec + j]) *\
+    invdiffRmed[i];
+
+  }
+  __syncthreads();
+  i-=1;
+
+  if (i<nrad && j<nsec)
+  {
+    vthetanew[i*nsec + j] = vthetaint[i*nsec + j] - dt*2.0/(dens[i*nsec + j] + dens[i*nsec + ((j-1)+nsec)%nsec])*(densint[i*nsec + j] - \
+      densint[(i-1)*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
+
+  }
+  __syncthreads();
+  if (Adiabaticc)
+  {
+    i+=1;
+
+    if (i<nrad && j<nsec)
+    {
+      energyint[i*nsec + j] = energy[i*nsec + j] - dt*densint[i*nsec + j]*(vradint[i*nsec + j+1] - vradint[i*nsec + j])*invdiffRsup[i] - \
+      dt*temperatureint[i*nsec + j]*(vthetaint[i*nsec + (j+1)%nsec] - vthetaint[i*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
+
+    }
+  }
+}
+
 
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)

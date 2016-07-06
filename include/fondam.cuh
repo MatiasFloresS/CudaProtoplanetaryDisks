@@ -6,6 +6,7 @@ float PI	= 3.14159265358979323844;
 float MU  = 1.0;  /* Mean molecular weight */
 float R   = 1.0; /* Universal Gas Constant in code units */
 
+float CVNR = 1.41;
 
 int GET       = 0;
 int MARK      = 1;
