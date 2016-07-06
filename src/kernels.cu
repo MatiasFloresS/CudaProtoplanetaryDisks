@@ -39,7 +39,6 @@ __global__ void substep1(float *press, float *dens, float *vradint, float *invdi
     gradphi = (pot[i*nsec+ j] - pot[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec*Rmed[i]);
     vthetaint[i*nsec + j] = vtheta[i*nsec + j]- dt*(gradp+gradphi);
     vthetaint[i*nsec + j] += dt*IMPOSEDDISKDRIFT*0.5*powRmed[i];
-    if(i==0 && j == 0) printf("%f\n",vthetaint[i*nsec + j] );
 
   }
 
@@ -397,6 +396,19 @@ __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *t
   }
 }
 
+__global__ void OpenBoundary(float *vrad, float *dens, float *energy, int nsec, float *SigmaMed)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i=1;
+
+  if(j<nsec)
+  {
+    dens[(i-1)*nsec + j] = dens[i*nsec + j]; // copy first ring into ghost ring
+    energy[(i-1)*nsec + j] = energy[i*nsec + j];
+    if(vrad[(i+1)*nsec + j] > 0.0 || (dens[i*nsec + j] < SigmaMed[0])) vrad[i*nsec + j] = 0.0; // we just allow outflow [inwards]
+    else vrad[i*nsec +j] = vrad[(i+1)*nsec + j];
+  }
+}
 
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)

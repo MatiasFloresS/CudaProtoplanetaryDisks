@@ -53,4 +53,5 @@ __global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, in
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed);
-  
+
+__global__ void OpenBoundary(float *vrad, float *dens_d, float *energy_d, int nsec, float *SigmaMed);

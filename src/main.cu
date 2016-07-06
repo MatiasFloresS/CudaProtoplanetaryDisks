@@ -10,6 +10,7 @@
 #include "cuda_runtime.h"
 #include "Output.cuh"
 #include "Force.cuh"
+#include "SideEuler.cuh"
 
 using namespace std;
 
@@ -448,14 +449,17 @@ __host__ int main(int argc, char *argv[])
   cudaFree(vtheta_d);
   cudaFree(vthetanew_d);
 
+  ApplyBoundaryCondition (vrad, vtheta, dens, energy, dt);
 
-  /*if (SelfGravity){
+/* esto es parte de substep1
+
+  if (SelfGravity){
     selfgravityupdate = YES;
     compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
   }
-  ComputeViscousTerms (VradInt, VthetaInt, Rho);*/
+  ComputeViscousTerms (VradInt, VthetaInt, Rho);
   UpdateVelocitiesWithViscosity(vradint, vthetaint, rho, dt);
-/*
+
   if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
 */
 
