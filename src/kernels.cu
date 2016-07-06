@@ -39,6 +39,7 @@ __global__ void substep1(float *press, float *dens, float *vradint, float *invdi
     gradphi = (pot[i*nsec+ j] - pot[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec*Rmed[i]);
     vthetaint[i*nsec + j] = vtheta[i*nsec + j]- dt*(gradp+gradphi);
     vthetaint[i*nsec + j] += dt*IMPOSEDDISKDRIFT*0.5*powRmed[i];
+    if(i==0 && j == 0) printf("%f\n",vthetaint[i*nsec + j] );
 
   }
 

@@ -206,7 +206,6 @@ __host__ int main(int argc, char *argv[])
   /* <-------------------------     CircumPlanetaryMass()       --------------------------> */
 
   mdcp0 = (float *)malloc(size_grid*sizeof(float));
-
   float *mdcp0_d;
   gpuErrchk(cudaMalloc((void**)&Surf_d,NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&dens_d,size_grid*sizeof(float)));
@@ -275,7 +274,6 @@ __host__ int main(int argc, char *argv[])
   }
 
 
-  rho = (float *) malloc(sizeof(float)*size_grid );
   vradint = (float *) malloc(sizeof(float)*size_grid);
   pot = (float *) malloc(sizeof(float)*size_grid);
   vrad = (float *) malloc(sizeof(float)*size_grid);
@@ -289,7 +287,7 @@ __host__ int main(int argc, char *argv[])
   energyint = (float *)malloc(sizeof(float)*size_grid);
 
   for (int i  = 0; i < size_grid; i++) {
-    rho[i] = 2*i;
+    //rho[i] = 2*i;
     pot[i] = 0.00001*i;
     vrad[i] = 0.212*i;
     vtheta[i] = 0.1;
@@ -336,7 +334,7 @@ __host__ int main(int argc, char *argv[])
   gpuErrchk(cudaMalloc((void**)&powRmed_d,NRAD*sizeof(float)));
 
 	gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-	//gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+	gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(vradint_d, vradint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(pot_d, pot, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));
