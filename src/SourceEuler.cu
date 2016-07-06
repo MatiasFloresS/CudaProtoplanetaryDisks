@@ -9,7 +9,7 @@ extern float RMAX, RMIN, PI, MU, R;
 extern float *invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup;
 extern float *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns;
 extern float Adiabaticc, ADIABATICINDEX, FLARINGINDEX;
-float *press, *CellAbscissa, *CellOrdinate;
+float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed;
 extern string OUTPUTDIR;
 
 
@@ -109,10 +109,10 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   float *DivergenceVelocity, *DRR, *DRP, *DPP, *TAURR, *TAURP, *TAUPP;
 
   float *RhoStar, *RhoInt, *VradNew, *VradInt, *VthetaNew, *VthetaInt, *EnergyNew;
-  float *EnergyInt, *TemperInt, *Potential, *Pressure, *SoundSpeed, *Temperature, *Qplus;
+  float *EnergyInt, *TemperInt, *Potential, *Pressure, *Temperature, *Qplus;
   float *temperature, *temperature_d;
   float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d, *press_d;
-  float *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *dens_d, *AspectRatioRmed;
+  float *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *dens_d;
 
   CellAbscissa = (float *)malloc(sizeof(float)*size_grid);
   CellOrdinate = (float *)malloc(sizeof(float)*size_grid);
