@@ -63,6 +63,17 @@ __host__ void ApplyBoundaryCondition (float *vrad, float *vtheta, float *dens, f
 
 
       /* <---------     ComputeSoundSpeed()        --------> */
+
+
     }
+
+    /* <---------     NonReflectingBoundary()        --------> */
+
+    float *cs1;
+    cs1 = (float *)malloc(sizeof(float)*NSEC);
+    //cs1 = SoundSpeed[]
+    //cs0 = deviceReduce(mdcp0_d, size_grid);
+    //cs1 =
+    /* <---------     NonReflectingBoundary()        --------> */
   }
 }
