@@ -144,9 +144,6 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 }
 
 
-
-
-
 __host__ void InitComputeAccelhost()
 {
   float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d;
