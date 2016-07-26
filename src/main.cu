@@ -37,6 +37,7 @@ int static InnerOutputCounter=0;
 
 float *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed;
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint;
+float *fieldsrc;
 
 __host__ int main(int argc, char *argv[])
 {
@@ -200,7 +201,7 @@ __host__ int main(int argc, char *argv[])
   EmptyPlanetSystemFile (sys);
   PhysicalTimeInitial = PhysicalTime;
 
-  MultiplyPolarGridbyConstanthost();
+  MultiplyPolarGridbyConstanthost(fieldsrc, dens);
 
   for (int i = 0; i < 1; i++) {
     InnerOutputCounter++;
@@ -238,10 +239,10 @@ __host__ int main(int argc, char *argv[])
  }
 
 
-  substep1host(dt);
-  substep2host(dt);
-  ActualiseGasVrad();
-  ActualiseGasVtheta();
+  substep1host(vrad, vtheta, dens, dt);
+  substep2host(dens, energy, dt);
+  ActualiseGasVrad(vrad, vradnew);
+  ActualiseGasVtheta(vtheta, vthetanew);
 
   ApplyBoundaryCondition (vrad, vtheta, dens, energy, dt);
 
@@ -305,12 +306,12 @@ __host__ float CircumPlanetaryMasshost(float xpl, float ypl)
   return mdcp;
 }
 
-__host__ void MultiplyPolarGridbyConstanthost()
+__host__ void MultiplyPolarGridbyConstanthost(float *fieldsrc, float *dens)
 {
   dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
   dim3 dimBlock( blocksize, blocksize );
 
-  float *fieldsrc_d, *fieldsrc, *dens_d;
+  float *fieldsrc_d,  *dens_d;
 
   fieldsrc = (float *)malloc(((NRAD+1)*NSEC)*sizeof(float));
   gpuErrchk(cudaMalloc((void**)&dens_d,size_grid*sizeof(float)));
@@ -329,7 +330,7 @@ __host__ void MultiplyPolarGridbyConstanthost()
 
 }
 
-__host__ void substep1host(float dt)
+__host__ void substep1host(float *vrad, float *vtheta, float *dens, float dt)
 {
   dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
   dim3 dimBlock( blocksize, blocksize );
@@ -387,7 +388,7 @@ __host__ void substep1host(float dt)
 
 }
 
-__host__ void substep2host(float dt)
+__host__ void substep2host(float *dens, float *energy, float dt)
 {
   dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
   dim3 dimBlock( blocksize, blocksize );
@@ -447,7 +448,7 @@ __host__ void substep2host(float dt)
 
 }
 
-__host__ void ActualiseGasVrad()
+__host__ void ActualiseGasVtheta(float *vtheta, float *vthetanew)
 {
   float *vthetanew_d, *vtheta_d;
 
@@ -466,7 +467,7 @@ __host__ void ActualiseGasVrad()
   cudaFree(vtheta_d);
 }
 
-__host__ void ActualiseGasVtheta()
+__host__ void ActualiseGasVrad(float *vrad, float *vradnew)
 {
   float *vradnew_d, *vrad_d;
 

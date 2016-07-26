@@ -9,7 +9,7 @@ extern float RMAX, RMIN, PI, MU, R;
 extern float *invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup;
 extern float *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns;
 extern float Adiabaticc, ADIABATICINDEX, FLARINGINDEX;
-float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed;
+float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature;
 extern string OUTPUTDIR;
 
 
@@ -107,12 +107,8 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 
   /* Init Viscosity */
   float *DivergenceVelocity, *DRR, *DRP, *DPP, *TAURR, *TAURP, *TAUPP;
-
   float *RhoStar, *RhoInt, *VradNew, *VradInt, *VthetaNew, *VthetaInt, *EnergyNew;
   float *EnergyInt, *TemperInt, *Potential, *Pressure, *Temperature, *Qplus;
-  float *temperature, *temperature_d;
-  float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d, *press_d;
-  float *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *dens_d;
 
   CellAbscissa = (float *)malloc(sizeof(float)*size_grid);
   CellOrdinate = (float *)malloc(sizeof(float)*size_grid);
@@ -131,22 +127,41 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
 
   for (int i = 0; i < NRAD; i++) AspectRatioRmed[i] = AspectRatio(Rmed[i]);
 
+  InitComputeAccelhost();
+  ComputeSoundSpeedhost(dens, energy);
+  ComputePressureFieldhost(dens, energy);
+  ComputeTemperatureFieldhost(dens, energy);
+
+
+ /* <---------     InitGasVelocities()        --------> */
+
+
+// InitGasVelocities(Vr, Vt);
+
+
+  /* <---------     InitGasVelocities()        --------> */
+
+}
+
+
+
+
+
+__host__ void InitComputeAccelhost()
+{
+  float *CellAbscissa_d, *CellOrdinate_d, *Rmed_d, *sinns_d, *cosns_d;
   dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
   dim3 dimBlock( blocksize, blocksize );
 
-
-
-  /* <---------     InitComputeAccel()        --------> */
-
   gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(float)));
-	gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float) ));
+  gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float) ));
   gpuErrchk(cudaMalloc((void**)&Rmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&cosns_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&sinns_d, NSEC*sizeof(float)));
 
 
-	gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-	gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(cosns_d, cosns, NSEC*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(sinns_d, sinns, NSEC*sizeof(float), cudaMemcpyHostToDevice));
@@ -163,20 +178,23 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaFree(cosns_d);
   cudaFree(sinns_d);
 
-  /* <---------     InitComputeAccel()        --------> */
+}
 
+__host__ void ComputeSoundSpeedhost(float *dens, float *energy)
+{
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
 
-
-  /* <---------     ComputeSoundSpeed()        --------> */
+  float *SoundSpeed_d, *energy_d, *Rmed_d, *AspectRatioRmed_d, *dens_d;
 
   gpuErrchk(cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float)));
-	gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float) ));
+  gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float) ));
   gpuErrchk(cudaMalloc((void**)&Rmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&AspectRatioRmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
 
-	gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-	gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(AspectRatioRmed_d, AspectRatioRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
@@ -191,13 +209,14 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaFree(Rmed_d);
   cudaFree(energy_d);
   cudaFree(AspectRatioRmed_d);
+}
 
+__host__ void ComputePressureFieldhost(float *dens, float *energy)
+{
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
 
-  /* <---------     ComputeSoundSpeed()        --------> */
-
-
-
-   /* <---------     ComputePressureField()        --------> */
+  float *SoundSpeed_d, *energy_d, *press_d, *dens_d;
 
   gpuErrchk(cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float) ));
@@ -205,7 +224,7 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-	gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
@@ -218,41 +237,31 @@ __host__ void InitEuler (float *gas_v_rad, float *gas_v_theta, float *dens, floa
   cudaFree(press_d);
   cudaFree(energy_d);
 
- /* <---------     ComputePressureField()        --------> */
+}
 
+__host__ void ComputeTemperatureFieldhost(float *dens, float *energy)
+{
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
 
+  float *dens_d, *temperature_d, *press_d, *energy_d;
 
- /* <---------     ComputeTemperatureField()        --------> */
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&temperature_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&press_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float)));
 
- gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
- gpuErrchk(cudaMalloc((void**)&temperature_d, size_grid*sizeof(float)));
- gpuErrchk(cudaMalloc((void**)&press_d, size_grid*sizeof(float)));
- gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(temperature_d, temperature, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
- gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
- gpuErrchk(cudaMemcpy(temperature_d, temperature, size_grid*sizeof(float), cudaMemcpyHostToDevice));
- gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice));
- gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  ComputeTemperatureField<<<dimGrid, dimBlock>>>(dens_d, temperature_d, press_d, energy_d, MU, R, ADIABATICINDEX, Adiabaticc, NSEC, NRAD);
+  gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaMemcpy(temperature, temperature_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
- ComputeTemperatureField<<<dimGrid, dimBlock>>>(dens_d, temperature_d, press_d, energy_d, MU, R, ADIABATICINDEX, Adiabaticc, NSEC, NRAD);
- gpuErrchk(cudaDeviceSynchronize());
- gpuErrchk(cudaMemcpy(temperature, temperature_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-
- cudaFree(dens_d);
- cudaFree(temperature_d);
- cudaFree(press_d);
- cudaFree(energy_d);
-
- /* <---------     ComputeTemperatureField()        --------> */
-
-
-
- /* <---------     InitGasVelocities()        --------> */
-
-
-// InitGasVelocities(Vr, Vt);
-
-
-  /* <---------     InitGasVelocities()        --------> */
-
+  cudaFree(dens_d);
+  cudaFree(temperature_d);
+  cudaFree(press_d);
+  cudaFree(energy_d);
 }
