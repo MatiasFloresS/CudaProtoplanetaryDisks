@@ -434,6 +434,31 @@ __global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_den
   }
 }
 
+__global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, int nsec, float *vrad, float *SoundSpeed,
+  float SigmaMed)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = 1;
+  float vrad_med;
+
+  if (j<nsec)
+  {
+
+    if(j+i_angle >= nsec)
+    {
+      dens[j+i_angle - nsec] = dens[i*nsec + j];
+      energy[j+i_angle - nsec] = energy[i*nsec + j];
+    }
+
+    if(j+i_angle < 0)
+    {
+      dens[j+i_angle + nsec] = dens[i*nsec + j];
+      energy[j+i_angle + nsec] = energy[i*nsec + j];
+    }
+    vrad_med = -SoundSpeed[i*nsec + j]*(dens[i*nsec + j]-SigmaMed)/SigmaMed;
+    vrad[i*nsec + j] = 2.*vrad_med-vrad[(i+1)*nsec + j];
+  }
+}
 
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)

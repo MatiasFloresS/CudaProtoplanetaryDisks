@@ -59,3 +59,6 @@ __global__ void OpenBoundary(float *vrad, float *dens_d, float *energy_d, int ns
 __global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, int nsec);
 
 __global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy);
+
+__global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, int nsec, float *vrad, float *SoundSpeed,
+  float SigmaMed);
