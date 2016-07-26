@@ -55,3 +55,7 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed);
 
 __global__ void OpenBoundary(float *vrad, float *dens_d, float *energy_d, int nsec, float *SigmaMed);
+
+__global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, int nsec);
+
+__global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy);

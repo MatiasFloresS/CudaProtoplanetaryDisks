@@ -410,6 +410,31 @@ __global__ void OpenBoundary(float *vrad, float *dens, float *energy, int nsec, 
   }
 }
 
+__global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, int nsec)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i=0;
+
+  if(j<nsec)
+  {
+    cs0[i*nsec +j] = SoundSpeed[i*nsec +j];
+    cs1[i*nsec +j] = SoundSpeed[(i+1)*nsec +j];
+  }
+}
+
+__global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = 0;
+
+  if(j<nsec)
+  {
+    mean_dens[i*nsec +j] = dens[i*nsec+ j];
+    mean_energy[i*nsec +j] = energy[i*nsec +j];
+  }
+}
+
+
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)
   {
