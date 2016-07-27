@@ -410,32 +410,45 @@ __global__ void OpenBoundary(float *vrad, float *dens, float *energy, int nsec, 
   }
 }
 
-__global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, int nsec)
+__global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, float *csnrm1, float *csnrm2, int nsec, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i=0;
 
   if(j<nsec)
   {
-    cs0[i*nsec +j] = SoundSpeed[i*nsec +j];
-    cs1[i*nsec +j] = SoundSpeed[(i+1)*nsec +j];
+    cs0[j] = SoundSpeed[i*nsec +j];
+    cs1[j] = SoundSpeed[(i+1)*nsec +j];
+  }
+  i = nrad-1;
+  if(j<nsec)
+  {
+    csnrm2[j] = SoundSpeed[(i-1)*nsec +j];
+    csnrm1[j] = SoundSpeed[i*nsec +j];
   }
 }
 
-__global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy)
+__global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy, float *mean_dens2,
+  float *mean_energy2, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = 0;
 
   if(j<nsec)
   {
-    mean_dens[i*nsec +j] = dens[i*nsec+ j];
-    mean_energy[i*nsec +j] = energy[i*nsec +j];
+    mean_dens[j] = dens[i*nsec+ j];
+    mean_energy[j] = energy[i*nsec +j];
+  }
+  i = nrad-1;
+  if(j<nsec)
+  {
+    mean_dens2[j] = dens[i*nsec + j];
+    mean_energy2[j] = energy[i*nsec + j];
   }
 }
 
 __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, int nsec, float *vrad, float *SoundSpeed,
-  float SigmaMed)
+  float SigmaMed, int nrad, float SigmaMed2, int i_angle2)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = 1;
@@ -458,7 +471,43 @@ __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, i
     vrad_med = -SoundSpeed[i*nsec + j]*(dens[i*nsec + j]-SigmaMed)/SigmaMed;
     vrad[i*nsec + j] = 2.*vrad_med-vrad[(i+1)*nsec + j];
   }
+
+  i = nrad-1;
+  if (j<nsec)
+  {
+    if (j-i_angle2 >= nsec)
+    {
+      dens[i*nsec + j] = dens[j-i_angle2 + (i-2)*nsec ];
+      energy[i*nsec + j] = energy[j-i_angle2 + (i-2)*nsec ];
+    }
+    if (j-i_angle2 < 0)
+    {
+      vrad_med = SoundSpeed[i*nsec + j]*(dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
+      vrad[i*nsec + j] = 2.*vrad_med - vrad[(i-1)*nsec + j];
+    }
+  }
 }
+
+__global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
+  float mean_energy_r2, float EnergyMed, int nsec, int nrad, float SigmaMed2, float EnergyMed2)
+  {
+    int j = threadIdx.x + blockDim.x*blockIdx.x;
+    int i = 1;
+
+    if (j< nsec)
+    {
+      dens[i*nsec + j] += SigmaMed - mean_dens_r;
+      energy[i*nsec + j] += EnergyMed - mean_energy_r;
+    }
+
+    i = nrad-1;
+
+    if (j < nsec)
+    {
+      dens[i*nsec + j] += SigmaMed2 - mean_dens_r2;
+      energy[i*nsec + j] += EnergyMed2 - mean_energy_r2;
+    }
+  }
 
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)

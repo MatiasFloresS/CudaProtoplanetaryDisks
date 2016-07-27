@@ -56,9 +56,13 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
 
 __global__ void OpenBoundary(float *vrad, float *dens_d, float *energy_d, int nsec, float *SigmaMed);
 
-__global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, int nsec);
+__global__ void ReduceCs(float *SoundSpeed, float *cs0, float *cs1, float *csnrm1, float *csnrm2, int nsec, int nrad);
 
-__global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy);
+__global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_dens, float *mean_energy, float *mean_dens2,
+  float *mean_energy2, int nrad);
 
 __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, int nsec, float *vrad, float *SoundSpeed,
-  float SigmaMed);
+  float SigmaMed, int nrad, float SigmaMed2, int i_angle2);
+
+  __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r, 
+    float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
