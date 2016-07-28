@@ -80,8 +80,12 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
     fprintf(stderr, "Can't write 'bigplanet.dat' file. Aborting.\n");
     exit(1);
   }
+  fprintf (output, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n",
+  TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame1, mdcp, exces_mdcp);
+  fclose(output);
+}
 
-fprintf (output, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n",
- TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame1, mdcp, exces_mdcp);
-fclose(output);
+__host__ void SendOutput (int index, float *dens, float *gasvr, float *gasvt, float *gasenerg, float *label)
+{
+  
 }

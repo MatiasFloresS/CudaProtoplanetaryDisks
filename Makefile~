@@ -62,4 +62,4 @@ clean:
 	@ echo "Cleaning folders..."
 	@ rm -rf build/*
 	@ rm -rf bin/*
-	@ rm -rf out/*
+	@ rm -rf out/

@@ -49,7 +49,7 @@ __host__ long NearestPowerOf2(long n);
 
 __host__ float deviceReduce(float *in, int N) ;
 
-__global__ void MultiplyPolarGridbyConstant(float *dens_d, float *fieldsrc_d, int nrad, int nsec, float ScalingFactor);
+__global__ void MultiplyPolarGridbyConstant(float *dens_d, int nrad, int nsec, float ScalingFactor);
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed);
@@ -64,5 +64,7 @@ __global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_den
 __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, int nsec, float *vrad, float *SoundSpeed,
   float SigmaMed, int nrad, float SigmaMed2, int i_angle2);
 
-  __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r, 
+  __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
     float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
+
+__global__ void make1Dprofile(float *device_out2, float *SoundSpeed, float *GLOBAL_bufarray, int nsec, int nrad);

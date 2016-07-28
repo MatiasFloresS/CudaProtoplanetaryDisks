@@ -335,12 +335,12 @@ __host__ float deviceReduce(float *in, int N)
 	return sum;
 }
 
-__global__ void MultiplyPolarGridbyConstant(float *dens, float *fieldsrc, int nrad, int nsec, float ScalingFactor)
+__global__ void MultiplyPolarGridbyConstant(float *dens, int nrad, int nsec, float ScalingFactor)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<nrad+1 && j<nsec) fieldsrc[j+i*nsec] *= ScalingFactor;
+  if (i<nrad+1 && j<nsec) dens[j+i*nsec] *= ScalingFactor;
 
 }
 
@@ -508,6 +508,22 @@ __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean
       energy[i*nsec + j] += EnergyMed2 - mean_energy_r2;
     }
   }
+
+
+__global__ void make1Dprofile(float *device_out2, float *SoundSpeed, float *GLOBAL_bufarray, int nsec, int nrad)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+
+
+  if (i < nrad)
+  {
+    float sum =0;
+    for (int k = 0; k < nsec; k++)
+      sum += SoundSpeed[i*nrad + k];
+    GLOBAL_bufarray[i] = sum/nsec;
+  }
+}
+
 
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
   int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)

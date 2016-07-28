@@ -24,7 +24,7 @@ float *cosns, *sinns;
 int nrad2pot, nsec2pot;
 extern float *press, *CellAbscissa, *CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime, CVNR;
 int blocksize = 32;
-int size_grid;
+int size_grid, size_grid2;
 float OmegaFrame = 0.12871;
 bool ZMPlus = false, verbose = false, Restart = false;
 extern int Adiabaticc;
@@ -34,6 +34,7 @@ float mdcp;
 float exces_mdcp = 0.0, ScalingFactor = 1.0;
 int dimfxy=11, TimeStep = 0;
 int static InnerOutputCounter=0;
+bool TimeToWrite;
 
 float *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed;
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint;
@@ -131,6 +132,7 @@ __host__ int main(int argc, char *argv[])
 
   ReadFile(ParameterFile);
   size_grid = NRAD*NSEC;
+  size_grid2 = (NRAD+1)*NSEC;
   if(!isPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
   if(!isPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
 
@@ -142,7 +144,7 @@ __host__ int main(int argc, char *argv[])
   printf("Allocating arrays...\n");
   fflush(stdout);
 
-  dens = (float *) malloc(sizeof(float)*size_grid);
+  dens = (float *) malloc(sizeof(float)*(size_grid2));
   energy = (float *) malloc(sizeof(float)*size_grid);
   gas_v_rad = (float *) malloc(sizeof(float)*size_grid);
   gas_v_theta = (float *) malloc(sizeof(float)*size_grid);
@@ -200,8 +202,7 @@ __host__ int main(int argc, char *argv[])
 
   EmptyPlanetSystemFile (sys);
   PhysicalTimeInitial = PhysicalTime;
-
-  MultiplyPolarGridbyConstanthost(fieldsrc, dens);
+  MultiplyPolarGridbyConstanthost(dens);
 
   for (int i = 0; i < 1; i++) {
     InnerOutputCounter++;
@@ -210,6 +211,12 @@ __host__ int main(int argc, char *argv[])
       InnerOutputCounter = 0;
       WriteBigPlanetSystemFile (sys, TimeStep);
       UpdateLog(force, sys, dens, energy, TimeStep, PhysicalTime, dimfxy);
+    }
+    if (NINTERM * (TimeStep = (i / NINTERM)) == i)
+    {
+      /* Outputs are done here */
+      TimeToWrite = YES;
+      //SendOutput (TimeStep, dens, gas_v_rad, gas_v_theta, energy, gas_label);
     }
 
   }
@@ -227,7 +234,6 @@ __host__ int main(int argc, char *argv[])
   energyint = (float *)malloc(sizeof(float)*size_grid);
 
   for (int i  = 0; i < size_grid; i++) {
-    //rho[i] = 2*i;
     pot[i] = 0.00001*i;
     vrad[i] = 0.212*i;
     vtheta[i] = 0.1;
@@ -280,14 +286,14 @@ __host__ float CircumPlanetaryMasshost(float xpl, float ypl)
   mdcp0 = (float *)malloc(size_grid*sizeof(float));
 
   gpuErrchk(cudaMalloc((void**)&Surf_d,NRAD*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&dens_d,size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d,size_grid2*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&CellAbscissa_d,size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&CellOrdinate_d,size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mdcp0_d,size_grid*sizeof(float)));
 
   // gpuErrchk(cudaMalloc(&fieldsrc_d, ((NRAD+1)*NSEC)*sizeof(float)));
   gpuErrchk(cudaMemcpy(Surf_d, Surf, NRAD*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(mdcp0_d, mdcp0, size_grid*sizeof(float), cudaMemcpyHostToDevice));
@@ -306,26 +312,21 @@ __host__ float CircumPlanetaryMasshost(float xpl, float ypl)
   return mdcp;
 }
 
-__host__ void MultiplyPolarGridbyConstanthost(float *fieldsrc, float *dens)
+__host__ void MultiplyPolarGridbyConstanthost(float *dens)
 {
   dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
   dim3 dimBlock( blocksize, blocksize );
 
-  float *fieldsrc_d,  *dens_d;
+  float *dens_d;
 
-  fieldsrc = (float *)malloc(((NRAD+1)*NSEC)*sizeof(float));
-  gpuErrchk(cudaMalloc((void**)&dens_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc(&fieldsrc_d, ((NRAD+1)*NSEC)*sizeof(float)));
-  gpuErrchk(cudaMemset(fieldsrc_d, 0, ((NRAD+1)*NSEC)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d,size_grid2*sizeof(float)));
 
-  gpuErrchk(cudaMemcpy(fieldsrc_d, fieldsrc, ((NRAD+1)*NSEC)*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice ));
 
-  MultiplyPolarGridbyConstant<<<dimGrid, dimBlock>>>(dens_d, fieldsrc_d, NRAD, NSEC, ScalingFactor);
+  MultiplyPolarGridbyConstant<<<dimGrid, dimBlock>>>(dens_d, NRAD, NSEC, ScalingFactor);
   gpuErrchk(cudaDeviceSynchronize());
 
-  gpuErrchk(cudaMemcpy(fieldsrc, fieldsrc_d, ((NRAD+1)*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
-  cudaFree(fieldsrc_d);
+  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
   cudaFree(dens_d);
 
 }
@@ -339,7 +340,7 @@ __host__ void substep1host(float *vrad, float *vtheta, float *dens, float dt)
   float *invRinf_d, *Rinf_d, *Rmed_d, *powRmed_d;
 
   gpuErrchk(cudaMalloc((void**)&press_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid2*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vradint_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&pot_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vrad_d, size_grid*sizeof(float)));
@@ -352,7 +353,7 @@ __host__ void substep1host(float *vrad, float *vtheta, float *dens, float dt)
   gpuErrchk(cudaMalloc((void**)&powRmed_d,NRAD*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(vradint_d, vradint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(pot_d, pot, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));

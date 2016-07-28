@@ -6,3 +6,4 @@ __host__ void NonReflectingBoundaryhost(float *vrad, float *dens, float *energy)
 __host__ void ReduceMeanHost();
 __host__ void ReduceCshost();
 __host__ void MinusMeanHost();
+__host__ void EvanescentBoundary (float *vrad, float *vtheta, float *dens, float *energy, float step);
