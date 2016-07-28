@@ -2,9 +2,9 @@
 #include "Theo.cuh"
 
 extern int NRAD;
-extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0;
-extern float *SigmaMed, *SigmaInf, *EnergyMed, ScalingFactor;
-extern float R, MU, ASPECTRATIO, FLARINGINDEX, ADIABATICINDEX;
+extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *QplusMed;
+extern float *SigmaMed, *SigmaInf, *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed;
+extern float R, MU, ASPECTRATIO, FLARINGINDEX, ADIABATICINDEX, COOLINGTIME0;
 
 __host__ void FillSigma ()
 {
@@ -45,4 +45,33 @@ __host__ float Sigma(float r)
   /* to relax towards steady state, on a viscous time scale */
 
   return cavity*ScalingFactor*SIGMA0*powf(r,-SIGMASLOPE);
+}
+
+__host__ float CoolingTime(float r)
+{
+  float ct0;
+  ct0 = COOLINGTIME0*pow(r,2.0+2.0*FLARINGINDEX);
+  return ct0;
+}
+
+__host__ void FillCoolingTime()
+{
+  for (int i = 0; i < NRAD; i++) {
+    CoolingTimeMed[i] = CoolingTime(Rmed[i]);
+  }
+}
+
+__host__ void FillQplus()
+{
+  for (int i = 0; i < NRAD; i++) {
+    QplusMed[i] = Qplusinit(Rmed[i]);
+  }
+}
+
+__host__ float Qplusinit(float r)
+{
+  float qp0, viscosity;
+  //viscosity = FViscosity(r);
+  //qp0 = 2.25*viscosity*SIGMA0*pow(r,-SIGMASLOPE-3.0);
+  return qp0;
 }

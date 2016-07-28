@@ -1,6 +1,7 @@
 #include "main.cuh"
 #include "kernels.cuh"
 #include "SourceEuler.cuh"
+#include "Theo.cuh"
 using namespace std;
 
 extern int blocksize, nsec2pot, nrad2pot;
@@ -9,12 +10,13 @@ extern float RMAX, RMIN, PI, MU, R;
 extern float *invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup;
 extern float *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns;
 extern float Adiabaticc, ADIABATICINDEX, FLARINGINDEX;
-float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature;
+float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *CoolingTimeMed,
+*QplusMed;
 extern string OUTPUTDIR;
 extern bool CentrifugalBalance;
 extern int SelfGravity, ViscosityAlpha;
 float *GLOBAL_bufarray;
-
+extern int Cooling;
 __host__ void FillPolar1DArray()
 {
   FILE *input, *output;
@@ -273,7 +275,16 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
 
   if (!CentrifugalBalance && SelfGravity) // init_azimutalvelocity_withSG (vtheta);
 
-  if (!ViscosityAlpha) make1Dprofile(SoundSpeed, GLOBAL_bufarray);
+  if (ViscosityAlpha) make1Dprofile(SoundSpeed, GLOBAL_bufarray);
+
+  CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
+  QplusMed = (float *)malloc(sizeof(float)*size_grid);
+
+  if (!Cooling)
+  {
+    FillCoolingTime();
+    FillQplus();
+  }
 }
 
 __host__ void make1Dprofile(float *SoundSpeed, float *GLOBAL_bufarray)
