@@ -14,3 +14,4 @@ __host__ void substep1host(float *vrad, float *vtheta, float *dens, float dt);
 __host__ void substep2host(float *dens, float *energy, float dt);
 __host__ void ActualiseGasVrad(float *vrad, float *vradnew);
 __host__ void ActualiseGasVtheta(float *vtheta, float *vthetanew);
+__host__ float FViscosity(float r);

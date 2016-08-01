@@ -12,11 +12,15 @@ extern float *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns;
 extern float Adiabaticc, ADIABATICINDEX, FLARINGINDEX;
 float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *CoolingTimeMed,
 *QplusMed;
+float extern *Radii;
 extern string OUTPUTDIR;
 extern bool CentrifugalBalance;
 extern int SelfGravity, ViscosityAlpha;
-float *GLOBAL_bufarray;
+float *GLOBAL_bufarray, *vt_cent;
+float extern *vt_int, OmegaFrame1;
 extern int Cooling;
+
+
 __host__ void FillPolar1DArray()
 {
   FILE *input, *output;
@@ -28,6 +32,9 @@ __host__ void FillPolar1DArray()
   InputName = OUTPUTDIR +"radii.dat";
   OutputName = OUTPUTDIR +"used_rad.dat";
 
+  vt_cent = (float *) malloc(sizeof(float)*NRAD);
+  Radii = (float *) malloc(sizeof(float)*(NRAD+1));
+  Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rmed = (float *) malloc(sizeof(float)*(NRAD));
   Rsup = (float *) malloc(sizeof(float)*(NRAD));
@@ -39,7 +46,6 @@ __host__ void FillPolar1DArray()
   invdiffRsup = (float *) malloc(sizeof(float)*(NRAD));
   invdiffRmed = (float *) malloc(sizeof(float)*(NRAD));
 
-  float Radii[129];
   char inputcharname[100];
   strncpy(inputcharname, InputName.c_str(), sizeof(inputcharname));
   inputcharname[sizeof(inputcharname)-1]=0;
@@ -269,25 +275,45 @@ __host__ void ComputeTemperatureFieldhost(float *dens, float *energy)
 
 __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
 {
+  float t1;
+  /* Pressure is already initialized: cf initeuler in SourceEuler.c ...
+    Initialization of azimutal velocity with exact centrifugal balance */
   if (CentrifugalBalance) {
-    // ocurre algo , es cuando se coloca ./bin/fargoGPU  -b in/template.par
+    /* vt_int \equiv Romega = grad(P)/sigma + \partial(phi)/\partial(r) - acc_sg_radial
+    ./bin/fargoGPU  -b in/template.par */
+    make1Dprofile(press);
+    /* global axisymmetric pressure field */
+    for (int i = 1; i < NRAD; i++) {
+      vt_int[i] = ( GLOBAL_bufarray[i] - GLOBAL_bufarray[i-1]) / \
+      (.5*(Sigma(Rmed[i]) + Sigma(Rmed[i-1])))/(Rmed[i]-Rmed[i-1]);
+    }
+    /* Case of a disk with self-gravity */
+    // if ( SelfGravity )
+
+    for (int i = 1; i < NRAD; i++)
+      vt_int[i] = sqrtf(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame1;
+
+    t1 = vt_cent[0] = vt_int[1]+.75*(vt_int[1]-vt_int[2]);
+    //r1 = ConstructSequence (vt_cent, vt_int, NRAD);
   }
 
   if (!CentrifugalBalance && SelfGravity) // init_azimutalvelocity_withSG (vtheta);
 
-  if (ViscosityAlpha) make1Dprofile(SoundSpeed, GLOBAL_bufarray);
+  if (ViscosityAlpha) make1Dprofile(SoundSpeed);
 
   CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
   QplusMed = (float *)malloc(sizeof(float)*size_grid);
 
-  if (!Cooling)
+  if (Cooling)
   {
     FillCoolingTime();
     FillQplus();
   }
+
+
 }
 
-__host__ void make1Dprofile(float *SoundSpeed, float *GLOBAL_bufarray)
+__host__ void make1Dprofile(float *gridfield)
 {
 
   dim3 dimGrid( nrad2pot/blocksize, 1);
@@ -295,24 +321,22 @@ __host__ void make1Dprofile(float *SoundSpeed, float *GLOBAL_bufarray)
 
   GLOBAL_bufarray = (float *)malloc(sizeof(float)*NRAD);
 
-  float *device_out2, *SoundSpeed_d, *GLOBAL_bufarray_d;
+  float *device_out2, *gridfield_d, *GLOBAL_bufarray_d;
 
-  gpuErrchk(cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&gridfield_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&GLOBAL_bufarray_d, NRAD*sizeof(float)));
 
   gpuErrchk(cudaMalloc(&device_out2, sizeof(float)*NRAD));
   gpuErrchk(cudaMemset(device_out2, 1, sizeof(float)*NRAD));
 
-  gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(gridfield_d, gridfield, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(GLOBAL_bufarray_d, GLOBAL_bufarray, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
-  make1Dprofile<<<dimGrid, dimBlock>>>(device_out2, SoundSpeed_d, GLOBAL_bufarray_d, NSEC, NRAD);
+  make1Dprofile<<<dimGrid, dimBlock>>>(device_out2, gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
   gpuErrchk(cudaMemcpy(GLOBAL_bufarray, GLOBAL_bufarray_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
 
   cudaFree(GLOBAL_bufarray_d);
   cudaFree(device_out2);
-  cudaFree(SoundSpeed_d);
-
-  printf("%f\n", GLOBAL_bufarray[0]);
+  cudaFree(gridfield_d);
 }

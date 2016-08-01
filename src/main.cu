@@ -25,7 +25,6 @@ int nrad2pot, nsec2pot;
 extern float *press, *CellAbscissa, *CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime, CVNR;
 int blocksize = 32;
 int size_grid, size_grid2;
-float OmegaFrame = 0.12871;
 bool ZMPlus = false, verbose = false, Restart = false;
 extern int Adiabaticc;
 static int StillWriteOneOutput;
@@ -38,7 +37,7 @@ bool TimeToWrite;
 
 float *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed;
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint;
-float *fieldsrc;
+float *fieldsrc, *vt_int;
 
 __host__ int main(int argc, char *argv[])
 {
@@ -149,9 +148,10 @@ __host__ int main(int argc, char *argv[])
   gas_v_rad = (float *) malloc(sizeof(float)*size_grid);
   gas_v_theta = (float *) malloc(sizeof(float)*size_grid);
   gas_label = (float *) malloc(sizeof(float)*size_grid);
-  EnergyMed = (float *) malloc(sizeof(float)*(NRAD));
-  SigmaMed = (float *) malloc(sizeof(float)*(NRAD));
-  SigmaInf = (float *) malloc(sizeof(float)*(NRAD));
+  EnergyMed = (float *) malloc(sizeof(float)*NRAD);
+  SigmaMed = (float *) malloc(sizeof(float)*NRAD);
+  SigmaInf = (float *) malloc(sizeof(float)*NRAD);
+  vt_int = (float *) malloc(sizeof(float)*NRAD);
   printf("done.\n");
 
   FillPolar1DArray();
@@ -366,7 +366,7 @@ __host__ void substep1host(float *vrad, float *vtheta, float *dens, float dt)
   gpuErrchk(cudaMemcpy(powRmed_d, powRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
   substep1<<<dimGrid, dimBlock>>>(press_d, dens_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
-    invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame, ZMPlus,
+    invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame1, ZMPlus,
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
 
   gpuErrchk(cudaDeviceSynchronize());

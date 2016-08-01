@@ -6,6 +6,8 @@ extern int nsec;
 float PhysicalTime =0.0;
 float PhysicalTimeInitial= 0.0;
 extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
+extern float VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH;
+extern float *GLOBAL_bufarray, ALPHAVISCOSITY;
 
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT)
 {
@@ -32,4 +34,24 @@ __host__ float AspectRatio(float r)
     aspectratio *= expf((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
   }
   return aspectratio;
+}
+
+__host__ float FViscosity(float r)
+{
+  float viscosity, rmin, rmax, scale;
+  int i = 0;
+  viscosity = VISCOSITY;
+  if (ViscosityAlpha)
+  {
+    while (Rmed[i] < r) i++;
+    viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * powf(r, 1.5);
+  }
+  rmin = CAVITYRADIUS-CAVITYWIDTH*ASPECTRATIO;
+  rmax = CAVITYRADIUS+CAVITYWIDTH*ASPECTRATIO;
+  scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
+  rmin *= scale;
+  rmax *= scale;
+  if (r < rmin) viscosity *= CAVITYRATIO;
+  if ((r >= rmin) && (r <= rmax)) viscosity *= expf((rmax-r)/(rmax-rmin)*logf(CAVITYRATIO));
+  return viscosity;
 }

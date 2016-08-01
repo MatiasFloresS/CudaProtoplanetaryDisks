@@ -50,7 +50,7 @@ __host__ float Sigma(float r)
 __host__ float CoolingTime(float r)
 {
   float ct0;
-  ct0 = COOLINGTIME0*pow(r,2.0+2.0*FLARINGINDEX);
+  ct0 = COOLINGTIME0*powf(r,2.0+2.0*FLARINGINDEX);
   return ct0;
 }
 
@@ -71,7 +71,7 @@ __host__ void FillQplus()
 __host__ float Qplusinit(float r)
 {
   float qp0, viscosity;
-  //viscosity = FViscosity(r);
-  //qp0 = 2.25*viscosity*SIGMA0*pow(r,-SIGMASLOPE-3.0);
+  viscosity = FViscosity(r);
+  qp0 = 2.25*viscosity*SIGMA0*pow(r,-SIGMASLOPE-3.0);
   return qp0;
 }
