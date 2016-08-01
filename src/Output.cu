@@ -4,8 +4,10 @@
 
 using namespace std;
 
-extern int NSEC, NRAD, NTOT, NINTERM;
-extern float RMAX;
+extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy;
+extern int Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
+
+extern float RMAX, *temperature;
 extern string OUTPUTDIR;
 static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 extern float mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
@@ -65,6 +67,19 @@ __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
   }
 }
 
+__host__ void WritePlanetSystemFile (PlanetarySystem *sys, int TimeStep)
+{
+  int n = sys->nb;
+  for (int i = 0; i < n; i++) {
+    Xplanet = sys->x[i];
+    Yplanet = sys->y[i];
+    VXplanet = sys->vx[i];
+    VYplanet = sys->vy[i];
+    MplanetVirtual = sys->mass[i];
+    WritePlanetFile(TimeStep, i);
+  }
+}
+
 __host__ void WriteBigPlanetFile (int TimeStep, int n)
 {
   FILE *output;
@@ -85,7 +100,80 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
   fclose(output);
 }
 
+__host__ void WritePlanetFile (int TimeStep, int n)
+{
+  FILE *output;
+  char name[256];
+  char name2[256];
+  string input;
+  input = OUTPUTDIR + "planet";
+  printf("Updating 'planet%d.dat'...",n);
+  strncpy(name, input.c_str(), sizeof(name));
+  name[sizeof(name)-1] = 0;
+  sprintf (name2, "%s%d.dat", name, n);
+  output = fopen (name2, "a");
+  if (output == NULL)
+  {
+    fprintf(stderr, "Can't write 'planet%d,dat' file. Aborting.\n", n);
+    exit(1);
+  }
+  fprintf (output, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n",
+  TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame1, mdcp, exces_mdcp);
+  fclose(output);
+  printf("done\n");
+
+}
+
 __host__ void SendOutput (int index, float *dens, float *gasvr, float *gasvt, float *gasenerg, float *label)
 {
-  
+  printf("\n*** OUTPUT %d ***\n", index);
+  if (IsDisk == YES)
+  {
+    if (Write_Density == YES) WriteDiskPolar(dens, "gasdensity", index);
+    if (Write_Velocity == YES)
+    {
+      WriteDiskPolar(gasvr, "gasvrad", index);
+      WriteDiskPolar(gasvt, "gasvtheta", index);
+    }
+    if (Write_Energy == YES) WriteDiskPolar(gasenerg, "gasenergy", index);
+    if (Write_Temperature == YES) WriteDiskPolar(temperature, "gastemperature", index);
+    // if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity,index);
+    //if (Write_Qplus == YES) WriteDiskPolar(Qplus, index);
+    if (AdvecteLabel == YES) WriteDiskPolar(label, "gaslabel", index);
+  }
+}
+
+__host__ void WriteDiskPolar(float *array, char *inputname, int number)
+{
+  FILE *dump;
+  char name[256];
+  char name2[256];
+  char nameinput[256];
+
+  string input, input2, url;
+  input = OUTPUTDIR + inputname + "/" + inputname;
+  input2 = inputname;
+  url = OUTPUTDIR + inputname;
+
+  strncpy(name, input.c_str(), sizeof(name));
+  strncpy(nameinput, input2.c_str(), sizeof(nameinput));
+  name[sizeof(name)-1] = 0;
+  nameinput[sizeof(nameinput)-1] = 0;
+  sprintf (name2, "%s%d.dat", name, number);
+
+  // mkdir ("/some/directory") ... etc
+
+  struct stat st = {0};
+  if (stat(url.c_str(), &st) == -1) mkdir(url.c_str(), 0700);
+
+  dump = fopen(name2, "w");
+  if (dump == NULL)
+  {
+    fprintf(stderr, "Unable to open '%s'\n", name2);
+    exit(1);
+  }
+  printf("Writting '%s%d.dat'...\n", nameinput, number);
+  fwrite(array, sizeof(float), NRAD*NSEC, dump);
+  fclose(dump);
+  printf("done\n");
 }

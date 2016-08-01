@@ -2,7 +2,7 @@
 #include "kernels.cuh"
 #include "SourceEuler.cuh"
 
-extern int OpenInner, YES, blocksize, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, Evanescent, size_grid2;
+extern int OpenInner, YES, blocksize, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, Evanescent;
 extern float *SigmaMed, *vrad, *dens, *energy, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed;
 extern float ADIABATICINDEX, FLARINGINDEX;
 float *mean_dens, *mean_energy, mean_dens_r, mean_energy_r, *mean_dens2, *mean_energy2, mean_dens_r2, mean_energy_r2;
@@ -31,11 +31,11 @@ __host__ void OpenBoundaryhost(float *vrad, float *dens, float *energy)
   dim3 dimBlock( blocksize, 1);
 
   gpuErrchk(cudaMalloc((void**)&vrad_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energy_d,size_grid*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
   OpenBoundary<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
@@ -68,12 +68,12 @@ __host__ void NonReflectingBoundaryhost(float *vrad, float *dens, float *energy)
   i_angle2 = (int)(dangle/2.0/CUDART_PI_F*(float)NSEC+.5);
 
   gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vrad_d, size_grid*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
@@ -81,7 +81,7 @@ __host__ void NonReflectingBoundaryhost(float *vrad, float *dens, float *energy)
   SigmaMed[i-1], i_angle2);
   gpuErrchk(cudaDeviceSynchronize());
 
-  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
@@ -154,14 +154,14 @@ __host__ void ReduceMeanHost()
   mean_energy = (float *)malloc(sizeof(float)*NSEC);
   mean_energy2 = (float *)malloc(sizeof(float)*NSEC);
 
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_dens_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_energy_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_dens_d2, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_energy_d2, NSEC*sizeof(float)));
 
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(mean_dens_d, mean_dens, NSEC*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(mean_energy_d, mean_energy, NSEC*sizeof(float), cudaMemcpyHostToDevice));
@@ -190,17 +190,17 @@ __host__ void MinusMeanHost()
   dim3 dimBlock( blocksize, 1);
 
   float *dens_d, *energy_d;
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float)));
 
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
   MinusMean<<<dimGrid, dimBlock>>>(dens_d, energy_d, SigmaMed[0], mean_dens_r, mean_dens_r2, mean_energy_r, mean_energy_r2,
   EnergyMed[0], NSEC, NRAD, SigmaMed[NRAD-1], EnergyMed[NRAD-1]);
   gpuErrchk(cudaDeviceSynchronize());
 
-  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
   cudaFree(dens_d);

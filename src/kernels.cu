@@ -30,18 +30,12 @@ __global__ void substep1(float *press, float *dens, float *vradint, float *invdi
     gradp = 2.0*(press[i*nsec + j] - press[i*nsec + ((j-1)+nsec)%nsec])/(dens[i*nsec +j] +dens[i*nsec + ((j-1)+nsec)%nsec]) \
     *1.0/(2.0*CUDART_PI_F/nsec*Rmed[i]);
 
-
-    if (ZMPlus)
-    {
-      gradp *= 1; //gradp *= SG_aniso_coeff;  Definir mas adelante SG_aniso_coeff
-    }
+    if (ZMPlus) gradp *= 1; //gradp *= SG_aniso_coeff;  Definir mas adelante SG_aniso_coeff
 
     gradphi = (pot[i*nsec+ j] - pot[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec*Rmed[i]);
     vthetaint[i*nsec + j] = vtheta[i*nsec + j]- dt*(gradp+gradphi);
     vthetaint[i*nsec + j] += dt*IMPOSEDDISKDRIFT*0.5*powRmed[i];
-
   }
-
 }
 
 
@@ -166,7 +160,6 @@ __global__ void CircumPlanetaryMass (float *dens, float *Surf, float *CellAbscis
     dist = sqrtf((CellAbscissa[j+i*nsec]-xpl)*(CellAbscissa[j+i*nsec]-xpl) + (CellOrdinate[j+i*nsec]-ypl)*(CellOrdinate[j+i*nsec]-ypl));
 
     if (dist < HillRadius) mdcp0[j+i*nsec] =  Surf[i]* dens[j+i*nsec];
-
   }
 }
 
@@ -341,7 +334,6 @@ __global__ void MultiplyPolarGridbyConstant(float *dens, int nrad, int nsec, flo
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<nrad+1 && j<nsec) dens[j+i*nsec] *= ScalingFactor;
-
 }
 
 __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint, int nrad, int nsec, float CVNR,
@@ -523,6 +515,45 @@ __global__ void make1Dprofile(float *device_out2, float *SoundSpeed, float *GLOB
     GLOBAL_bufarray[i] = sum/nsec;
   }
 }
+
+__global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed, float G,
+  float ASPECTRATIO, float FLARINGINDEX, float SIGMASLOPE, int CentrifugalBalance, float *vrad, float *vtheta,
+  float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, float OmegaFrame, float *Rinf)
+  {
+    int j = threadIdx.x + blockDim.x*blockIdx.x;
+    int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+    float omega, r, ri;
+
+    if (i <= nrad && j < nsec)
+    {
+      if (i == nrad)
+      {
+        r = Rmed[nrad - 1];
+        ri = Rinf[nrad - 1];
+      }
+      else {
+        r = Rmed[i];
+        ri = Rinf[i];
+      }
+
+      if (!SelfGravity)
+      {
+        omega = sqrtf(G*1.0/r/r/r);
+        vtheta[i*nsec + j] = omega*r*sqrt(1.0-powf(ASPECTRATIO,2.0)* powf(r,2.0*FLARINGINDEX)* \
+        (1.+SIGMASLOPE-2.0*FLARINGINDEX));
+      }
+      vtheta[i*nsec + j] -= OmegaFrame*r;
+      //if (CentrifugalBalance) vtheta[i*nsec + j] = vt_cent[i];
+
+      if (i == nrad) vrad[i*nsec + j] = 0.0;
+      else vrad[i*nsec + j] = IMPOSEDDISKDRIFT*SIGMA0/SigmaInf[i]/ri;
+
+      if (ViscosityAlpha) vrad[i*nsec + j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+2.0*FLARINGINDEX+1.0);
+      else vrad[i*nsec + j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+.5);
+      
+    }
+  }
 
 
 /*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,

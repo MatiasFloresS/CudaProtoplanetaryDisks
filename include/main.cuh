@@ -3,6 +3,9 @@
 #include <cstdarg>
 #include <iostream>
 #include "string.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 __host__ void ReadFile(char *ParameterFile);
 __host__ void TellEverything();

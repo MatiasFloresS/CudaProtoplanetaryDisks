@@ -44,6 +44,6 @@ Adiabatic	YES        #choose No for an isothermal eq. of state
 
 AdiabaticIndex	1.4 #Default value: 1.4
 
-Cooling	No           #choose: Yes or No
+Cooling	Yes           #choose: Yes or No
 
 CoolingTime0	62.8 #Cooling time at r=1

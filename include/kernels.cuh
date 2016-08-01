@@ -68,3 +68,7 @@ __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, i
     float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
 
 __global__ void make1Dprofile(float *device_out2, float *SoundSpeed, float *GLOBAL_bufarray, int nsec, int nrad);
+
+__global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed, float G,
+  float ASPECTRATIO, float FLARINGINDEX, float SIGMASLOPE, int CentrifugalBalance, float *vrad, float *vtheta,
+  float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, float OmegaFrame, float *Rinf);
