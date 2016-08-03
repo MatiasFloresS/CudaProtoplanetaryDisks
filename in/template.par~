@@ -1,7 +1,7 @@
 ### Disk parameters
 
 AspectRatio     	0.05            Thickness over Radius in the disc
-Sigma0			5.1e-5		Surface Density at r=1
+Sigma0			6.3661977237e-4	Surface Density at r=1
 Viscosity		1e-5		Uniform kinematic viscosity
 SigmaSlope		0.0		Slope of surface density profile.
 					#here constant.

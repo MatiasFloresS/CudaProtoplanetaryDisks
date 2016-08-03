@@ -35,6 +35,8 @@ int dimfxy=11, TimeStep = 0;
 int static InnerOutputCounter=0;
 bool TimeToWrite;
 
+float *forcesx, *forcesy;
+
 float *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed;
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint;
 float *fieldsrc, *vt_int;
@@ -210,6 +212,8 @@ __host__ int main(int argc, char *argv[])
   vradnew = (float *)malloc(sizeof(float)*size_grid);
   vthetanew = (float *)malloc(sizeof(float)*size_grid);
   energyint = (float *)malloc(sizeof(float)*size_grid);
+  forcesx = (float *)malloc(sizeof(float)*size_grid);
+  forcesy = (float *)malloc(sizeof(float)*size_grid);
 
   for (int i  = 0; i < size_grid; i++) {
     pot[i] = 0.00001*i;
@@ -249,8 +253,8 @@ __host__ int main(int argc, char *argv[])
     if (NINTERM * TimeStep == i) printf("step = %d\n",TimeStep );
   }
 
-
-
+  FreePlanetary (sys);
+  FreeForce (force);
 
 
 /* esto es parte de substep1

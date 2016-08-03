@@ -71,6 +71,7 @@ __host__ void FillPolar1DArray()
     }
   }
 
+
   for (i = 0; i < NRAD; i++) {
     Rmed[i] = 2.0/3.0*(Radii[i+1]*Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]*Radii[i]);
     Rmed[i] = Rmed[i] / (Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]);

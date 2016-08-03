@@ -2,11 +2,14 @@
 #include "types.cuh"
 #include "Force.cuh"
 #include "SourceEuler.cuh"
+#include "kernels.cuh"
 using namespace std;
 
 extern string OUTPUTDIR;
-extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
+extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, *forcesx, *forcesy;
 extern bool RocheSmoothing;
+extern int size_grid, blocksize, NRAD, NSEC, nsec2pot, nrad2pot;
+
 __host__ void UpdateLog (Force *fc, PlanetarySystem *sys, float *dens, float *energy, int outputnb, float time2, int dimfxy)
 {
   FILE *out;
@@ -60,7 +63,7 @@ __host__ Force *AllocateForce (int dimfxy)
   return force;
 }
 
-__host__ void ComputeForce (Force *fc, float *dens, float x, float y, float smoothing, float mass, int dimfxy)
+__host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy)
 {
   float *globalforce, *localforce, *fxi, *fxo, *fyi, *fyo;
   float a, rh;
@@ -84,8 +87,38 @@ __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float smoo
     globalforce[k] = 0.;
   }
 
-  /*ComputeForceKernel<<<dimGrid, dimBlock>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, dens_d, x, rsmoothing, dimfxy,
-     mass, a, fxi, fxo, fyi, fyo, Rmed_d)*/
+  float *CellAbscissa_d, *CellOrdinate_d, *Surf_d, *forcesx_d, *forcesy_d, *dens_d;
+
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
+
+  gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float) ));
+  gpuErrchk(cudaMalloc((void**)&Surf_d, NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&forcesx_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&forcesy_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
+
+  gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
+  gpuErrchk(cudaMemcpy(Surf_d, Surf, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(forcesx_d, forcesx, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(forcesy_d, forcesy, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+
+  ComputeForceKernel<<<dimGrid, dimBlock>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, dens_d, x, y, rsmoothing, forcesx_d, forcesy_d,
+    NSEC, NRAD, G);
+  gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaMemcpy(forcesx, forcesx_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(forcesy, forcesy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
+  cudaFree(CellAbscissa_d );
+  cudaFree(CellOrdinate_d );
+  cudaFree(Surf_d);
+  cudaFree(forcesx_d);
+  cudaFree(forcesy_d);
+  cudaFree(dens_d);
+
 
   // aca llamo al kernel
   fc->fx_inner = globalforce[0];
@@ -97,6 +130,12 @@ __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float smoo
   fc->fy_outer = globalforce[3*dimfxy];
   fc->fy_ex_outer = globalforce[4*dimfxy-1];
   fc->GlobalForce = globalforce;
+
+  free(localforce);
+  free(fxi);
+  free(fxo);
+  free(fyi);
+  free(fyo);
 }
 
 __host__ float compute_smoothing(float r)
@@ -104,4 +143,9 @@ __host__ float compute_smoothing(float r)
   float smooth;
   smooth = THICKNESSSMOOTHING * AspectRatio(r) * powf(r, 1.0+FLARINGINDEX);
   return smooth;
+}
+
+__host__ void FreeForce (Force *force)
+{
+  free (force->GlobalForce);
 }

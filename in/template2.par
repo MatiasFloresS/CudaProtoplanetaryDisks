@@ -1,7 +1,7 @@
 ### Disk parameters
 
 AspectRatio     	0.05            Thickness over Radius in the disc
-Sigma0			5.1e-5		Surface Density at r=1
+Sigma0			6.3661977237e-4	Surface Density at r=1
 Viscosity		1e-5		Uniform kinematic viscosity
 SigmaSlope		0.0		Slope of surface density profile.
 					#here constant.
@@ -23,10 +23,10 @@ IndirectTerm		YES
 
 ### Mesh parameters
 
-Nrad			400		Radial number of zones
-Nsec			900		Azimuthal number of zones (sectors)
-Rmin			3.2		Inner boundary radius
-Rmax			7.2		Outer boundary radius
+Nrad			128		Radial number of zones
+Nsec			384		Azimuthal number of zones (sectors)
+Rmin			0.4		Inner boundary radius
+Rmax			2.5		Outer boundary radius
 RadialSpacing 		Logarithm      Zone interfaces evenly spaced
 
 

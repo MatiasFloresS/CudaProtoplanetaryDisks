@@ -140,6 +140,10 @@ __host__ void ReduceCshost()
   cudaFree(csnrm1_d);
   cudaFree(csnrm2_d);
   cudaFree(SoundSpeed_d);
+  free(cs0);
+  free(cs1);
+  free(csnrm1);
+  free(csnrm2);
 }
 
 __host__ void ReduceMeanHost()
@@ -182,6 +186,10 @@ __host__ void ReduceMeanHost()
   cudaFree(mean_energy_d2);
   cudaFree(dens_d);
   cudaFree(energy_d);
+  free(mean_dens);
+  free(mean_dens2);
+  free(mean_energy);
+  free(mean_energy2);
 }
 
 __host__ void MinusMeanHost()

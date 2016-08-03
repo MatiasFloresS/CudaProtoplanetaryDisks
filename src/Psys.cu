@@ -220,3 +220,16 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   }
   return 0.0;
 }
+
+__host__ void FreePlanetary (PlanetarySystem *sys)
+{
+  free (sys->x);
+  free (sys->vx);
+  free (sys->y);
+  free (sys->vy);
+  free (sys->mass);
+  free (sys->acc);
+  free (sys->FeelOthers);
+  free (sys->FeelDisk);
+  free (sys);
+}

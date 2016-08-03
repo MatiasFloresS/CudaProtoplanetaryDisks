@@ -551,22 +551,30 @@ __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, in
 
       if (ViscosityAlpha) vrad[i*nsec + j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+2.0*FLARINGINDEX+1.0);
       else vrad[i*nsec + j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+.5);
-      
+
     }
   }
 
 
-/*__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float rsmoothing,
-  int dimfxy, float mass, float a, float *fxi, float *fxo, float *fyi, float *fyo, float *Rmed)
+__global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float y, float rsmoothing,
+  float *forcesx, float *forcesy, int nsec, int nrad, float G)
   {
 
-    int x = threadIdx.x + blockDim.x*blockIdx.x;
+    int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
+    float cellmass, dx, dy, d2, InvDist3, dist2, distance;
 
     if (i<nrad && j<nsec)
     {
-      for (int k = 0; k < dimfxy; k++) {
-        fxi[k] += i;
-      }
+      cellmass = Surf[i] * dens[i*nsec + j];
+      dx = CellAbscissa[i*nsec + j] - x;
+      dy = CellOrdinate[i*nsec + j] - y;
+      d2 = dx*dx * dy*dy;
+      dist2 = d2 + rsmoothing*rsmoothing;
+      distance = sqrtf(dist2);
+      InvDist3 = 1.0/dist2/distance;
+      forcesx[i*nsec + j] = G * cellmass * dx * InvDist3;
+      forcesy[i*nsec + j] = G * cellmass * dy * InvDist3;
+
     }
-  }*/
+  }
