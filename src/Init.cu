@@ -8,7 +8,7 @@
 extern float *Rmed;
 extern int NRAD, NSEC, nsec2pot, blocksize, nrad2pot, size_grid;
 
-__host__ void Initialization (float *dens,float *gas_v_rad,float * gas_v_theta,float * energy,float * gas_label, PlanetarySystem *sys)
+__host__ void Initialization (float *dens, float *vrad, float * vtheta, float * energy, float * gas_label, PlanetarySystem *sys)
 {
   float rp, rhill, xp, yp;
   xp = sys->x[0];
@@ -16,7 +16,7 @@ __host__ void Initialization (float *dens,float *gas_v_rad,float * gas_v_theta,f
   rp = sqrt(xp*xp+yp*yp);
   rhill = rp * pow(sys->mass[0]/3., 1./3);
 
-  InitEuler (gas_v_rad, gas_v_theta, dens, energy);
+  InitEuler (vrad, vtheta, dens, energy);
   InitLabelhost(xp, yp, rhill, gas_label);
   WriteDim();
 

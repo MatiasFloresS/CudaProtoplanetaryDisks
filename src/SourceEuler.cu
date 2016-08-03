@@ -323,7 +323,7 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
   gpuErrchk(cudaMalloc((void**)&Rmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vrad_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vtheta_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vt_cent_d, NRAD*sizeof(float)));
+  //gpuErrchk(cudaMalloc((void**)&vt_cent_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&SigmaInf_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Rinf_d, NRAD*sizeof(float)));
 

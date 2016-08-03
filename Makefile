@@ -63,3 +63,9 @@ clean:
 	@ rm -rf build/*
 	@ rm -rf bin/*
 	@ rm -rf out/*
+
+cleanout:
+	@ clear
+	@ echo "Clening output folder..."
+	@ rm -rf out/*
+
