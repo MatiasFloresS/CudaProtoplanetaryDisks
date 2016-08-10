@@ -557,7 +557,7 @@ __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, in
 
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float y, float rsmoothing,
-  float *forcesx, float *forcesy, int nsec, int nrad, float G)
+  float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed)
   {
 
     int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -565,7 +565,7 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
     float cellmass, dx, dy, d2, InvDist3, dist2, distance;
 
     if (i<nrad && j<nsec)
-    {
+    {    
       cellmass = Surf[i] * dens[i*nsec + j];
       dx = CellAbscissa[i*nsec + j] - x;
       dy = CellOrdinate[i*nsec + j] - y;
@@ -573,8 +573,20 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
       dist2 = d2 + rsmoothing*rsmoothing;
       distance = sqrtf(dist2);
       InvDist3 = 1.0/dist2/distance;
-      forcesx[i*nsec + j] = G * cellmass * dx * InvDist3;
-      forcesy[i*nsec + j] = G * cellmass * dy * InvDist3;
 
+      if (Rmed[i] < a)
+      {
+        forcesxi[i*nsec + j] = G * cellmass * dx * InvDist3;
+        forcesyi[i*nsec + j] = G * cellmass * dy * InvDist3;
+      }
+      else
+      {
+        forcesxo[i*nsec + j] = G * cellmass * dx * InvDist3;
+        forcesyo[i*nsec + j] = G * cellmass * dy * InvDist3;
+      }
+
+      //for (int k = 0; k < dimfxy; k++) {
+      //  fxi[k] += i;
+      //}
     }
   }

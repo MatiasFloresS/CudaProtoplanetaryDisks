@@ -35,7 +35,7 @@ int dimfxy=11, TimeStep = 0;
 int static InnerOutputCounter=0;
 bool TimeToWrite;
 
-float *forcesx, *forcesy;
+float *forcesxi, *forcesyi, *forcesxo, *forcesyo;
 
 float *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed;
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint;
@@ -212,8 +212,10 @@ __host__ int main(int argc, char *argv[])
   vradnew = (float *)malloc(sizeof(float)*size_grid);
   vthetanew = (float *)malloc(sizeof(float)*size_grid);
   energyint = (float *)malloc(sizeof(float)*size_grid);
-  forcesx = (float *)malloc(sizeof(float)*size_grid);
-  forcesy = (float *)malloc(sizeof(float)*size_grid);
+  forcesxi = (float *)malloc(sizeof(float)*size_grid);
+  forcesyi = (float *)malloc(sizeof(float)*size_grid);
+  forcesxo = (float *)malloc(sizeof(float)*size_grid);
+  forcesyo = (float *)malloc(sizeof(float)*size_grid);
 
   for (int i  = 0; i < size_grid; i++) {
     pot[i] = 0.00001*i;
