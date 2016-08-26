@@ -5,8 +5,8 @@
 #include "Output.cuh"
 #include "Init.cuh"
 
-extern float *Rmed, *Rmed_d;
 extern int NRAD, NSEC, nsec2pot, blocksize, nrad2pot, size_grid;
+extern float *Rmed, *Rmed_d;
 float *gas_label_d;
 
 __host__ void Initialization (float *dens, float *energy, float *vrad, float * vtheta, float * gas_label, PlanetarySystem *sys)

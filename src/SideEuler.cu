@@ -4,9 +4,9 @@
 
 extern int OpenInner, YES, blocksize, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, Evanescent;
 extern float *SigmaMed, *vrad, *energy, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, FLARINGINDEX;
+extern float *vrad_d, *dens_d, *energy_d, *SoundSpeed_d, *AspectRatioRmed_d;
 float *mean_dens, *mean_energy, mean_dens_r, mean_energy_r, *mean_dens2, *mean_energy2, mean_dens_r2, mean_energy_r2;
 float *cs0, *cs1, cs0_r, cs1_r, csnrm1_r, csnrm2_r, *csnrm1, *csnrm2, *mean_dens_d, *mean_energy_d;
-extern float *vrad_d, *dens_d, *energy_d, *SoundSpeed_d, *AspectRatioRmed_d;
 float *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2;
 
 

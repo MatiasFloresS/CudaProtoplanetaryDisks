@@ -2,10 +2,10 @@
 #include "Psys.cuh"
 
 extern int YES, NO, GET, MARK, FREQUENCY, GuidingCenter;
-extern float *Rmed,  G,  *Radii, ECCENTRICITY, PI;
 extern bool CICPlanet, ForcedCircular;
-float HillRadius;
+extern float *Rmed,  G,  *Radii, ECCENTRICITY, PI;
 static float Xplanet, Yplanet;
+float HillRadius;
 
 __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
 {

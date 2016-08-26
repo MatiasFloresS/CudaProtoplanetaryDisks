@@ -7,13 +7,13 @@ using namespace std;
 extern int blocksize, nsec2pot, nrad2pot, NRAD, NSEC, YES, LogGrid, size_grid, SelfGravity, ViscosityAlpha, Cooling;
 extern float RMAX, RMIN, PI, MU, R,*invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup, *Radii, *GLOBAL_bufarray;
 extern float *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns, Adiabaticc, ADIABATICINDEX, FLARINGINDEX;
-float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *vtheta_d;
-extern string OUTPUTDIR;
-extern bool CentrifugalBalance;
 extern float *vt_int, OmegaFrame1, *SigmaInf, G, ASPECTRATIO, SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT;
+extern float *CoolingTimeMed, *QplusMed , *viscosity_array;
+extern bool CentrifugalBalance;
+extern string OUTPUTDIR;
+float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *vtheta_d;
 float *Rmed_d, *CellAbscissa_d, *CellOrdinate_d, *sinns_d, *cosns_d, *vt_cent, *Rinf_d, *SigmaInf_d, *vrad_d;
 float *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *dens_d, *press_d, *temperature_d, *viscosity_array_d;
-extern float *CoolingTimeMed, *QplusMed , *viscosity_array;
 
 __host__ void FillPolar1DArray()
 {

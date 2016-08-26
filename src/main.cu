@@ -12,20 +12,21 @@
 
 using namespace std;
 
-extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc;
-float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
-float *SigmaMed, *SigmaInf, *EnergyMed, *cosns, *sinns, mdcp, exces_mdcp = 0.0, ScalingFactor = 1.0;
+extern float *SigmaInf_d, *AspectRatioRmed_d;
 extern float OMEGAFRAME, OmegaFrame1, *press, *CellAbscissa, *CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime;
 extern float *Rmed_d, CVNR, *CellAbscissa_d, *CellOrdinate_d, *dens_d, *temperature_d, *gas_label_d, *energy_d;
 extern float *temperature, *vrad_d, *vtheta_d, *press_d, *Rinf_d, *cosns_d, *sinns_d, *SoundSpeed_d, *viscosity_array_d;
-extern float *SigmaInf_d, *AspectRatioRmed_d;
-int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0;
-bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
-static int StillWriteOneOutput, InnerOutputCounter=0;
+float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
+float *SigmaMed, *SigmaInf, *EnergyMed, *cosns, *sinns, mdcp, exces_mdcp = 0.0, ScalingFactor = 1.0;
 float *forcesxi, *forcesyi, *forcesxo, *forcesyo, *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed, *densint_d;
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint, *fieldsrc, *vt_int, *GLOBAL_bufarray, *Surf_d;
 float *vradint_d, *pot_d, *vthetaint_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *vthetanew_d, *vradnew_d;
 float *temperatureint_d, *energyint_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMed , *viscosity_array;
+
+extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc;
+static int StillWriteOneOutput, InnerOutputCounter=0;
+int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0;
+bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
 
 __host__ int main(int argc, char *argv[])
 {
@@ -170,6 +171,7 @@ __host__ int main(int argc, char *argv[])
   /* Gas density initialization */
   InitGasDensity (dens);
 
+
   /* If energy equation is taken into account, we initialize the gas
      thermal energy  */
   if ( Adiabaticc ) {
@@ -265,18 +267,20 @@ __host__ int main(int argc, char *argv[])
   if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
 */
 
+  FILE *f;
+  f = fopen("datos.txt","w");
+
+  for (int i = 0; i < NRAD*NSEC; i++)
+  {
+    fprintf(f, "%f\n",dens[i] );
+  }
+
+  fclose(f);
+
+
   FreeArrays(dens, energy, gas_label);
   FreeCuda();
 
-  // FILE *f;
-  // f = fopen("datos.txt","w");
-  //
-  // for (int i = 0; i < size_grid; i++)
-  // {
-  //   fprintf(f, "%f\n",energy[i] );
-  // }
-  //
-  // fclose(f);
 	return EXIT_SUCCESS;
 }
 
