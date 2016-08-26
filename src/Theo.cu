@@ -2,9 +2,8 @@
 #include "Theo.cuh"
 
 extern int NRAD;
-extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *QplusMed;
-extern float *SigmaMed, *SigmaInf, *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed;
-extern float R, MU, ASPECTRATIO, FLARINGINDEX, ADIABATICINDEX, COOLINGTIME0;
+extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *QplusMed, *SigmaMed, *SigmaInf, ADIABATICINDEX;
+extern float *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed, R, MU, ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
 
 __host__ void FillSigma ()
 {
@@ -72,6 +71,6 @@ __host__ float Qplusinit(float r)
 {
   float qp0, viscosity;
   viscosity = FViscosity(r);
-  qp0 = 2.25*viscosity*SIGMA0*pow(r,-SIGMASLOPE-3.0);
+  qp0 = 2.25*viscosity*SIGMA0*powf(r,-SIGMASLOPE-3.0);
   return qp0;
 }

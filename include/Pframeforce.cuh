@@ -1,2 +1,2 @@
-__host__ void InitGasDensity ();
-__host__ void InitGasEnergy ();
+__host__ void InitGasDensity (float *dens);
+__host__ void InitGasEnergy (float *energy);

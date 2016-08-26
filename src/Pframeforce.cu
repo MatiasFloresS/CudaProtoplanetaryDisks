@@ -3,9 +3,8 @@
 
 extern int NRAD, NSEC;
 extern float *SigmaMed, *EnergyMed;
-extern float *dens, *energy;
 
-__host__ void InitGasDensity ()
+__host__ void InitGasDensity (float *dens)
 {
     FillSigma ();
     for (int i = 0; i < NRAD; i++) {
@@ -15,7 +14,7 @@ __host__ void InitGasDensity ()
     }
 }
 
-__host__ void InitGasEnergy ()
+__host__ void InitGasEnergy (float *energy)
 {
     FillEnergy ();
     for (int i = 0; i < NRAD; i++) {

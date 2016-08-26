@@ -2,9 +2,8 @@
 #include "Psys.cuh"
 
 extern int YES, NO, GET, MARK, FREQUENCY, GuidingCenter;
-extern float *Rmed,  G,  *Radii;
+extern float *Rmed,  G,  *Radii, ECCENTRICITY, PI;
 extern bool CICPlanet, ForcedCircular;
-extern float ECCENTRICITY, PI;
 float HillRadius;
 static float Xplanet, Yplanet;
 

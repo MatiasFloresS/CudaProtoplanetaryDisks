@@ -3,11 +3,9 @@
 
 using namespace std;
 extern int nsec;
-float PhysicalTime =0.0;
-float PhysicalTimeInitial= 0.0;
+float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
 extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
-extern float VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH;
-extern float *GLOBAL_bufarray, ALPHAVISCOSITY;
+extern float VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray, ALPHAVISCOSITY;
 
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT)
 {

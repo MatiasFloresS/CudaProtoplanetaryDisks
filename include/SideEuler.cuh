@@ -1,9 +1,11 @@
 #include "main.cuh"
 
-__host__ void ApplyBoundaryCondition (float *vrad, float *vtheta, float *dens, float *energy, float step);
-__host__ void OpenBoundaryhost(float *vrad, float *dens, float *energy);
-__host__ void NonReflectingBoundaryhost(float *vrad, float *dens, float *energy);
-__host__ void ReduceMeanHost();
-__host__ void ReduceCshost();
-__host__ void MinusMeanHost();
-__host__ void EvanescentBoundary (float *vrad, float *vtheta, float *dens, float *energy, float step);
+__host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, float *vtheta, float step, int i);
+__host__ void OpenBoundaryhost(float *dens, float *energy, float *vrad);
+__host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad, int i);
+__host__ void ReduceMeanHost(float *dens, float *energy, int i);
+__host__ void ReduceCshost(int i);
+__host__ void MinusMeanHost(float *dens, float *energy);
+__host__ void EvanescentBoundary (float *vrad, float *vtheta, float step);
+__host__ void cscudamalloc();
+__host__ void meancudamalloc();

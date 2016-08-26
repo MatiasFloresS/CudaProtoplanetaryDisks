@@ -2,6 +2,8 @@
 #include <stdio.h>
 using namespace std;
 
+extern int blocksize, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
+extern float *GLOBAL_bufarray;
 
 __global__ void substep1(float *press, float *dens, float *vradint, float *invdiffRmed, float *pot,
    float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *vtheta, float *Rmed, float dt,
@@ -91,10 +93,10 @@ int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed
 
   if (i<nrad && j<nsec)
   {
-    if (~Adiabaticc){
+    if (!Adiabaticc){
       SoundSpeed[j+i*nsec] = AspectRatioRmed[i]*sqrtf(1.0*1.0/Rmed[i])*powf(Rmed[i], FLARINGINDEX);
     }
-    else SoundSpeed[j+i*nsec] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec]);
+    else SoundSpeed[j+i*nsec] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0))*energy[j+i*nsec]/dens[j+i*nsec];
   }
 }
 
@@ -501,19 +503,43 @@ __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean
     }
   }
 
-
-__global__ void make1Dprofile(float *device_out2, float *SoundSpeed, float *GLOBAL_bufarray, int nsec, int nrad)
+__global__ void make1Dprofile(float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad)
 {
-  int i = threadIdx.x + blockDim.x*blockIdx.x;
 
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
 
-  if (i < nrad)
+  if (j < nrad)
   {
-    float sum =0;
-    for (int k = 0; k < nsec; k++)
-      sum += SoundSpeed[i*nrad + k];
-    GLOBAL_bufarray[i] = sum/nsec;
+    float sum = 0.0;
+
+    for (int t = 0; t < nsec; t++)
+      sum += gridfield[j*nsec + t];
+
+    GLOBAL_bufarray[j] = sum/nsec; // every thread updates one EvanescentBoundary
   }
+}
+
+
+__host__ void make1Dprofilehost(float *gridfield)
+{
+
+  dim3 dimGrid( nrad2pot/blocksize, 1);
+  dim3 dimBlock( blocksize, 1);
+
+  float *gridfield_d, *GLOBAL_bufarray_d;
+
+  gpuErrchk(cudaMalloc((void**)&gridfield_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&GLOBAL_bufarray_d, NRAD*sizeof(float)));
+
+  gpuErrchk(cudaMemcpy(gridfield_d, gridfield, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(GLOBAL_bufarray_d, GLOBAL_bufarray, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+
+  make1Dprofile<<<dimGrid, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
+  gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaMemcpy(GLOBAL_bufarray, GLOBAL_bufarray_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
+
+  cudaFree(GLOBAL_bufarray_d);
+  cudaFree(gridfield_d);
 }
 
 __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed, float G,
@@ -565,7 +591,7 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
     float cellmass, dx, dy, d2, InvDist3, dist2, distance;
 
     if (i<nrad && j<nsec)
-    {    
+    {
       cellmass = Surf[i] * dens[i*nsec + j];
       dx = CellAbscissa[i*nsec + j] - x;
       dy = CellOrdinate[i*nsec + j] - y;

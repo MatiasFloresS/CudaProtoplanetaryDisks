@@ -6,11 +6,9 @@ using namespace std;
 
 extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy;
 extern int Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
-
-extern float RMAX, *temperature;
+extern float RMAX, *temperature, mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
 extern string OUTPUTDIR;
 static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
-extern float mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
 float LostMass =0.0;
 
 __host__ void WriteDim ()
@@ -124,7 +122,7 @@ __host__ void WritePlanetFile (int TimeStep, int n)
 
 }
 
-__host__ void SendOutput (int index, float *dens, float *gasvr, float *gasvt, float *gasenerg, float *label)
+__host__ void SendOutput (int index, float *dens, float *vrad, float *vtheta, float *energy, float *label)
 {
   //printf("\n*** OUTPUT %d ***\n", index);
   if (IsDisk == YES)
@@ -132,10 +130,10 @@ __host__ void SendOutput (int index, float *dens, float *gasvr, float *gasvt, fl
     if (Write_Density == YES) WriteDiskPolar(dens, "gasdensity", index);
     if (Write_Velocity == YES)
     {
-      WriteDiskPolar(gasvr, "gasvrad", index);
-      WriteDiskPolar(gasvt, "gasvtheta", index);
+      WriteDiskPolar(vrad, "gasvrad", index);
+      WriteDiskPolar(vtheta, "gasvtheta", index);
     }
-    if (Write_Energy == YES) WriteDiskPolar(gasenerg, "gasenergy", index);
+    if (Write_Energy == YES) WriteDiskPolar(energy, "gasenergy", index);
     if (Write_Temperature == YES) WriteDiskPolar(temperature, "gastemperature", index);
     // if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity,index);
     //if (Write_Qplus == YES) WriteDiskPolar(Qplus, index);
