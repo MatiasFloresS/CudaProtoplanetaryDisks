@@ -37,7 +37,7 @@ __host__ int main(int argc, char *argv[])
   PlanetarySystem *sys;
   Force *force;
 
-  float *gas_v_rad, *gas_v_theta, *gas_label, *dens, *energy, *rho, xpl, ypl;
+  float *gas_label, *dens, *energy, *rho, xpl, ypl;
 
   if (argc == 1) PrintUsage (argv[0]);
 
@@ -119,7 +119,7 @@ __host__ int main(int argc, char *argv[])
   ReadFile(ParameterFile);
   size_grid = (NRAD+1)*NSEC;
 
-  if(!isPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
+  if(!isPow2(NRAD+1)) nrad2pot = NearestPowerOf2(NRAD+1);
   if(!isPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
 
   if (verbose == YES) TellEverything();
@@ -133,9 +133,9 @@ __host__ int main(int argc, char *argv[])
   SigmaMed = (float *) malloc(sizeof(float)*NRAD);
   SigmaInf = (float *) malloc(sizeof(float)*NRAD);
   vt_int = (float *) malloc(sizeof(float)*NRAD);
+  GLOBAL_bufarray = (float *)malloc(sizeof(float)*NRAD);
   vrad = (float *) malloc(sizeof(float)*size_grid);
   vtheta = (float *) malloc(sizeof(float)*size_grid);
-  GLOBAL_bufarray = (float *)malloc(sizeof(float)*NRAD);
   vradint = (float *) malloc(sizeof(float)*size_grid);
   pot = (float *) malloc(sizeof(float)*size_grid);
   vthetaint = (float *) malloc(sizeof(float)*size_grid);
@@ -149,9 +149,9 @@ __host__ int main(int argc, char *argv[])
   forcesyi = (float *)malloc(sizeof(float)*size_grid);
   forcesxo = (float *)malloc(sizeof(float)*size_grid);
   forcesyo = (float *)malloc(sizeof(float)*size_grid);
-  CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
   QplusMed = (float *)malloc(sizeof(float)*size_grid);
-  viscosity_array = (float *)malloc(sizeof(float)*NRAD+1);
+  CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
+  viscosity_array = (float *)malloc(sizeof(float)*(NRAD+1));
 
   printf("done.\n");
 
@@ -244,8 +244,8 @@ __host__ int main(int argc, char *argv[])
     substep2host(dens, energy, dt, i);
     ActualiseGasVrad(vrad, vradnew);
     ActualiseGasVtheta(vtheta, vthetanew);
-
     ApplyBoundaryCondition (dens, energy, vrad, vtheta, dt, i);
+
 
     if (NINTERM * TimeStep == i) printf("step = %d\n",TimeStep );
 

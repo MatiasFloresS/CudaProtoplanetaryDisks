@@ -486,7 +486,7 @@ __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean
   float mean_energy_r2, float EnergyMed, int nsec, int nrad, float SigmaMed2, float EnergyMed2)
   {
     int j = threadIdx.x + blockDim.x*blockIdx.x;
-    int i = 1;
+    int i = 0;
 
     if (j< nsec)
     {

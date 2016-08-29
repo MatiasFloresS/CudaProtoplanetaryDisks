@@ -26,8 +26,8 @@ __host__ void FillPolar1DArray()
   InputName = OUTPUTDIR +"radii.dat";
   OutputName = OUTPUTDIR +"used_rad.dat";
 
-  vt_cent = (float *) malloc(sizeof(float)*NRAD);
   Radii = (float *) malloc(sizeof(float)*(NRAD+1));
+  vt_cent = (float *) malloc(sizeof(float)*NRAD);
   Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rmed = (float *) malloc(sizeof(float)*(NRAD));
@@ -134,7 +134,6 @@ __host__ void InitEuler (float *dens, float *energy, float *vrad, float *vtheta)
   for (int i = 0; i < NRAD; i++) AspectRatioRmed[i] = AspectRatio(Rmed[i]);
 
   Computecudamalloc(dens, energy, vrad, vtheta);
-
   InitComputeAccelhost();
   ComputeSoundSpeedhost(dens, energy);
   ComputePressureFieldhost(dens, energy);

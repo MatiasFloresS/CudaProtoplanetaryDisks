@@ -16,6 +16,7 @@ __host__ void Initialization (float *dens, float *energy, float *vrad, float * v
   yp = sys->y[0];
   rp = sqrt(xp*xp+yp*yp);
   rhill = rp * pow(sys->mass[0]/3., 1./3);
+
   InitEuler (dens, energy, vrad, vtheta);
   InitLabelhost(xp, yp, rhill, gas_label);
   WriteDim();

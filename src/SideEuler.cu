@@ -20,6 +20,7 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
     if (Adiabaticc) ComputeSoundSpeedhost(dens, energy);
     NonReflectingBoundaryhost(dens, energy, vrad, i);
 
+
   }
   if (Evanescent == YES) EvanescentBoundary (vrad, vtheta, step);
 }
@@ -41,6 +42,7 @@ __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad,
   dim3 dimBlock( blocksize, 1);
 
   ReduceCshost(a);
+
   int i;
   float dangle, i_angle, dangle2, i_angle2;
 
@@ -61,6 +63,7 @@ __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad,
   //gpuErrchk(cudaMemcpy(dens, dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   //gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   //gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
 
   ReduceMeanHost(dens,energy, a);
   MinusMeanHost(dens, energy);
@@ -83,11 +86,12 @@ __host__ void ReduceCshost(int i)
   ReduceCs<<<dimGrid, dimBlock>>> (SoundSpeed_d, cs0_d, cs1_d, csnrm1_d, csnrm2_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
-
   cs0_r = deviceReduce(cs0_d, NSEC);
   cs0_r /= NSEC;
+
   cs1_r = deviceReduce(cs1_d, NSEC);
   cs1_r /= NSEC;
+
 
   csnrm1_r = deviceReduce(csnrm1_d, NSEC);
   csnrm1_r /= NSEC;
@@ -118,9 +122,16 @@ __host__ void ReduceMeanHost(float *dens, float *energy, int i)
   gpuErrchk(cudaDeviceSynchronize());
 
   mean_dens_r = deviceReduce(mean_dens_d, NSEC);
+  mean_dens_r /= NSEC;
+
   mean_energy_r = deviceReduce(mean_energy_d, NSEC);
+  mean_energy_r /= NSEC;
+
   mean_dens_r2 = deviceReduce(mean_dens_d2, NSEC);
+  mean_dens_r2 /= NSEC;
+
   mean_energy_r2 = deviceReduce(mean_energy_d2, NSEC);
+  mean_energy_r2 /= NSEC;
 
   //cudaFree(mean_dens_d);
   //cudaFree(mean_energy_d);
