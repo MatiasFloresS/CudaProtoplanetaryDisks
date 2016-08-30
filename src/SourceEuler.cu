@@ -199,6 +199,7 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
     ./bin/fargoGPU  -b in/template.par */
 
     make1Dprofilehost(press);
+    
     /* global axisymmetric pressure field */
     for (int i = 1; i < NRAD; i++) {
       vt_int[i] = ( GLOBAL_bufarray[i] - GLOBAL_bufarray[i-1]) / \

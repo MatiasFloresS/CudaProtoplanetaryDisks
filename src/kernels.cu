@@ -2,7 +2,7 @@
 #include <stdio.h>
 using namespace std;
 
-extern int blocksize, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
+extern int blocksize2, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
 extern float *GLOBAL_bufarray;
 
 __global__ void substep1(float *press, float *dens, float *vradint, float *invdiffRmed, float *pot,
@@ -523,8 +523,8 @@ __global__ void make1Dprofile(float *gridfield, float *GLOBAL_bufarray, int nsec
 __host__ void make1Dprofilehost(float *gridfield)
 {
 
-  dim3 dimGrid( nrad2pot/blocksize, 1);
-  dim3 dimBlock( blocksize, 1);
+  dim3 dimGrid( nrad2pot/blocksize2, 1);
+  dim3 dimBlock( blocksize2, 1);
 
   float *gridfield_d, *GLOBAL_bufarray_d;
 

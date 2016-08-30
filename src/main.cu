@@ -12,10 +12,11 @@
 
 using namespace std;
 
-extern float *SigmaInf_d, *AspectRatioRmed_d;
+extern float *SigmaInf_d, *AspectRatioRmed_d, *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d, *mean_dens_d2, *vrad_d;
+extern float *mean_energy_d, *mean_energy_d2, *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens, *mean_dens2, *mean_energy;
 extern float OMEGAFRAME, OmegaFrame1, *press, *CellAbscissa, *CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime;
-extern float *Rmed_d, CVNR, *CellAbscissa_d, *CellOrdinate_d, *dens_d, *temperature_d, *gas_label_d, *energy_d;
-extern float *temperature, *vrad_d, *vtheta_d, *press_d, *Rinf_d, *cosns_d, *sinns_d, *SoundSpeed_d, *viscosity_array_d;
+extern float *Rmed_d, CVNR, *CellAbscissa_d, *CellOrdinate_d, *dens_d, *temperature_d, *gas_label_d, *energy_d, *mean_energy2;
+extern float *temperature, *vtheta_d, *press_d, *Rinf_d, *cosns_d, *sinns_d, *SoundSpeed_d, *viscosity_array_d;
 float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
 float *SigmaMed, *SigmaInf, *EnergyMed, *cosns, *sinns, mdcp, exces_mdcp = 0.0, ScalingFactor = 1.0;
 float *forcesxi, *forcesyi, *forcesxo, *forcesyo, *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed, *densint_d;
@@ -25,7 +26,7 @@ float *temperatureint_d, *energyint_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMe
 
 extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc;
 static int StillWriteOneOutput, InnerOutputCounter=0;
-int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0;
+int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 1024;
 bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
 
 __host__ int main(int argc, char *argv[])
@@ -316,6 +317,14 @@ __host__ void FreeCuda()
   cudaFree(vradnew_d);
   cudaFree(vthetanew_d);
   cudaFree(energyint_d);
+  cudaFree(cs0_d);
+  cudaFree(cs1_d);
+  cudaFree(csnrm1_d);
+  cudaFree(csnrm2_d);
+  cudaFree(mean_dens_d);
+  cudaFree(mean_energy_d);
+  cudaFree(mean_dens_d2);
+  cudaFree(mean_energy_d2);
 }
 
 __host__ void FreeArrays(float *dens, float *energy, float *gas_label)
@@ -343,6 +352,15 @@ __host__ void FreeArrays(float *dens, float *energy, float *gas_label)
   free(forcesyi);
   free(forcesxo);
   free(forcesyo);
+  free(cs0);
+  free(cs1);
+  free(csnrm1);
+  free(csnrm2);
+  free(mean_dens);
+  free(mean_dens2);
+  free(mean_energy);
+  free(mean_energy2);
+
 }
 
 __host__ void fcudaMemcpy(float *dens, float *energy, float *gas_label, float *temperature, float *vrad, float *vtheta)

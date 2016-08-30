@@ -33,7 +33,5 @@ __host__ void InitLabelhost(float xp, float yp, float rhill, float *gas_label)
 
   InitLabel<<<dimGrid, dimBlock>>>(gas_label_d, xp, yp, rhill, Rmed_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
-  //gpuErrchk(cudaMemcpy(gas_label, gas_label_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
-  //cudaFree(gas_label_d);
 }

@@ -2,7 +2,7 @@
 #include "kernels.cuh"
 #include "SourceEuler.cuh"
 
-extern int OpenInner, YES, blocksize, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, Evanescent;
+extern int OpenInner, YES, blocksize2, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, Evanescent;
 extern float *SigmaMed, *vrad, *energy, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, FLARINGINDEX;
 extern float *vrad_d, *dens_d, *energy_d, *SoundSpeed_d, *AspectRatioRmed_d;
 float *mean_dens, *mean_energy, mean_dens_r, mean_energy_r, *mean_dens2, *mean_energy2, mean_dens_r2, mean_energy_r2;
@@ -28,8 +28,8 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
 __host__ void OpenBoundaryhost(float *dens, float *energy, float *vrad)
 {
 
-  dim3 dimGrid( nsec2pot/blocksize, 1);
-  dim3 dimBlock( blocksize, 1);
+  dim3 dimGrid( nsec2pot/blocksize2, 1);
+  dim3 dimBlock( blocksize2, 1);
 
   OpenBoundary<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
   gpuErrchk(cudaDeviceSynchronize());
@@ -38,8 +38,8 @@ __host__ void OpenBoundaryhost(float *dens, float *energy, float *vrad)
 
 __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad, int a)
 {
-  dim3 dimGrid( nsec2pot/blocksize, 1);
-  dim3 dimBlock( blocksize, 1);
+  dim3 dimGrid( nsec2pot/blocksize2, 1);
+  dim3 dimBlock( blocksize2, 1);
 
   ReduceCshost(a);
 
@@ -60,11 +60,6 @@ __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad,
   SigmaMed[i-1], i_angle2);
   gpuErrchk(cudaDeviceSynchronize());
 
-  //gpuErrchk(cudaMemcpy(dens, dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  //gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  //gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-
-
   ReduceMeanHost(dens,energy, a);
   MinusMeanHost(dens, energy);
 
@@ -73,13 +68,8 @@ __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad,
 __host__ void ReduceCshost(int i)
 {
 
-  dim3 dimGrid( nsec2pot/blocksize, 1);
-  dim3 dimBlock( blocksize, 1);
-
-  cs0 = (float *)malloc(sizeof(float)*NSEC);
-  cs1 = (float *)malloc(sizeof(float)*NSEC);
-  csnrm1 = (float *)malloc(sizeof(float)*NSEC);
-  csnrm2 = (float *)malloc(sizeof(float)*NSEC);
+  dim3 dimGrid( nsec2pot/blocksize2, 1);
+  dim3 dimBlock( blocksize2, 1);
 
   if (i == 0) cscudamalloc();
 
@@ -99,22 +89,14 @@ __host__ void ReduceCshost(int i)
   csnrm2_r = deviceReduce(csnrm2_d, NSEC);
   csnrm2_r /= NSEC;
 
-  free(cs0);
-  free(cs1);
-  free(csnrm1);
-  free(csnrm2);
 }
 
 __host__ void ReduceMeanHost(float *dens, float *energy, int i)
 {
 
-  dim3 dimGrid( nsec2pot/blocksize, 1);
-  dim3 dimBlock( blocksize, 1);
+  dim3 dimGrid( nsec2pot/blocksize2, 1);
+  dim3 dimBlock( blocksize2, 1);
 
-  mean_dens = (float *)malloc(sizeof(float)*NSEC);
-  mean_dens2 = (float *)malloc(sizeof(float)*NSEC);
-  mean_energy = (float *)malloc(sizeof(float)*NSEC);
-  mean_energy2 = (float *)malloc(sizeof(float)*NSEC);
 
   if (i == 0) meancudamalloc();
 
@@ -133,21 +115,12 @@ __host__ void ReduceMeanHost(float *dens, float *energy, int i)
   mean_energy_r2 = deviceReduce(mean_energy_d2, NSEC);
   mean_energy_r2 /= NSEC;
 
-  //cudaFree(mean_dens_d);
-  //cudaFree(mean_energy_d);
-  //cudaFree(mean_dens_d2);
-  //cudaFree(mean_energy_d2);
-
-  free(mean_dens);
-  free(mean_dens2);
-  free(mean_energy);
-  free(mean_energy2);
 }
 
 __host__ void MinusMeanHost(float *dens, float *energy)
 {
-  dim3 dimGrid( nsec2pot/blocksize, 1);
-  dim3 dimBlock( blocksize, 1);
+  dim3 dimGrid( nsec2pot/blocksize2, 1);
+  dim3 dimBlock( blocksize2, 1);
 
   MinusMean<<<dimGrid, dimBlock>>>(dens_d, energy_d, SigmaMed[0], mean_dens_r, mean_dens_r2, mean_energy_r, mean_energy_r2,
   EnergyMed[0], NSEC, NRAD, SigmaMed[NRAD-1], EnergyMed[NRAD-1]);
@@ -171,6 +144,12 @@ __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step)
 
 __host__ void cscudamalloc()
 {
+
+  cs0 = (float *)malloc(sizeof(float)*NSEC);
+  cs1 = (float *)malloc(sizeof(float)*NSEC);
+  csnrm1 = (float *)malloc(sizeof(float)*NSEC);
+  csnrm2 = (float *)malloc(sizeof(float)*NSEC);
+
   gpuErrchk(cudaMalloc((void**)&cs0_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&cs1_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&csnrm1_d, NSEC*sizeof(float)));
@@ -185,6 +164,11 @@ __host__ void cscudamalloc()
 
 __host__ void meancudamalloc()
 {
+
+  mean_dens = (float *)malloc(sizeof(float)*NSEC);
+  mean_dens2 = (float *)malloc(sizeof(float)*NSEC);
+  mean_energy = (float *)malloc(sizeof(float)*NSEC);
+  mean_energy2 = (float *)malloc(sizeof(float)*NSEC);
 
   gpuErrchk(cudaMalloc((void**)&mean_dens_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_energy_d, NSEC*sizeof(float)));
