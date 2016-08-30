@@ -23,6 +23,7 @@ float *forcesxi, *forcesyi, *forcesxo, *forcesyo, *vradint, *pot, *vrad, *vtheta
 float *temperatureint, *densint, *vradnew, *vthetanew, *energyint, *fieldsrc, *vt_int, *GLOBAL_bufarray, *Surf_d;
 float *vradint_d, *pot_d, *vthetaint_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *vthetanew_d, *vradnew_d;
 float *temperatureint_d, *energyint_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMed , *viscosity_array;
+float *Drr, *Drr_d, *Dpp, *Dpp_d, *Drp, *Drp_d, *divergence, *divergence_d, *Trr, *Trr_d, *Tpp, *Tpp_d, *Trp , *Trp_d;
 
 extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc;
 static int StillWriteOneOutput, InnerOutputCounter=0;
@@ -153,6 +154,13 @@ __host__ int main(int argc, char *argv[])
   QplusMed = (float *)malloc(sizeof(float)*size_grid);
   CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
   viscosity_array = (float *)malloc(sizeof(float)*(NRAD+1));
+  Drr = (float *)malloc(sizeof(float)*size_grid);
+  Dpp = (float *)malloc(sizeof(float)*size_grid);
+  divergence = (float *)malloc(sizeof(float)*size_grid);
+  Drp = (float *)malloc(sizeof(float)*size_grid);
+  Trr = (float *)malloc(sizeof(float)*size_grid);
+  Tpp = (float *)malloc(sizeof(float)*size_grid);
+  Trp = (float *)malloc(sizeof(float)*size_grid);
 
   printf("done.\n");
 
@@ -212,7 +220,6 @@ __host__ int main(int argc, char *argv[])
 
   for (int i  = 0; i < size_grid; i++) {
     pot[i] = 0.00001*i;
-    densint[i] = 0.1;
   }
 
  for (int i = 0; i < NRAD; i++) {
@@ -246,6 +253,11 @@ __host__ int main(int argc, char *argv[])
     ActualiseGasVrad(vrad, vradnew);
     ActualiseGasVtheta(vtheta, vthetanew);
     ApplyBoundaryCondition (dens, energy, vrad, vtheta, dt, i);
+
+    if (Adiabaticc)
+    {
+      ComputeViscousTerms (vrad, vtheta, dens, i);
+    }
 
 
     if (NINTERM * TimeStep == i) printf("step = %d\n",TimeStep );
@@ -460,8 +472,6 @@ __host__ void substep1host(float *dens, float *vrad, float *vtheta, float dt, in
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
 
   gpuErrchk(cudaDeviceSynchronize());
-  //gpuErrchk(cudaMemcpy(vradint, vradint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  //gpuErrchk(cudaMemcpy(vthetaint, vthetaint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
 }
 

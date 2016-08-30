@@ -198,8 +198,9 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
     /* vt_int \equiv Romega = grad(P)/sigma + \partial(phi)/\partial(r) - acc_sg_radial
     ./bin/fargoGPU  -b in/template.par */
 
+    gpuErrchk(cudaMemcpy(press, press_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
     make1Dprofilehost(press);
-    
+
     /* global axisymmetric pressure field */
     for (int i = 1; i < NRAD; i++) {
       vt_int[i] = ( GLOBAL_bufarray[i] - GLOBAL_bufarray[i-1]) / \
@@ -217,7 +218,11 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
 
   if (!CentrifugalBalance && SelfGravity) // init_azimutalvelocity_withSG (vtheta);
 
-  if (ViscosityAlpha) make1Dprofilehost(SoundSpeed);
+  if (ViscosityAlpha)
+  {
+    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    make1Dprofilehost(SoundSpeed);
+  }
 
   CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
   QplusMed = (float *)malloc(sizeof(float)*size_grid);

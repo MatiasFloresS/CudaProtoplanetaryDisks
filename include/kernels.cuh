@@ -74,3 +74,7 @@ __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, in
   float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, float OmegaFrame, float *Rinf);
 
 __host__ void make1Dprofilehost(float *gridfield);
+
+__global__ void ViscousTerms(float *vrad, float *vtheta , float *Drr, float *Dpp, float *divergence, float *Drp,
+  float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
+  float *Trr, float *Tpp, float *dens, float *viscosity_array, float onethird, float *Trp, float *invRinf);

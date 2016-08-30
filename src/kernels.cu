@@ -616,3 +616,34 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
       //}
     }
   }
+
+  __global__ void ViscousTerms(float *vrad, float *vtheta , float *Drr, float *Dpp, float *divergence, float *Drp,
+    float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
+    float *Trr, float *Tpp, float *dens, float *viscosity_array, float onethird, float *Trp, float *invRinf)
+ {
+   int j = threadIdx.x + blockDim.x*blockIdx.x;
+   int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+   if (i<nrad && j<nsec) /* Drr, Dpp and divV computation */
+   {
+     Drr[i*nsec + j] = (vrad[(i+1)*nsec + j] - vrad[i*nsec + j])*invdiffRsup[i];
+     Dpp[i*nsec + j] = (vtheta[i*nsec + (j+1)%nsec] - vtheta[i*nsec + j])*invdphi*invRmed[i]+0.5* \
+       (vrad[(i+1)*nsec + j]+vrad[i*nsec + j])*invRmed[i];
+     divergence[i*nsec + j] = (vrad[i*nsec + (j+1)]*Rsup[i]-vrad[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
+       invRmed[i];
+     divergence[i*nsec + j] += (vtheta[i*nsec + (j+1)%nsec]-vtheta[i*nsec + j])*invdphi*invRmed[i];
+
+     if (i > 0) Drp[i*nsec + j] = 0.5*(Rinf[i]*(vtheta[i*nsec + j]*invRmed[i]-vtheta[(i-1)*nsec + j])*invRmed[i-1])* \
+          invdiffRmed[i] + (vrad[i*nsec + j]-vrad[i*nsec + (j-1)%nsec])*invdphi*invRinf[i];
+   }
+
+   if (i<nrad && j<nsec) /* TAUrr and TAUpp computation */
+   {
+     Trr[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(Drr[i*nsec + j]-onethird*divergence[i*nsec + j]);
+     Tpp[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(Dpp[i*nsec + j]-onethird*divergence[i*nsec + j]);
+
+     if (i > 0) Trp[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
+         viscosity_array[i]*Drp[i*nsec + j];
+   }
+
+ }

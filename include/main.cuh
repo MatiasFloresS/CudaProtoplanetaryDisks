@@ -23,3 +23,5 @@ __host__ void fcudamalloc();
 __host__ void f2cudamalloc();
 __host__ void FreeArrays(float *dens, float *energy, float *gas_label);
 __host__ void fcudaMemcpy(float *dens, float *energy, float *gas_label, float *temperature, float *vrad, float *vtheta);
+__host__ void ComputeViscousTerms (float *vrad, float *vtheta, float *dens, int i);
+__host__ void Viscouscudamalloc();
