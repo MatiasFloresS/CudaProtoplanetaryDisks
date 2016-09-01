@@ -52,7 +52,8 @@ __host__ float deviceReduce(float *in, int N) ;
 __global__ void MultiplyPolarGridbyConstant(float *dens_d, int nrad, int nsec, float ScalingFactor);
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float y, float rsmoothing,
-    float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed);
+    float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed,
+     int dimfxy, float rh);
 
 __global__ void OpenBoundary(float *vrad, float *dens_d, float *energy_d, int nsec, float *SigmaMed);
 

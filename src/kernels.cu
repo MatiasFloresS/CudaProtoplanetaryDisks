@@ -581,39 +581,54 @@ __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, in
     }
   }
 
+__device__ float test[6] = {0};
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float y, float rsmoothing,
-  float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed)
+  float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed,
+  int dimfxy, float rh)
   {
 
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
-    float cellmass, dx, dy, d2, InvDist3, dist2, distance;
+    float cellmass, dx, dy, d2, InvDist3, dist2, distance, resultxi, resultyi;
+    float resultxo, resultyo, hillcutfactor, hill_cut;
 
     if (i<nrad && j<nsec)
     {
       cellmass = Surf[i] * dens[i*nsec + j];
       dx = CellAbscissa[i*nsec + j] - x;
       dy = CellOrdinate[i*nsec + j] - y;
-      d2 = dx*dx * dy*dy;
+      d2 = dx*dx + dy*dy;
       dist2 = d2 + rsmoothing*rsmoothing;
       distance = sqrtf(dist2);
       InvDist3 = 1.0/dist2/distance;
 
-      if (Rmed[i] < a)
+      for (int k = 0; k < dimfxy; k++)
       {
-        forcesxi[i*nsec + j] = G * cellmass * dx * InvDist3;
-        forcesyi[i*nsec + j] = G * cellmass * dy * InvDist3;
-      }
-      else
-      {
-        forcesxo[i*nsec + j] = G * cellmass * dx * InvDist3;
-        forcesyo[i*nsec + j] = G * cellmass * dy * InvDist3;
-      }
+        hillcutfactor =  k / (float)(dimfxy-1);
+        if (k != 0)
+        {
+          rh *= hillcutfactor;
+          hill_cut = 1.-expf(-d2/(rh*rh));
+        }
+        else hill_cut = 1.;
 
-      //for (int k = 0; k < dimfxy; k++) {
-      //  fxi[k] += i;
-      //}
+
+        if (Rmed[i] < a)
+        {
+          resultxi = G * cellmass * dx * InvDist3 * hill_cut;
+          resultyi = G * cellmass * dy * InvDist3 * hill_cut;
+          atomicAdd(&(forcesxi[k]), resultxi);
+          atomicAdd(&(forcesyi[k]), resultyi);
+        }
+        else
+        {
+          resultxo = G * cellmass * dx * InvDist3 * hill_cut;
+          resultyo = G * cellmass * dy * InvDist3 * hill_cut;
+          atomicAdd(&(forcesxo[k]), resultxo);
+          atomicAdd(&(forcesyo[k]), resultyo);
+        }
+      }
     }
   }
 

@@ -17,6 +17,7 @@ extern float *mean_energy_d, *mean_energy_d2, *cs0, *cs1, *csnrm1, *csnrm2, *mea
 extern float OMEGAFRAME, OmegaFrame1, *press, *CellAbscissa, *CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime;
 extern float *Rmed_d, CVNR, *CellAbscissa_d, *CellOrdinate_d, *dens_d, *temperature_d, *gas_label_d, *energy_d, *mean_energy2;
 extern float *temperature, *vtheta_d, *press_d, *Rinf_d, *cosns_d, *sinns_d, *SoundSpeed_d, *viscosity_array_d;
+extern float *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
 float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii;
 float *SigmaMed, *SigmaInf, *EnergyMed, *cosns, *sinns, mdcp, exces_mdcp = 0.0, ScalingFactor = 1.0;
 float *forcesxi, *forcesyi, *forcesxo, *forcesyo, *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed, *densint_d;
@@ -147,10 +148,10 @@ __host__ int main(int argc, char *argv[])
   vradnew = (float *)malloc(sizeof(float)*size_grid);
   vthetanew = (float *)malloc(sizeof(float)*size_grid);
   energyint = (float *)malloc(sizeof(float)*size_grid);
-  forcesxi = (float *)malloc(sizeof(float)*size_grid);
-  forcesyi = (float *)malloc(sizeof(float)*size_grid);
-  forcesxo = (float *)malloc(sizeof(float)*size_grid);
-  forcesyo = (float *)malloc(sizeof(float)*size_grid);
+  forcesxi = (float *)malloc(sizeof(float)*dimfxy);
+  forcesyi = (float *)malloc(sizeof(float)*dimfxy);
+  forcesxo = (float *)malloc(sizeof(float)*dimfxy);
+  forcesyo = (float *)malloc(sizeof(float)*dimfxy);
   QplusMed = (float *)malloc(sizeof(float)*size_grid);
   CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
   viscosity_array = (float *)malloc(sizeof(float)*(NRAD+1));
@@ -233,8 +234,9 @@ __host__ int main(int argc, char *argv[])
     if (InnerOutputCounter == 1) {
       InnerOutputCounter = 0;
       WriteBigPlanetSystemFile (sys, TimeStep);
-      UpdateLog(force, sys, TimeStep, PhysicalTime, dimfxy); // aca falta hacer computeForce
+      UpdateLog(force, dens, sys, TimeStep, PhysicalTime, dimfxy, i); // aca falta hacer computeForce
     }
+
     if (NINTERM * (TimeStep = (i / NINTERM)) == i)
     {
       /* Outputs are done here */
@@ -268,27 +270,16 @@ __host__ int main(int argc, char *argv[])
   FreePlanetary (sys);
   FreeForce (force);
 
-/* esto es parte de substep1
 
-  if (SelfGravity){
-    selfgravityupdate = YES;
-    compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
-  }
-  ComputeViscousTerms (VradInt, VthetaInt, Rho);
-  UpdateVelocitiesWithViscosity(vradint, vthetaint, rho, dt);
-
-  if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
-*/
-
-  FILE *f;
-  f = fopen("datos.txt","w");
-
-  for (int i = 0; i < NRAD*NSEC; i++)
-  {
-    fprintf(f, "%f\n",dens[i] );
-  }
-
-  fclose(f);
+  // FILE *f;
+  // f = fopen("datos.txt","w");
+  //
+  // for (int i = 0; i < NRAD*NSEC; i++)
+  // {
+  //   fprintf(f, "%f\n",dens[i] );
+  // }
+  //
+  // fclose(f);
 
 
   FreeArrays(dens, energy, gas_label);
@@ -337,6 +328,11 @@ __host__ void FreeCuda()
   cudaFree(mean_energy_d);
   cudaFree(mean_dens_d2);
   cudaFree(mean_energy_d2);
+  cudaFree(forcesxi_d);
+  cudaFree(forcesyi_d);
+  cudaFree(forcesxo_d);
+  cudaFree(forcesyo_d);
+
 }
 
 __host__ void FreeArrays(float *dens, float *energy, float *gas_label)
@@ -472,6 +468,18 @@ __host__ void substep1host(float *dens, float *vrad, float *vtheta, float dt, in
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
 
   gpuErrchk(cudaDeviceSynchronize());
+
+  /* esto es parte de substep1
+
+    if (SelfGravity){
+      selfgravityupdate = YES;
+      compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
+    }
+    ComputeViscousTerms (VradInt, VthetaInt, Rho);
+    UpdateVelocitiesWithViscosity(vradint, vthetaint, rho, dt);
+
+    if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
+  */
 
 }
 
