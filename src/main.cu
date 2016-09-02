@@ -26,7 +26,7 @@ float *vradint_d, *pot_d, *vthetaint_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, 
 float *temperatureint_d, *energyint_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMed , *viscosity_array;
 float *Drr, *Drr_d, *Dpp, *Dpp_d, *Drp, *Drp_d, *divergence, *divergence_d, *Trr, *Trr_d, *Tpp, *Tpp_d, *Trp , *Trp_d;
 
-extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc;
+extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, IsDisk;
 static int StillWriteOneOutput, InnerOutputCounter=0;
 int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 1024;
 bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
@@ -250,6 +250,19 @@ __host__ int main(int argc, char *argv[])
     else TimeToWrite = NO;
 
     // algogas
+
+    if (Adiabaticc)
+    {
+      ComputeSoundSpeedhost(dens, energy);
+      /* it is necesary to update computation of soundspeed if one uses
+        alphaviscosity in Fviscosity. It is not necesary in locally
+        isothermal runs since cs is constant. It is computed here for
+        the needs of ConditionCFL. */
+    }
+    if (IsDisk == YES)
+    {
+
+    }
     substep1host(dens, vrad, vtheta, dt, i); // aca voy
     substep2host(dens, energy, dt, i);
     ActualiseGasVrad(vrad, vradnew);
@@ -258,7 +271,10 @@ __host__ int main(int argc, char *argv[])
 
     if (Adiabaticc)
     {
-      ComputeViscousTerms (vrad, vtheta, dens, i);
+
+      ComputeViscousTerms (vrad, vtheta, dens, 1, 1);
+      substep3host(dens, dt);
+      //ActualiseGasEnergy (energy, energynew);
     }
 
 
@@ -390,6 +406,7 @@ __host__ void fcudamalloc()
   gpuErrchk(cudaMalloc((void**)&invdiffRmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&invRinf_d,NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&powRmed_d,NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&invdiffRsup_d, NRAD*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(vradint_d, vradint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(pot_d, pot, size_grid*sizeof(float), cudaMemcpyHostToDevice));
@@ -399,21 +416,19 @@ __host__ void fcudamalloc()
   gpuErrchk(cudaMemcpy(invdiffRmed_d, invdiffRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(invRinf_d, invRinf, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(powRmed_d, powRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
-
+  gpuErrchk(cudaMemcpy(invdiffRsup_d, invdiffRsup, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 }
 
 __host__ void f2cudamalloc()
 {
 
   gpuErrchk(cudaMalloc((void**)&temperatureint_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&invdiffRsup_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&densint_d,size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vradnew_d,size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vthetanew_d,size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energyint_d, size_grid*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(temperatureint_d, temperatureint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(invdiffRsup_d, invdiffRsup, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(densint_d, densint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vradnew_d, vradnew, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vthetanew_d, vthetanew, size_grid*sizeof(float), cudaMemcpyHostToDevice));
@@ -469,17 +484,17 @@ __host__ void substep1host(float *dens, float *vrad, float *vtheta, float dt, in
 
   gpuErrchk(cudaDeviceSynchronize());
 
-  /* esto es parte de substep1
 
-    if (SelfGravity){
+    /*if (SelfGravity){
       selfgravityupdate = YES;
       compute_selfgravity(Rho, VradInt, VthetaInt, dt, selfgravityupdate);
-    }
-    ComputeViscousTerms (VradInt, VthetaInt, Rho);
-    UpdateVelocitiesWithViscosity(vradint, vthetaint, rho, dt);
+    }*/
 
-    if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
-  */
+  ComputeViscousTerms (vradint, vthetaint, dens, i, 0);
+  //UpdateVelocitiesWithViscosity(vradint, vthetaint, dens, dt);
+
+  //if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
+
 
 }
 
@@ -499,6 +514,13 @@ __host__ void substep2host(float *dens, float *energy, float dt, int i)
   //gpuErrchk(cudaMemcpy(vthetanew, vthetanew_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   //gpuErrchk(cudaMemcpy(vradnew, vradnew_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   //gpuErrchk(cudaMemcpy(energyint, energyint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+}
+
+__host__ void substep3host(float *dens, float dt)
+{
+
+  for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
+
 }
 
 __host__ void ActualiseGasVtheta(float *vtheta, float *vthetanew)

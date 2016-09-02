@@ -16,25 +16,29 @@ __global__ void substep1(float *press, float *rho, float *vradint, float *invdif
   float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *Rmed, float *vtheta, float dt,
   int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
 
-  __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint,
-    int nrad, int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *densint, int Adiabaticc, float *Rmed, float dt,
-    float *vradnew, float *vthetanew, float *energy, float *energyint);
+__global__ void substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint,
+  int nrad, int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *densint, int Adiabaticc,
+  float *Rmed, float dt,    float *vradnew, float *vthetanew, float *energy, float *energyint);
+
+__global__ void substep3(float *dens, float *qplus, float *viscosity_array, float *Trr, float *Trp,float *Tpp,
+  float *divergence, int nrad, int nsec, float *Rmed, int Cooling, float *energynew, float dt, float *EnergyMed,
+  float *SigmaMed, float *CoolingTimeMed, float *energy, float ADIABATICINDEX, float *QplusMed);
 
 __global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
   float *Trp, float *Tpp, float DeltaT, int nrad, int nsec);
 
 __global__ void InitComputeAccel(float *CellAbscissa, float *CellOrdinate, float *Rmed,
-   float *cosns, float *sinns, int nsec, int nrad);
+  float *cosns, float *sinns, int nsec, int nrad);
 
 __global__ void ComputeSoundSpeed(float *SoundSpeed, float *dens, float *Rmed, float *energy, int nsec, int nrad,
-   int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed);
+  int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed);
 
 __global__ void ComputePressureField(float *SoundSpeed, float *dens, float *press, int Adiabaticc, int nrad, int nsec,
-   int ADIABATICINDEX, float *energy);
+  int ADIABATICINDEX, float *energy);
 
 __global__ void ComputeTemperatureField(float *dens, float *temperature, float *press, float *energy, float MU, float R,
-   float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
+  float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
 
 __global__ void InitLabel (float *label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec);
 
@@ -52,8 +56,8 @@ __host__ float deviceReduce(float *in, int N) ;
 __global__ void MultiplyPolarGridbyConstant(float *dens_d, int nrad, int nsec, float ScalingFactor);
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float y, float rsmoothing,
-    float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed,
-     int dimfxy, float rh);
+  float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed,
+  int dimfxy, float rh);
 
 __global__ void OpenBoundary(float *vrad, float *dens_d, float *energy_d, int nsec, float *SigmaMed);
 
@@ -65,8 +69,8 @@ __global__ void ReduceMean(float *dens, float *energy, int nsec, float *mean_den
 __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, int nsec, float *vrad, float *SoundSpeed,
   float SigmaMed, int nrad, float SigmaMed2, int i_angle2);
 
-  __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
-    float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
+__global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
+  float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
 
 __global__ void make1Dprofile(float *device_out2, float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad);
 

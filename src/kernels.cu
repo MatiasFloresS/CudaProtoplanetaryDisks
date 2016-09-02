@@ -40,8 +40,64 @@ __global__ void substep1(float *press, float *dens, float *vradint, float *invdi
   }
 }
 
+__global__ void substep3(float *dens, float *qplus, float *viscosity_array, float *Trr, float *Trp,float *Tpp,
+  float *divergence, int nrad, int nsec, float *Rmed, int Cooling, float *energynew, float dt, float *EnergyMed,
+  float *SigmaMed, float *CoolingTimeMed, float *energy, float ADIABATICINDEX, float *QplusMed)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+  float den, num;
 
-__global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
+  i+= 1;
+
+  if (i<nrad && j<nsec)
+  {
+    if (viscosity_array[i] != 0.0)
+    {
+      qplus[i*nsec + j] = 0.5/viscosity_array[i]/dens[i*nsec + j]*(Trr[i*nsec + j]*Trr[i*nsec + j] + \
+        Trp[i*nsec + j]* Trp[i*nsec + j] + Tpp[i*nsec + j]*Tpp[i*nsec + j]);
+
+      qplus[i*nsec + j] += (2.0/9.0)*viscosity_array[i]*dens[i*nsec + j]*divergence[i*nsec + j]* \
+        divergence[i*nsec + j];
+    }
+    else qplus[i*nsec + j] = 0.0;
+
+  }
+
+  if (i==0 && j<nsec)
+  {
+    /* We calculate the heating source term Qplus for i=0 */
+
+    if (viscosity_array[i] != 0) {
+      /* power-law extrapolation */
+      qplus[i*nsec + j] = qplus[(i+1)*nsec + j]*expf(logf(qplus[(i+1)*nsec + j]/qplus[(i+2)*nsec + j]) * \
+        logf(Rmed[i]/Rmed[i+1]) / logf(Rmed[i+1]/Rmed[i+2]));
+    }
+    else qplus[i*nsec + j] = 0.0;
+  }
+
+  if (i<nrad && j<nsec)
+  {
+    if (!Cooling)
+    {
+      num = dt*qplus[i*nsec + j] + energy[i*nsec + j];
+      den = 1.0+(ADIABATICINDEX-1.0)*dt*divergence[i*nsec + j];
+      energynew[i*nsec + j] = num/den;
+    }
+    if (Cooling)
+    {
+      num = EnergyMed[i]*dt*dens[i*nsec + j]/SigmaMed[i] + CoolingTimeMed[i]*energy[i*nsec + j] + \
+        dt*CoolingTimeMed[i]*(qplus[i*nsec + j]-QplusMed[i]*dens[i*nsec + j]/SigmaMed[i]);
+
+      den = dt + CoolingTimeMed[i] + (ADIABATICINDEX-1.0)*dt*CoolingTimeMed[i]*divergence[i*nsec + j];
+      energynew[i*nsec + j] = num/den;
+    }
+  }
+
+}
+
+
+__global__ void UpdateVelocities(float *vtheta, float *vrad, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *dens, float *invRinf, float *Trr,
   float *Trp, float *Tpp, float DeltaT, int nrad, int nsec)
 {
@@ -56,7 +112,7 @@ __global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rm
   /* vtheta first */
   if (i<nrad-1 && j<nsec)
   {
-    vt[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*Trp[(i+1)*nsec+ j]-Rinf[i]*Trp[i*nsec +j])*invdiffRsup[i] + \
+    vtheta[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*Trp[(i+1)*nsec+ j]-Rinf[i]*Trp[i*nsec +j])*invdiffRsup[i] + \
     (Tpp[i*nsec +j]-Tpp[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec) + 0.5*(Trp[i*nsec + j] + Trp[(i+1)*nsec +j]))/ \
     (0.5*(dens[i*nsec +j]+dens[i*nsec + ((j-1)+nsec)%nsec]));
   }
@@ -64,7 +120,7 @@ __global__ void UpdateVelocities(float *vt, float *vr, float *invRmed, float *Rm
   /* now vrad */
   if (i<nrad && j<nsec)
   {
-    vr[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*Trr[i*nsec +j]- Rmed[i-1]*Trr[(i-1)*nsec + j])*invdiffRmed[i] + \
+    vrad[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*Trr[i*nsec +j]- Rmed[i-1]*Trr[(i-1)*nsec + j])*invdiffRmed[i] + \
     (Trp[i*nsec + (j+1)%nsec] -Trp[i*nsec + j])*1.0/(2.0*CUDART_PI_F/nsec) - 0.5*(Trp[i*nsec +j] + Trp[(i-1)*nsec + j]))/ \
     (0.5*(dens[i*nsec +j] + dens[(i-1)*nsec + j]));
 
@@ -581,7 +637,6 @@ __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, in
     }
   }
 
-__device__ float test[6] = {0};
 
 __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, float *Surf, float *dens, float x, float y, float rsmoothing,
   float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed,
@@ -632,7 +687,7 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
     }
   }
 
-  __global__ void ViscousTerms(float *vrad, float *vtheta , float *Drr, float *Dpp, float *divergence, float *Drp,
+  __global__ void ViscousTerms(float *vradial, float *vazimutal , float *Drr, float *Dpp, float *divergence, float *Drp,
     float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
     float *Trr, float *Tpp, float *dens, float *viscosity_array, float onethird, float *Trp, float *invRinf)
  {
@@ -641,15 +696,15 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
 
    if (i<nrad && j<nsec) /* Drr, Dpp and divV computation */
    {
-     Drr[i*nsec + j] = (vrad[(i+1)*nsec + j] - vrad[i*nsec + j])*invdiffRsup[i];
-     Dpp[i*nsec + j] = (vtheta[i*nsec + (j+1)%nsec] - vtheta[i*nsec + j])*invdphi*invRmed[i]+0.5* \
-       (vrad[(i+1)*nsec + j]+vrad[i*nsec + j])*invRmed[i];
-     divergence[i*nsec + j] = (vrad[i*nsec + (j+1)]*Rsup[i]-vrad[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
+     Drr[i*nsec + j] = (vradial[(i+1)*nsec + j] - vradial[i*nsec + j])*invdiffRsup[i];
+     Dpp[i*nsec + j] = (vazimutal[i*nsec + (j+1)%nsec] - vazimutal[i*nsec + j])*invdphi*invRmed[i]+0.5* \
+       (vradial[(i+1)*nsec + j]+vradial[i*nsec + j])*invRmed[i];
+     divergence[i*nsec + j] = (vradial[i*nsec + (j+1)]*Rsup[i]-vradial[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
        invRmed[i];
-     divergence[i*nsec + j] += (vtheta[i*nsec + (j+1)%nsec]-vtheta[i*nsec + j])*invdphi*invRmed[i];
+     divergence[i*nsec + j] += (vazimutal[i*nsec + (j+1)%nsec]-vazimutal[i*nsec + j])*invdphi*invRmed[i];
 
-     if (i > 0) Drp[i*nsec + j] = 0.5*(Rinf[i]*(vtheta[i*nsec + j]*invRmed[i]-vtheta[(i-1)*nsec + j])*invRmed[i-1])* \
-          invdiffRmed[i] + (vrad[i*nsec + j]-vrad[i*nsec + (j-1)%nsec])*invdphi*invRinf[i];
+     if (i > 0) Drp[i*nsec + j] = 0.5*(Rinf[i]*(vazimutal[i*nsec + j]*invRmed[i]-vazimutal[(i-1)*nsec + j])*invRmed[i-1])* \
+          invdiffRmed[i] + (vradial[i*nsec + j]-vradial[i*nsec + (j-1)%nsec])*invdphi*invRinf[i];
    }
 
    if (i<nrad && j<nsec) /* TAUrr and TAUpp computation */

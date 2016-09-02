@@ -131,12 +131,6 @@ __host__ void FreeForce (Force *force)
 __host__ void Forcescudamalloc(int dimfxy)
 {
 
-  // localforce = (float *)malloc(sizeof(float)*4*dimfxy);
-  // fxi = (float *)malloc(sizeof(float)*dimfxy);
-  // fxo = (float *)malloc(sizeof(float)*dimfxy);
-  // fyi = (float *)malloc(sizeof(float)*dimfxy);
-  // fyo = (float *)malloc(sizeof(float)*dimfxy);
-
   gpuErrchk(cudaMalloc(&forcesxi_d, dimfxy*sizeof(float)));
   gpuErrchk(cudaMalloc(&forcesxo_d, dimfxy*sizeof(float)));
   gpuErrchk(cudaMalloc(&forcesyi_d, dimfxy*sizeof(float)));
