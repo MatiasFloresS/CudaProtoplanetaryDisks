@@ -146,7 +146,7 @@ __host__ void ReadFile(char *ParameterFile)
         for (int i = 0; i < strlen(nm); i++) {
   	nm[i] = (char) toupper(nm[i]);
         }
-        searchVariable(nm, stringval);
+        SearchVariable(nm, stringval);
       }
     }
     fclose(input);
@@ -239,7 +239,7 @@ __host__ void ReadFile(char *ParameterFile)
   }*/
 }
 
-__host__ void searchVariable(char *name, char *stringval)
+__host__ void SearchVariable(char *name, char *stringval)
 {
   float temp;
   char *stringval2;

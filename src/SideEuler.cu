@@ -71,22 +71,22 @@ __host__ void ReduceCshost(int i)
   dim3 dimGrid( nsec2pot/blocksize2, 1);
   dim3 dimBlock( blocksize2, 1);
 
-  if (i == 0) cscudamalloc();
+  if (i == 0) Cscudamalloc();
 
   ReduceCs<<<dimGrid, dimBlock>>> (SoundSpeed_d, cs0_d, cs1_d, csnrm1_d, csnrm2_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
-  cs0_r = deviceReduce(cs0_d, NSEC);
+  cs0_r = DeviceReduce(cs0_d, NSEC);
   cs0_r /= NSEC;
 
-  cs1_r = deviceReduce(cs1_d, NSEC);
+  cs1_r = DeviceReduce(cs1_d, NSEC);
   cs1_r /= NSEC;
 
 
-  csnrm1_r = deviceReduce(csnrm1_d, NSEC);
+  csnrm1_r = DeviceReduce(csnrm1_d, NSEC);
   csnrm1_r /= NSEC;
 
-  csnrm2_r = deviceReduce(csnrm2_d, NSEC);
+  csnrm2_r = DeviceReduce(csnrm2_d, NSEC);
   csnrm2_r /= NSEC;
 
 }
@@ -98,21 +98,21 @@ __host__ void ReduceMeanHost(float *dens, float *energy, int i)
   dim3 dimBlock( blocksize2, 1);
 
 
-  if (i == 0) meancudamalloc();
+  if (i == 0) Meancudamalloc();
 
   ReduceMean<<<dimGrid, dimBlock>>>(dens_d, energy_d, NSEC, mean_dens_d, mean_energy_d, mean_dens_d2, mean_energy_d2, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
-  mean_dens_r = deviceReduce(mean_dens_d, NSEC);
+  mean_dens_r = DeviceReduce(mean_dens_d, NSEC);
   mean_dens_r /= NSEC;
 
-  mean_energy_r = deviceReduce(mean_energy_d, NSEC);
+  mean_energy_r = DeviceReduce(mean_energy_d, NSEC);
   mean_energy_r /= NSEC;
 
-  mean_dens_r2 = deviceReduce(mean_dens_d2, NSEC);
+  mean_dens_r2 = DeviceReduce(mean_dens_d2, NSEC);
   mean_dens_r2 /= NSEC;
 
-  mean_energy_r2 = deviceReduce(mean_energy_d2, NSEC);
+  mean_energy_r2 = DeviceReduce(mean_energy_d2, NSEC);
   mean_energy_r2 /= NSEC;
 
 }
@@ -142,7 +142,7 @@ __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step)
 
 }
 
-__host__ void cscudamalloc()
+__host__ void Cscudamalloc()
 {
 
   cs0 = (float *)malloc(sizeof(float)*NSEC);
@@ -162,7 +162,7 @@ __host__ void cscudamalloc()
 
 }
 
-__host__ void meancudamalloc()
+__host__ void Meancudamalloc()
 {
 
   mean_dens = (float *)malloc(sizeof(float)*NSEC);

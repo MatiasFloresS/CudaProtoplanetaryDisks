@@ -106,7 +106,7 @@ __host__ void InitEuler (float *dens, float *energy, float *vrad, float *vtheta)
 {
 
   /* Init Transport */
-  // float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel;
+  // *Work, *QRStar, *ExtLabel;
   // float *VthetaRes, *Elongtions;  dicen que es (NRAD+3)(NSEC+1) + 5
   // float * TempShift, *dq;    todos NSEC*NRAD
 
@@ -199,7 +199,7 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
     ./bin/fargoGPU  -b in/template.par */
 
     gpuErrchk(cudaMemcpy(press, press_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-    make1Dprofilehost(press);
+    Make1Dprofilehost(press);
 
     /* global axisymmetric pressure field */
     for (int i = 1; i < NRAD; i++) {
@@ -221,7 +221,7 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
   if (ViscosityAlpha)
   {
     gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-    make1Dprofilehost(SoundSpeed);
+    Make1Dprofilehost(SoundSpeed);
   }
 
   CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
@@ -239,7 +239,7 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
     else viscosity_array[i] = FViscosity(Rmed[i]);
   }
 
-  if(!isPow2(NRAD+1)) nrad2potlocal = NearestPowerOf2(NRAD+1);
+  if(!IsPow2(NRAD+1)) nrad2potlocal = NearestPowerOf2(NRAD+1);
 
   dim3 dimGrid( nsec2pot/blocksize, nrad2potlocal/blocksize );
   dim3 dimBlock( blocksize, blocksize );

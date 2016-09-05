@@ -35,7 +35,7 @@ __host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outpu
     rh = powf(m/3., 1./3.)*a+1e-15;
 
     if (RocheSmoothing) smoothing = r*powf(m/3.,1./3.)*ROCHESMOOTHING;
-    else smoothing = compute_smoothing(r);
+    else smoothing = Compute_smoothing(r);
 
     ComputeForce (fc, dens, x, y, smoothing, m, dimfxy, p, i, a, rh);
 
@@ -116,7 +116,7 @@ __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmo
 
 }
 
-__host__ float compute_smoothing(float r)
+__host__ float Compute_smoothing(float r)
 {
   float smooth;
   smooth = THICKNESSSMOOTHING * AspectRatio(r) * powf(r, 1.0+FLARINGINDEX);

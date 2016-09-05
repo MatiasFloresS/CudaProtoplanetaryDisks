@@ -5,7 +5,7 @@ using namespace std;
 extern int blocksize2, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
 extern float *GLOBAL_bufarray;
 
-__global__ void substep1(float *press, float *dens, float *vradint, float *invdiffRmed, float *pot,
+__global__ void Substep1(float *press, float *dens, float *vradint, float *invdiffRmed, float *pot,
    float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *vtheta, float *Rmed, float dt,
  int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed)
 {
@@ -40,7 +40,7 @@ __global__ void substep1(float *press, float *dens, float *vradint, float *invdi
   }
 }
 
-__global__ void substep3(float *dens, float *qplus, float *viscosity_array, float *Trr, float *Trp,float *Tpp,
+__global__ void Substep3(float *dens, float *qplus, float *viscosity_array, float *Trr, float *Trp,float *Tpp,
   float *divergence, int nrad, int nsec, float *Rmed, int Cooling, float *energynew, float dt, float *EnergyMed,
   float *SigmaMed, float *CoolingTimeMed, float *energy, float ADIABATICINDEX, float *QplusMed)
 {
@@ -222,7 +222,7 @@ __global__ void CircumPlanetaryMass (float *dens, float *Surf, float *CellAbscis
 }
 
 template <bool nIsPow2>
-__global__ void deviceReduceKernel(float *g_idata, float *g_odata, unsigned int n)
+__global__ void DeviceReduceKernel(float *g_idata, float *g_odata, unsigned int n)
 {
     extern __shared__ float sdata[];
 
@@ -349,12 +349,12 @@ __host__ long NearestPowerOf2(long n)
   return x;
 }
 
-__host__ bool isPow2(unsigned int x)
+__host__ bool IsPow2(unsigned int x)
 {
   return ((x&(x-1)==0));
 }
 
-__host__ float deviceReduce(float *in, int N)
+__host__ float DeviceReduce(float *in, int N)
 {
   float *device_out;
   gpuErrchk(cudaMalloc(&device_out, sizeof(float)*1024));
@@ -364,12 +364,12 @@ __host__ float deviceReduce(float *in, int N)
   int blocks = min((int(NearestPowerOf2(N)) + threads - 1) / threads, 1024);
   int smemSize = (threads <= 32) ? 2 * threads * sizeof(float) : threads * sizeof(float);
 
-  bool isPower2 = isPow2(N);
+  bool isPower2 = IsPow2(N);
   if(isPower2){
-    deviceReduceKernel<true><<<blocks, threads, smemSize>>>(in, device_out, N);
+    DeviceReduceKernel<true><<<blocks, threads, smemSize>>>(in, device_out, N);
     gpuErrchk(cudaDeviceSynchronize());
   }else{
-    deviceReduceKernel<false><<<blocks, threads, smemSize>>>(in, device_out, N);
+    DeviceReduceKernel<false><<<blocks, threads, smemSize>>>(in, device_out, N);
     gpuErrchk(cudaDeviceSynchronize());
   }
 
@@ -394,7 +394,7 @@ __global__ void MultiplyPolarGridbyConstant(float *dens, int nrad, int nsec, flo
   if (i<nrad+1 && j<nsec) dens[j+i*nsec] *= ScalingFactor;
 }
 
-__global__ void substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint, int nrad, int nsec, float CVNR,
+__global__ void Substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint, int nrad, int nsec, float CVNR,
   float *invdiffRmed, float *invdiffRsup, float *densint, int Adiabaticc, float *Rmed, float dt, float *vradnew,
   float *vthetanew, float *energy, float *energyint)
 {
@@ -414,7 +414,6 @@ __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *t
     else temperatureint[i*nsec + j] = 0.0;
 
   }
-  __syncthreads();
   i+=1;
 
   if (i<nrad && j<nsec)
@@ -423,7 +422,6 @@ __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *t
     invdiffRmed[i];
 
   }
-  __syncthreads();
   i-=1;
 
   if (i<nrad && j<nsec)
@@ -432,7 +430,6 @@ __global__ void substep2(float *dens, float *vradint, float *vthetaint, float *t
       densint[(i-1)*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
 
   }
-  __syncthreads();
   if (Adiabaticc)
   {
     i+=1;
@@ -559,7 +556,7 @@ __global__ void MinusMean(float *dens, float *energy, float SigmaMed, float mean
     }
   }
 
-__global__ void make1Dprofile(float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad)
+__global__ void Make1Dprofile(float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad)
 {
 
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -576,7 +573,7 @@ __global__ void make1Dprofile(float *gridfield, float *GLOBAL_bufarray, int nsec
 }
 
 
-__host__ void make1Dprofilehost(float *gridfield)
+__host__ void Make1Dprofilehost(float *gridfield)
 {
 
   dim3 dimGrid( nrad2pot/blocksize2, 1);
@@ -590,7 +587,7 @@ __host__ void make1Dprofilehost(float *gridfield)
   gpuErrchk(cudaMemcpy(gridfield_d, gridfield, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(GLOBAL_bufarray_d, GLOBAL_bufarray, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
-  make1Dprofile<<<dimGrid, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
+  Make1Dprofile<<<dimGrid, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
   gpuErrchk(cudaMemcpy(GLOBAL_bufarray, GLOBAL_bufarray_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
 
@@ -687,9 +684,9 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
     }
   }
 
-  __global__ void ViscousTerms(float *vradial, float *vazimutal , float *Drr, float *Dpp, float *divergence, float *Drp,
-    float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
-    float *Trr, float *Tpp, float *dens, float *viscosity_array, float onethird, float *Trp, float *invRinf)
+__global__ void ViscousTerms(float *vradial, float *vazimutal , float *Drr, float *Dpp, float *divergence, float *Drp,
+  float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
+  float *Trr, float *Tpp, float *dens, float *viscosity_array, float onethird, float *Trp, float *invRinf)
  {
    int j = threadIdx.x + blockDim.x*blockIdx.x;
    int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -716,4 +713,20 @@ __global__ void ComputeForceKernel(float *CellAbscissa, float *CellOrdinate, flo
          viscosity_array[i]*Drp[i*nsec + j];
    }
 
+ }
+
+__global__ void LRMomenta(float *RadMomP, float *RadMomM, float *ThetaMomP, float *ThetaMomM, float *dens,
+  float *vrad, float *vtheta, int nrad, int nsec, float *Rmed, float OmegaFrame)
+ {
+   int j = threadIdx.x + blockDim.x*blockIdx.x;
+   int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+   if (i<nrad && j<nsec)
+   {
+     RadMomP[i*nsec + j] = dens[i*nsec + j] * vrad[(i+1)*nsec + j];
+     RadMomM[i*nsec + j] = dens[i*nsec + j] * vrad[i*nsec + j];
+     /* it is the angular momentum -> ThetaMomP */
+     ThetaMomP[i*nsec + j] = dens[i*nsec + j] * (vtheta[i*nsec + (j+1)%nsec]+Rmed[i]*OmegaFrame)*Rmed[i];
+     ThetaMomM[i*nsec + j] = dens[i*nsec + j] * (vtheta[i*nsec + j]+Rmed[i]*OmegaFrame)*Rmed[i];
+   }
  }

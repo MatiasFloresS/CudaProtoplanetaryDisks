@@ -7,5 +7,5 @@ __host__ void ReduceMeanHost(float *dens, float *energy, int i);
 __host__ void ReduceCshost(int i);
 __host__ void MinusMeanHost(float *dens, float *energy);
 __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step);
-__host__ void cscudamalloc();
-__host__ void meancudamalloc();
+__host__ void Cscudamalloc();
+__host__ void Meancudamalloc();
