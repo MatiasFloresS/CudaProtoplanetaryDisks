@@ -1,6 +1,6 @@
-#include "main.cuh"
-#include "kernels.cuh"
-#include "fondam.cuh"
+#include "Main.cuh"
+#include "Kernels.cuh"
+#include "Fondam.cuh"
 #include "SourceEuler.cuh"
 #include "Psys.cuh"
 #include "Pframeforce.cuh"
@@ -9,6 +9,7 @@
 #include "Output.cuh"
 #include "Force.cuh"
 #include "SideEuler.cuh"
+#include "TransportEuler.cuh"
 
 using namespace std;
 
@@ -25,8 +26,9 @@ float *temperatureint, *densint, *vradnew, *vthetanew, *energyint, *fieldsrc, *v
 float *vradint_d, *pot_d, *vthetaint_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *vthetanew_d, *vradnew_d;
 float *temperatureint_d, *energyint_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMed , *viscosity_array;
 float *Drr, *Drr_d, *Dpp, *Dpp_d, *Drp, *Drp_d, *divergence, *divergence_d, *Trr, *Trr_d, *Tpp, *Tpp_d, *Trp , *Trp_d;
+float *qplus_d, *energynew_d, *EnergyMed_d, *SigmaMed_d, *CoolingTimeMed_d, *QplusMed_d, *energynew, *qplus;
 
-extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, IsDisk;
+extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, IsDisk, Cooling;
 static int StillWriteOneOutput, InnerOutputCounter=0;
 int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 1024;
 bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
@@ -148,12 +150,13 @@ __host__ int main(int argc, char *argv[])
   vradnew = (float *)malloc(sizeof(float)*size_grid);
   vthetanew = (float *)malloc(sizeof(float)*size_grid);
   energyint = (float *)malloc(sizeof(float)*size_grid);
+  energynew = (float *)malloc(sizeof(float)*size_grid);
   forcesxi = (float *)malloc(sizeof(float)*dimfxy);
   forcesyi = (float *)malloc(sizeof(float)*dimfxy);
   forcesxo = (float *)malloc(sizeof(float)*dimfxy);
   forcesyo = (float *)malloc(sizeof(float)*dimfxy);
-  QplusMed = (float *)malloc(sizeof(float)*size_grid);
-  CoolingTimeMed = (float *)malloc(sizeof(float)*size_grid);
+  QplusMed = (float *)malloc(sizeof(float)*NRAD);
+  CoolingTimeMed = (float *)malloc(sizeof(float)*NRAD);
   viscosity_array = (float *)malloc(sizeof(float)*(NRAD+1));
   Drr = (float *)malloc(sizeof(float)*size_grid);
   Dpp = (float *)malloc(sizeof(float)*size_grid);
@@ -162,6 +165,7 @@ __host__ int main(int argc, char *argv[])
   Trr = (float *)malloc(sizeof(float)*size_grid);
   Tpp = (float *)malloc(sizeof(float)*size_grid);
   Trp = (float *)malloc(sizeof(float)*size_grid);
+  qplus = (float *)malloc(sizeof(float)*size_grid);
 
   printf("done.\n");
 
@@ -263,6 +267,7 @@ __host__ int main(int argc, char *argv[])
     {
 
     }
+
     substep1host(dens, vrad, vtheta, dt, i); // aca voy
     substep2host(dens, energy, dt, i);
     ActualiseGasVrad(vrad, vradnew);
@@ -271,15 +276,13 @@ __host__ int main(int argc, char *argv[])
 
     if (Adiabaticc)
     {
-
       ComputeViscousTerms (vrad, vtheta, dens, 1, 1);
-      substep3host(dens, dt);
-      //ActualiseGasEnergy (energy, energynew);
+      substep3host(dens, dt, i);
+      ActualiseGasEnergy (energy, energynew);
     }
-
+    Transport (dens, vrad, vtheta, energy, gas_label, dt);
 
     if (NINTERM * TimeStep == i) printf("step = %d\n",TimeStep );
-
 
   }
 
@@ -348,6 +351,12 @@ __host__ void FreeCuda()
   cudaFree(forcesyi_d);
   cudaFree(forcesxo_d);
   cudaFree(forcesyo_d);
+  cudaFree(qplus_d);
+  cudaFree(energynew_d);
+  cudaFree(EnergyMed_d);
+  cudaFree(SigmaMed_d);
+  cudaFree(CoolingTimeMed_d);
+  cudaFree(QplusMed_d);
 
 }
 
@@ -436,6 +445,25 @@ __host__ void f2cudamalloc()
 
 }
 
+__host__ void f3cudamalloc()
+{
+  gpuErrchk(cudaMalloc((void**)&qplus_d,size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&energynew_d,size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&EnergyMed_d,NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&SigmaMed_d,NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&CoolingTimeMed_d,NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&QplusMed_d,NRAD*sizeof(float)));
+
+
+  gpuErrchk(cudaMemcpy(qplus_d, qplus, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(energynew_d, energynew, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(EnergyMed_d, EnergyMed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(CoolingTimeMed_d, CoolingTimeMed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(QplusMed_d, QplusMed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+
+}
+
 __host__ float CircumPlanetaryMasshost(float *dens, float xpl, float ypl)
 {
 
@@ -516,10 +544,21 @@ __host__ void substep2host(float *dens, float *energy, float dt, int i)
   //gpuErrchk(cudaMemcpy(energyint, energyint_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 }
 
-__host__ void substep3host(float *dens, float dt)
+__host__ void substep3host(float *dens, float dt, int p)
 {
 
+  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
+  dim3 dimBlock( blocksize, blocksize );
+
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
+  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+
+  if (p == 0) f3cudamalloc();
+
+  substep3<<<dimGrid, dimBlock>>>(dens_d, qplus_d, viscosity_array_d, Trr_d, Trp_d , Tpp_d, divergence_d,
+     NRAD, NSEC, Rmed_d, Cooling, energynew_d, dt, EnergyMed_d, SigmaMed_d, CoolingTimeMed_d, energy_d,
+     ADIABATICINDEX, QplusMed_d);
+  gpuErrchk(cudaDeviceSynchronize());
 
 }
 
@@ -534,6 +573,14 @@ __host__ void ActualiseGasVrad(float *vrad, float *vradnew)
 {
 
   gpuErrchk(cudaMemcpy(vrad_d, vradnew_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+  gpuErrchk(cudaDeviceSynchronize());
+
+}
+
+__host__ void ActualiseGasEnergy(float *energy, float *energynew)
+{
+
+  gpuErrchk(cudaMemcpy(energy_d, energynew_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
 
 }

@@ -1,5 +1,5 @@
 #include "SideEuler.cuh"
-#include "kernels.cuh"
+#include "Kernels.cuh"
 #include "SourceEuler.cuh"
 
 extern int OpenInner, YES, blocksize2, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, Evanescent;

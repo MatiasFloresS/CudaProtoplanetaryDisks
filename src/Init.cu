@@ -1,7 +1,7 @@
-#include "main.cuh"
-#include "types.cuh"
+#include "Main.cuh"
+#include "Types.cuh"
 #include "SourceEuler.cuh"
-#include "kernels.cuh"
+#include "Kernels.cuh"
 #include "Output.cuh"
 #include "Init.cuh"
 

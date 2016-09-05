@@ -1,4 +1,4 @@
-#include "main.cuh"
+#include "Main.cuh"
 #include "Theo.cuh"
 
 extern int NRAD, NSEC;

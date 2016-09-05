@@ -1,8 +1,8 @@
-#include "main.cuh"
-#include "types.cuh"
+#include "Main.cuh"
+#include "Types.cuh"
 #include "Force.cuh"
 #include "SourceEuler.cuh"
-#include "kernels.cuh"
+#include "Kernels.cuh"
 using namespace std;
 
 extern string OUTPUTDIR;

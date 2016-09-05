@@ -1,4 +1,4 @@
-#include "kernels.cuh"
+#include "Kernels.cuh"
 #include <stdio.h>
 using namespace std;
 

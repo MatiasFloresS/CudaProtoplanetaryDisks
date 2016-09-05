@@ -1,5 +1,5 @@
-#include "main.cuh"
-#include "kernels.cuh"
+#include "Main.cuh"
+#include "Kernels.cuh"
 
 using namespace std;
 
@@ -58,7 +58,7 @@ __host__ float FViscosity(float r)
   return viscosity;
 }
 
-__host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens, int i, int option)
+__host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens, int p, int option)
 {
 
   float dphi, invdphi, onethird;
@@ -79,7 +79,7 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
   dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
   dim3 dimBlock( blocksize, blocksize );
 
-  if (i == 0) Viscouscudamalloc(); // el primero que llama a la funcion inicializa los cudamalloc
+  if (p == 0) Viscouscudamalloc(); // el primero que llama a la funcion inicializa los cudamalloc
 
 
 

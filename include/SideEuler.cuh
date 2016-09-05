@@ -1,4 +1,4 @@
-#include "main.cuh"
+#include "Main.cuh"
 
 __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, float *vtheta, float step, int i);
 __host__ void OpenBoundaryhost(float *dens, float *energy, float *vrad);

@@ -1,4 +1,4 @@
-#include "main.cuh"
+#include "Main.cuh"
 #include "Psys.cuh"
 
 extern int YES, NO, GET, MARK, FREQUENCY, GuidingCenter;

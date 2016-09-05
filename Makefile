@@ -22,28 +22,28 @@ endif
 
 
 
-main: build/main.o build/Viscosity.o build/kernels.o build/readfiles.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
-	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o
+main: build/Main.o build/Viscosity.o build/Kernels.o build/Readfiles.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
+	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o build/TransportEuler.o
 	@ echo "Linking"
 	@ mkdir -p bin
 	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(ARCHFLAG)
 
-build/main.o: src/main.cu
+build/Main.o: src/Main.cu
 	@ echo "Building Main"
 	@ mkdir -p build
-	@ nvcc $(CFLAGS) $(INC_DIRS) src/main.cu -o build/main.o $(LDFLAGS) $(ARCHFLAG)
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/Main.cu -o build/Main.o $(LDFLAGS) $(ARCHFLAG)
 
 build/Viscosity.o: src/Viscosity.cu
 	@ echo "Building Viscosity"
 	@ nvcc $(CFLAGS) $(INC_DIRS) src/Viscosity.cu -o build/Viscosity.o $(LDFLAGS) $(ARCHFLAG)
 
-build/kernels.o: src/kernels.cu
-	@ echo "Building kernels"
-	@ nvcc $(CFLAGS) $(INC_DIRS)  src/kernels.cu -o build/kernels.o $(LDFLAGS) $(ARCHFLAG)
+build/Kernels.o: src/Kernels.cu
+	@ echo "Building Kernels"
+	@ nvcc $(CFLAGS) $(INC_DIRS)  src/Kernels.cu -o build/Kernels.o $(LDFLAGS) $(ARCHFLAG)
 
-build/readfiles.o: src/readfiles.cu
-	@ echo "Building readfiles"
-	@ nvcc $(CFLAGS) $(INC_DIRS) src/readfiles.cu -o build/readfiles.o $(LDFLAGS) $(ARCHFLAG)
+build/Readfiles.o: src/Readfiles.cu
+	@ echo "Building Readfiles"
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/Readfiles.cu -o build/Readfiles.o $(LDFLAGS) $(ARCHFLAG)
 
 build/SourceEuler.o: src/SourceEuler.cu
 	@ echo "Building SourceEuler"
@@ -76,6 +76,11 @@ build/Output.o: src/Output.cu
 build/Force.o: src/Force.cu
 	@ echo "Building Force"
 	@ nvcc $(CFLAGS) $(INC_DIRS) src/Force.cu -o build/Force.o $(LDFLAGS) $(ARCHFLAG)
+
+build/TransportEuler.o: src/TransportEuler.cu
+	@ echo "Building TransportEuler"
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/TransportEuler.cu -o build/TransportEuler.o $(LDFLAGS) $(ARCHFLAG)
+
 clean:
 	@ clear
 	@ echo "Cleaning folders..."
@@ -87,4 +92,3 @@ cleanout:
 	@ clear
 	@ echo "Clening output folder..."
 	@ rm -rf out/*
-

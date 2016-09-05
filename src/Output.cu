@@ -1,5 +1,5 @@
-#include "main.cuh"
-#include "types.cuh"
+#include "Main.cuh"
+#include "Types.cuh"
 #include "Output.cuh"
 
 using namespace std;

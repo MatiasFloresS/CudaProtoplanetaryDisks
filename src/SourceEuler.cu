@@ -1,5 +1,5 @@
-#include "main.cuh"
-#include "kernels.cuh"
+#include "Main.cuh"
+#include "Kernels.cuh"
 #include "SourceEuler.cuh"
 #include "Theo.cuh"
 using namespace std;
