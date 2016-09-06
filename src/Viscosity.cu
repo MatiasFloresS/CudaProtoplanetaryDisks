@@ -4,12 +4,16 @@
 using namespace std;
 
 extern int NSEC, size_grid, nsec2pot, nrad2pot, blocksize, NRAD;
-extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING, *SoundSpeed_d, *SoundSpeed;
-extern float VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray, ALPHAVISCOSITY;
-extern float *vrad_d, *vtheta_d, *Drr_d, *Dpp_d, *divergence_d, *Drp_d, *invdiffRsup_d, *Rinf_d, *Dpp;
-extern float *invdiffRmed_d, *Trr_d, *Tpp_d, *dens_d, *viscosity_array_d, *Trp_d, *divergence, *Drr, *Drp, *Trr, *Trp, *Tpp;
-extern float *invRinf_d, *Rsup, *invRmed, *vthetaint_d, *vradint_d, *viscosity_array;
-float *Rsup_d, *invRmed_d, PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
+
+extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING, *SoundSpeed_d, \
+*SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray, \
+ALPHAVISCOSITY, *vrad_d, *vtheta_d, *Drr_d, *Dpp_d, *divergence_d, *Drp_d, *invdiffRsup_d, *Rinf_d, *Dpp, \
+*invdiffRmed_d, *Trr_d, *Tpp_d, *dens_d, *viscosity_array_d, *Trp_d, *divergence, *Drr, *Drp, *Trr, *Trp, \
+*Tpp, *invRinf_d, *Rsup, *invRmed, *vthetaint_d, *vradint_d, *viscosity_array, *Rsup_d, *invRmed_d;
+
+float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
+
+extern dim3 dimGrid2, dimBlock2;
 
 __host__ void UpdateVelocitiesWithViscosity(float *vrad, float *vtheta, float *dens, float DeltaT)
 {
@@ -58,7 +62,7 @@ __host__ float FViscosity(float r)
   return viscosity;
 }
 
-__host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens, int p, int option)
+__host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens, int option)
 {
 
   float dphi, invdphi, onethird;
@@ -76,56 +80,20 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
   gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
 
-  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
-  dim3 dimBlock( blocksize, blocksize );
-
-  if (p == 0) Viscouscudamalloc(); // el primero que llama a la funcion inicializa los cudamalloc
-
-
 
   if (option == 1)
   {
 
-    ViscousTerms<<<dimGrid, dimBlock>>>(vrad_d, vtheta_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
+    ViscousTerms<<<dimGrid2, dimBlock2>>>(vrad_d, vtheta_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
       invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, Trr_d, Tpp_d, dens_d, viscosity_array_d,
       onethird, Trp_d, invRinf_d);
-    gpuErrchk(cudaDeviceSynchronize());
-
   }
   else
   {
-    ViscousTerms<<<dimGrid, dimBlock>>>(vradint_d, vthetaint_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
+    ViscousTerms<<<dimGrid2, dimBlock2>>>(vradint_d, vthetaint_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
       invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, Trr_d, Tpp_d, dens_d, viscosity_array_d,
       onethird, Trp_d, invRinf_d);
-    gpuErrchk(cudaDeviceSynchronize());
-
   }
 
-}
-
-
-__host__ void Viscouscudamalloc()
-{
-  gpuErrchk(cudaMalloc((void**)&Drr_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Dpp_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&divergence_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Drp_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Trr_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Tpp_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Trp_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Trp_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Rsup_d,NRAD*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&invRmed_d,NRAD*sizeof(float)));
-
-
-  gpuErrchk(cudaMemcpy(invRmed_d, invRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Rsup_d, Rsup, NRAD*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Drr_d, Drr, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(Dpp_d, Dpp, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(divergence_d, divergence, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(Drp_d, Drp, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(Trr_d, Trr, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(Tpp_d, Tpp, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(Trp_d, Trp, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-
+  gpuErrchk(cudaDeviceSynchronize());
 }

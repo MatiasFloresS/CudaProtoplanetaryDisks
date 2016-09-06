@@ -6,11 +6,15 @@
 using namespace std;
 
 extern string OUTPUTDIR;
-float *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d, *globalforce, *localforce, *fxi, *fxo, *fyi, *fyo;
-extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, *forcesxi, *forcesyi;
-extern float *forcesxo, *forcesyo, *Rmed, *Rmed_d, *dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d;
+float *globalforce, *localforce;
+
+extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, \
+*forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d,
+*forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
+
 extern bool RocheSmoothing;
 extern int size_grid, blocksize, NRAD, NSEC, nsec2pot, nrad2pot;
+extern dim3 dimGrid2, dimBlock2;
 
 __host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outputnb, float time2, int dimfxy, int p)
 {
@@ -77,17 +81,12 @@ __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmo
 
   globalforce = fc->GlobalForce;
 
-  if (p == 0 && i == 0) Forcescudamalloc(dimfxy);
-
   gpuErrchk(cudaMemset(forcesxi_d, 0, dimfxy*sizeof(float)));
   gpuErrchk(cudaMemset(forcesxo_d, 0, dimfxy*sizeof(float)));
   gpuErrchk(cudaMemset(forcesyi_d, 0, dimfxy*sizeof(float)));
   gpuErrchk(cudaMemset(forcesyo_d, 0, dimfxy*sizeof(float)));
 
-  dim3 dimGrid( nsec2pot/blocksize, nrad2pot/blocksize );
-  dim3 dimBlock( blocksize, blocksize );
-
-  ComputeForceKernel<<<dimGrid, dimBlock>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, dens_d, x, y, rsmoothing, forcesxi_d, forcesyi_d,
+  ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, dens_d, x, y, rsmoothing, forcesxi_d, forcesyi_d,
     forcesxo_d, forcesyo_d, NSEC, NRAD, G, a, Rmed_d, dimfxy, rh);
   gpuErrchk(cudaDeviceSynchronize());
 
@@ -126,14 +125,4 @@ __host__ float Compute_smoothing(float r)
 __host__ void FreeForce (Force *force)
 {
   free (force->GlobalForce);
-}
-
-__host__ void Forcescudamalloc(int dimfxy)
-{
-
-  gpuErrchk(cudaMalloc(&forcesxi_d, dimfxy*sizeof(float)));
-  gpuErrchk(cudaMalloc(&forcesxo_d, dimfxy*sizeof(float)));
-  gpuErrchk(cudaMalloc(&forcesyi_d, dimfxy*sizeof(float)));
-  gpuErrchk(cudaMalloc(&forcesyo_d, dimfxy*sizeof(float)));
-
 }

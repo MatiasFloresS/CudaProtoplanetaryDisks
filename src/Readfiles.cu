@@ -4,19 +4,21 @@ using namespace std;
 
 extern char NewOutputdir[1024];
 extern int NINTERM, NTOT, NRAD, NSEC, YES, NO, OverridesOutputdir;
-extern float RMIN, RMAX, THICKNESSSMOOTHING, ROCHESMOOTHING, ASPECTRATIO, VISCOSITY, ALPHAVISCOSITY, SIGMASLOPE;
-extern float RELEASERADIUS, RELEASEDATE, OMEGAFRAME, MASSTAPER, DT, SIGMA0;
-extern float TRANSITIONRATIO, TRANSITIONWIDTH, LAMBDADOUBLING, ADIABATICINDEX, COOLINGTIME0, G, PI;
-extern float IMPOSEDDISKDRIFT, FLARINGINDEX, ECCENTRICITY, CAVITYRADIUS, CAVITYRATIO, CAVITYWIDTH, TRANSITIONRADIUS;
-extern string DISK, FRAME, OUTERSOURCEMASS, WRITEDENSITY, WRITEVELOCITY, WRITEENERGY, WRITETEMPERATURE, WRITEDIVV;
-extern string WRITEQPLUS, INDIRECTTERM, OUTPUTDIR ,INNERBOUNDARY, LABELADVECTION, TRANSPORT, PLANETCONFIG;
-extern string SELFGRAVITY, CICPLANET, FORCEDCIRCULAR, ZMPLUS, ADIABATIC, COOLING, EXCLUDEHILL, RADIALSPACING;
 
-int ExcludeHill, ViscosityAlpha, RocheSmoothing, OpenInner, AdvecteLabel, LogGrid, FastTransport = YES;
-int GuidingCenter = NO, Indirect_Term = YES, IsDisk = YES, NonReflecting = NO, Corotating = NO, OuterSourceMass = NO;
-int Evanescent = NO, Write_Density = YES, Write_Velocity = YES, Write_Energy = NO, Write_Temperature = NO;
-int Write_DivV = NO, Write_Qplus = NO, SelfGravity = NO, SGZeroMode = NO, ZMPluss = NO, Adiabaticc = NO, Cooling = NO;
-int CICPlanet = NO, ForcedCircular = NO;
+extern float RMIN, RMAX, THICKNESSSMOOTHING, ROCHESMOOTHING, ASPECTRATIO, VISCOSITY, ALPHAVISCOSITY, \
+SIGMASLOPE, RELEASERADIUS, RELEASEDATE, OMEGAFRAME, MASSTAPER, DT, SIGMA0, TRANSITIONRATIO, TRANSITIONWIDTH, \
+LAMBDADOUBLING, ADIABATICINDEX, COOLINGTIME0, G, PI, IMPOSEDDISKDRIFT, FLARINGINDEX, ECCENTRICITY, CAVITYRADIUS, \
+CAVITYRATIO, CAVITYWIDTH, TRANSITIONRADIUS;
+
+extern string DISK, FRAME, OUTERSOURCEMASS, WRITEDENSITY, WRITEVELOCITY, WRITEENERGY, WRITETEMPERATURE, \
+WRITEDIVV, WRITEQPLUS, INDIRECTTERM, OUTPUTDIR ,INNERBOUNDARY, LABELADVECTION, TRANSPORT, PLANETCONFIG, \
+SELFGRAVITY, CICPLANET, FORCEDCIRCULAR, ZMPLUS, ADIABATIC, COOLING, EXCLUDEHILL, RADIALSPACING;
+
+int ExcludeHill, ViscosityAlpha, RocheSmoothing, OpenInner, AdvecteLabel, LogGrid, FastTransport = YES, \
+GuidingCenter = NO, Indirect_Term = YES, IsDisk = YES, NonReflecting = NO, Corotating = NO, \
+OuterSourceMass = NO, Evanescent = NO, Write_Density = YES, Write_Velocity = YES, Write_Energy = NO, \
+Write_Temperature = NO, Write_DivV = NO, Write_Qplus = NO, SelfGravity = NO, SGZeroMode = NO, ZMPluss = NO, \
+Adiabaticc = NO, Cooling = NO, CICPlanet = NO, ForcedCircular = NO;
 
 __host__ void PrintUsage (char *execname)
 {
@@ -119,7 +121,6 @@ __host__ float TellNbOutputs (float time)
 {
   return (time/DT/NINTERM);
 }
-
 
 __host__ void ReadFile(char *ParameterFile)
 {

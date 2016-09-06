@@ -5,8 +5,10 @@
 using namespace std;
 
 extern string OUTPUTDIR;
-extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy;
-extern int Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
+
+extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, \
+Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
+
 extern float RMAX, *temperature, mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
 static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 float LostMass =0.0;

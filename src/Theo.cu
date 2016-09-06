@@ -2,8 +2,10 @@
 #include "Theo.cuh"
 
 extern int NRAD;
-extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *QplusMed, *SigmaMed, *SigmaInf, ADIABATICINDEX;
-extern float *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed, R, MU, ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
+
+extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *QplusMed, *SigmaMed, *SigmaInf, \
+ADIABATICINDEX, *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed, R, MU, ASPECTRATIO, FLARINGINDEX, \
+COOLINGTIME0;
 
 __host__ void FillSigma ()
 {

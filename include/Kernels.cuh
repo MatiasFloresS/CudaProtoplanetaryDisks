@@ -86,3 +86,8 @@ __global__ void ViscousTerms(float *vrad, float *vtheta , float *Drr, float *Dpp
 
 __global__ void LRMomenta(float *RadMomP, float *RadMomM, float *ThetaMomP, float *ThetaMomM, float *dens,
   float *vrad, float *vtheta, int nrad, int nsec, float *Rmed, float OmegaFrame);
+
+__global__ void ExtQty(float *extlabel, float *dens, float *label, int nsec, int nrad);
+
+__global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int nrad, int nsec,
+  float *invdiffRmed, float *Rmed);
