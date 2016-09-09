@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cufft.h>
 
 __host__ void ReadFile(char *ParameterFile);
 __host__ void TellEverything();
@@ -27,4 +28,4 @@ __host__ void DeviceToHostcudaMemcpy(float *dens, float *energy, float *label, f
 __host__ void ComputeViscousTerms (float *vrad, float *vtheta, float *dens, int option);
 __host__ void Viscouscudamalloc();
 __host__ void CreateArrays();
-__host__ void cudamalloc(float *label);
+__host__ void cudamalloc(float *label, float *dens);

@@ -27,7 +27,6 @@ __host__ void Transport (float *dens, float *vrad, float *vtheta, float *energy,
 
 }
 
-
 __host__ void OneWindRad (float *dens, float *vrad, float *energy, float dt)
 {
   StarRad<<<dimGrid2, dimBlock2>>> (Qbase_d, vrad_d, QStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d);

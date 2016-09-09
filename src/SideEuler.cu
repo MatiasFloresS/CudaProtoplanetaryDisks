@@ -38,7 +38,6 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
   if (Evanescent == YES) EvanescentBoundary (vrad, vtheta, step);
 }
 
-
 __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad)
 {
 

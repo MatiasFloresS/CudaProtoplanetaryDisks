@@ -9,7 +9,8 @@ extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LA
 *SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray, \
 ALPHAVISCOSITY, *vrad_d, *vtheta_d, *Drr_d, *Dpp_d, *divergence_d, *Drp_d, *invdiffRsup_d, *Rinf_d, *Dpp, \
 *invdiffRmed_d, *Trr_d, *Tpp_d, *dens_d, *viscosity_array_d, *Trp_d, *divergence, *Drr, *Drp, *Trr, *Trp, \
-*Tpp, *invRinf_d, *Rsup, *invRmed, *vthetaint_d, *vradint_d, *viscosity_array, *Rsup_d, *invRmed_d;
+*Tpp, *invRinf_d, *Rsup, *invRmed, *vthetaint_d, *vradint_d, *viscosity_array, *Rsup_d, *invRmed_d, \
+dphi, invdphi, onethird;
 
 float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
 
@@ -65,12 +66,6 @@ __host__ float FViscosity(float r)
 __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens, int option)
 {
 
-  float dphi, invdphi, onethird;
-
-  dphi = 2.0*CUDART_PI_F/NSEC;
-  invdphi = 1.0/dphi;
-  onethird = 1.0/3.0;
-
   if (ViscosityAlpha)
   {
     gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
@@ -79,7 +74,6 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
 
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
   gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
-
 
   if (option == 1)
   {

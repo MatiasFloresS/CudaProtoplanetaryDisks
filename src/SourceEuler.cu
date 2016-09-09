@@ -13,11 +13,11 @@ extern string OUTPUTDIR;
 extern float RMAX, RMIN, PI, MU, R,*invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup, *Radii, \
 *GLOBAL_bufarray, *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns, Adiabaticc, ADIABATICINDEX, \
 FLARINGINDEX, *vt_int, OmegaFrame1, *SigmaInf, G, ASPECTRATIO, SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT, \
-*CoolingTimeMed, *QplusMed , *viscosity_array;
+*CoolingTimeMed, *QplusMed , *viscosity_array, *dens_d, *Rmed_d;
 
-float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *vtheta_d, *Rmed_d, \
+float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *vtheta_d, \
 *CellAbscissa_d, *CellOrdinate_d, *sinns_d, *cosns_d, *vt_cent, *Rinf_d, *SigmaInf_d, *vrad_d, *SoundSpeed_d, \
-*energy_d, *AspectRatioRmed_d, *dens_d, *press_d, *temperature_d, *viscosity_array_d;
+*energy_d, *AspectRatioRmed_d, *press_d, *temperature_d, *viscosity_array_d;
 
 extern dim3 dimGrid2, dimBlock2;
 
@@ -34,7 +34,6 @@ __host__ void FillPolar1DArray()
 
   Radii = (float *) malloc(sizeof(float)*(NRAD+1));
   vt_cent = (float *) malloc(sizeof(float)*NRAD);
-  Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rmed = (float *) malloc(sizeof(float)*(NRAD));
   Rsup = (float *) malloc(sizeof(float)*(NRAD));
@@ -229,13 +228,11 @@ __host__ void Computecudamalloc(float *dens, float *energy, float *vrad, float *
 {
   gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float) ));
-  gpuErrchk(cudaMalloc((void**)&Rmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&cosns_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&sinns_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&SoundSpeed_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energy_d, size_grid*sizeof(float) ));
   gpuErrchk(cudaMalloc((void**)&AspectRatioRmed_d, NRAD*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&press_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&temperature_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vrad_d, size_grid*sizeof(float)));
@@ -244,16 +241,13 @@ __host__ void Computecudamalloc(float *dens, float *energy, float *vrad, float *
   gpuErrchk(cudaMalloc((void**)&SigmaInf_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Rinf_d, NRAD*sizeof(float)));
 
-
   gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
-  gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(cosns_d, cosns, NSEC*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(sinns_d, sinns, NSEC*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(energy_d, energy, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(AspectRatioRmed_d, AspectRatioRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(temperature_d, temperature, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));

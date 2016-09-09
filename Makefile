@@ -1,5 +1,6 @@
 
 CFLAGS = -c -w
+CUFFTFLAG = -lcufft
 LDFLAGS = -lcuda -lcudart
 INC_DIRS = -Iinclude
 
@@ -21,17 +22,16 @@ endif
 endif
 
 
-
 main: build/Main.o build/Viscosity.o build/Kernels.o build/Readfiles.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
 	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o build/TransportEuler.o
 	@ echo "Linking"
 	@ mkdir -p bin
-	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(ARCHFLAG)
+	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG)
 
 build/Main.o: src/Main.cu
 	@ echo "Building Main"
 	@ mkdir -p build
-	@ nvcc $(CFLAGS) $(INC_DIRS) src/Main.cu -o build/Main.o $(LDFLAGS) $(ARCHFLAG)
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/Main.cu -o build/Main.o $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG)
 
 build/Viscosity.o: src/Viscosity.cu
 	@ echo "Building Viscosity"
@@ -39,7 +39,7 @@ build/Viscosity.o: src/Viscosity.cu
 
 build/Kernels.o: src/Kernels.cu
 	@ echo "Building Kernels"
-	@ nvcc $(CFLAGS) $(INC_DIRS)  src/Kernels.cu -o build/Kernels.o $(LDFLAGS) $(ARCHFLAG)
+	@ nvcc $(CFLAGS) $(INC_DIRS)  src/Kernels.cu -o build/Kernels.o $(LDFLAGS) $(ARCHFLAG) $(CUFFTFLAG)
 
 build/Readfiles.o: src/Readfiles.cu
 	@ echo "Building Readfiles"

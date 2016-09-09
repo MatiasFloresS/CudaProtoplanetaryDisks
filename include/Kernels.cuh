@@ -1,5 +1,6 @@
 #include "math_constants.h"
 #include <stdio.h>
+#include <cufft.h>
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -91,3 +92,9 @@ __global__ void ExtQty(float *extlabel, float *dens, float *label, int nsec, int
 
 __global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int nrad, int nsec,
   float *invdiffRmed, float *Rmed);
+
+__global__ void fftkernel(float *Radii, cufftReal *SGP_Kr, cufftReal *SGP_Kt, float SGP_eps, int nrad, int nsec,
+  cufftReal *SGP_Sr, cufftReal *SGP_St, float *dens, float *Rmed, int nrad2pot);
+
+__global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec2pot, int nrad2pot, float G, int nrad);
