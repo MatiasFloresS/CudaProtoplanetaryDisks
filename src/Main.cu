@@ -32,7 +32,7 @@ float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup
 *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens, *mean_dens2, *mean_energy, *mean_energy2, *cs0_d, *cs1_d, *csnrm1_d, \
 *csnrm2_d, *mean_dens_d, *mean_dens_d2, *mean_energy_d, *mean_energy_d2, *forcesxi_d, *forcesyi_d, *forcesxo_d, \
 *forcesyo_d, dphi, invdphi, onethird, *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Rmed_d, *dens_d, *Gr, \
-*Gphi;
+*Gphi, *SG_Accr_d, *SG_Acct_d, *SG_Accr, *SG_Acct, *asdasd;
 
 extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, IsDisk, Cooling;
 static int StillWriteOneOutput, InnerOutputCounter=0;
@@ -41,7 +41,7 @@ nrad2potSG;
 
 bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
 
-dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3;
+dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4;
 
 cufftHandle planf, planb;
 
@@ -145,12 +145,12 @@ __host__ int main(int argc, char *argv[])
 
   if(!IsPow2(2*NRAD)) nrad2potSG = NearestPowerOf2(2*NRAD);
 
-  if ((cufftPlan2d(&planf, nrad2pot, nsec2pot, CUFFT_R2C)) != CUFFT_SUCCESS) {
+  if ((cufftPlan2d(&planf, 2*NRAD, NSEC, CUFFT_R2C)) != CUFFT_SUCCESS) {
     printf("cufft plan error\n");
     exit(-1);
   }
 
-  if ((cufftPlan2d(&planb, nrad2pot, (nsec2pot/2 + 1), CUFFT_C2R)) != CUFFT_SUCCESS) {
+  if ((cufftPlan2d(&planb, 2*NRAD, (NSEC/2 + 1), CUFFT_C2R)) != CUFFT_SUCCESS) {
     printf("cufft plan error\n");
     exit(-1);
   }
@@ -167,6 +167,9 @@ __host__ int main(int argc, char *argv[])
 
   dim3 dimG3(nsec2pot/blocksize, nrad2potSG/blocksize);
   dimGrid3 = dimG3;
+
+  dim3 dimG4(NSEC/2 +1, nrad2potSG/blocksize);
+  dimGrid4 = dimG4;
 
   dphi = 2.0*CUDART_PI_F/NSEC;
   invdphi = 1.0/dphi;
@@ -215,12 +218,20 @@ __host__ int main(int argc, char *argv[])
        the radial self-gravity acceleration. The disk radial and
        azimutal velocities are not updated */
 
-    float SGP_eps;
+    float SGP_eps, SGP_rstep, SGP_tstep;
+
     SGP_eps = THICKNESSSMOOTHING * ASPECTRATIO;
+    SGP_rstep = log(Radii[NRAD]/Radii[0])/(float)NRAD;
+    SGP_tstep = 2.0*PI/(float)NSEC;
 
     fftkernel<<<dimGrid3, dimBlock2>>>(Radii_d, SGP_Kr_d, SGP_Kt_d, SGP_eps, NRAD, NSEC, SGP_Sr_d,
     SGP_St_d, dens_d, Rmed_d, nrad2potSG);
     gpuErrchk(cudaDeviceSynchronize());
+
+    //gpuErrchk(cudaMemcpy(asdasd, SGP_Kr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
+    //gpuErrchk(cudaMemcpy(asdasd2, SGP_Kt_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
+
+
 
     if ((cufftExecR2C(planf, (cufftReal *)SGP_Sr_d, (cufftComplex *)SGP_Sr_dc))!= \
       CUFFT_SUCCESS)
@@ -254,8 +265,8 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    fftkernelmul<<<dimGrid2, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, \
-      SGP_Sr_dc, SGP_St_dc, nsec2pot, nrad2pot, G, NRAD);
+    fftkernelmul<<<dimGrid4, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, \
+      SGP_Sr_dc, SGP_St_dc, NSEC, G, NRAD);
     gpuErrchk(cudaDeviceSynchronize());
 
 
@@ -275,9 +286,23 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    gpuErrchk(cudaMemcpy(Gr, Gr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
-    gpuErrchk(cudaMemcpy(Gphi, Gphi_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
+    kernelSg_Acc <<<dimGrid2, dimBlock2>>>(SG_Accr_d, SG_Acct_d, dens_d, SGP_rstep, SGP_tstep, SGP_eps,
+      NRAD, NSEC, Rmed_d, Gr_d, Gphi_d, G);
+    gpuErrchk(cudaDeviceSynchronize());
 
+
+    gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
+
+    FILE *f;
+    f = fopen("SG_Accr.txt","w");
+
+    for (int i = 0; i < NRAD*NSEC; i++)
+    {
+      fprintf(f, "%.12f\n",SG_Accr[i] );
+    }
+    fclose(f);
+
+    exit(1);
 
     //compute_selfgravity (gas_density, gas_v_rad, gas_v_theta, foostep, updatevelocities);
     //init_planetarysys_withSG (sys);
@@ -460,9 +485,21 @@ __host__ void FreeCuda()
   cudaFree(Qbase_d);
   cudaFree(GLOBAL_bufarray_d);
   cudaFree(gridfield_d);
-  cudaFree(SGP_Kr_d);
-  cudaFree(SGP_Kt_d);
   cudaFree(Radii_d);
+  cudaFree(SGP_Kt_d);
+  cudaFree(SGP_Kr_d);
+  cudaFree(SGP_St_d);
+  cudaFree(SGP_Sr_d);
+  cudaFree(SGP_Kt_dc);
+  cudaFree(SGP_Kr_dc);
+  cudaFree(SGP_St_dc);
+  cudaFree(SGP_Sr_dc);
+  cudaFree(Gr_dc);
+  cudaFree(Gphi_dc);
+  cudaFree(Gr_d);
+  cudaFree(Gphi_d);
+  cudaFree(SG_Accr_d);
+  cudaFree(SG_Acct_d);
 }
 
 __host__ void FreeArrays(float *dens, float *energy, float *label)
@@ -530,9 +567,11 @@ __host__ void FreeArrays(float *dens, float *energy, float *label)
   free(QStar);
   free(Qbase);
   free(densStar);
-  free(SGP_Kr);
-  free(SGP_Kt);
   free(Radii);
+  free(SG_Accr);
+  free(SG_Acct);
+  free(Gr);
+  free(Gphi);
 
 }
 
@@ -707,12 +746,11 @@ __host__ void CreateArrays()
   mean_dens2 = (float *)malloc(sizeof(float)*NSEC);
   mean_energy = (float *)malloc(sizeof(float)*NSEC);
   mean_energy2 = (float *)malloc(sizeof(float)*NSEC);
-  // SGP_Kr = (cufftReal *)malloc(sizeof(cufftReal)*nrad2pot*nsec2pot);
-  // SGP_Kt = (cufftReal *)malloc(sizeof(cufftReal)*nrad2pot*nsec2pot);
-  // SGP_Sr = (cufftReal *)malloc(sizeof(cufftReal)*nrad2pot*nsec2pot);
-  // SGP_St = (cufftReal *)malloc(sizeof(cufftReal)*nrad2pot*nsec2pot);
   Gr = (float *)malloc(sizeof(float)*NRAD*NSEC);
   Gphi = (float *)malloc(sizeof(float)*NRAD*NSEC);
+  SG_Accr = (float *)malloc(sizeof(float)*NRAD*NSEC);
+  SG_Acct = (float *)malloc(sizeof(float)*NRAD*NSEC);
+  asdasd = (float *)malloc(sizeof(float)*2*NRAD*NSEC);
 }
 
 __host__ void cudamalloc(float *label, float *dens)
@@ -769,19 +807,22 @@ __host__ void cudamalloc(float *label, float *dens)
   gpuErrchk(cudaMalloc((void**)&mean_energy_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_dens_d2, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_energy_d2, NSEC*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Kt_d, nrad2potSG*nsec2pot*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Kr_d, nrad2potSG*nsec2pot*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_St_d, nrad2potSG*nsec2pot*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Sr_d, nrad2potSG*nsec2pot*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Kt_dc, nrad2potSG*(nsec2pot/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Kr_dc, nrad2potSG*(nsec2pot/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&SGP_St_dc, nrad2potSG*(nsec2pot/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Sr_dc, nrad2potSG*(nsec2pot/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&Gr_dc, nrad2potSG*(nsec2pot/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&Gphi_dc, nrad2potSG*(nsec2pot/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&Gr_d, nrad2potSG*nsec2pot*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&Gphi_d, nrad2potSG*nsec2pot*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Kt_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Kr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_St_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Sr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+
+  gpuErrchk(cudaMalloc((void**)&SGP_Kt_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Kr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
+  gpuErrchk(cudaMalloc((void**)&SGP_St_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Sr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
+  gpuErrchk(cudaMalloc((void**)&Gr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
+  gpuErrchk(cudaMalloc((void**)&Gphi_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
+  gpuErrchk(cudaMalloc((void**)&Gr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&Gphi_d, 2*NRAD*NSEC*sizeof(cufftReal)));
   gpuErrchk(cudaMalloc((void**)&Radii_d, (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&SG_Accr_d, NRAD*NSEC*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&SG_Acct_d, NRAD*NSEC*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));

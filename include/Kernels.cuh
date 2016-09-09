@@ -97,4 +97,7 @@ __global__ void fftkernel(float *Radii, cufftReal *SGP_Kr, cufftReal *SGP_Kt, fl
   cufftReal *SGP_Sr, cufftReal *SGP_St, float *dens, float *Rmed, int nrad2pot);
 
 __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec2pot, int nrad2pot, float G, int nrad);
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad);
+
+__global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
+  float SGP_eps, int nrad, int nsec, float *Rmed, cufftReal *Gr, cufftReal *Gphi, float G);
