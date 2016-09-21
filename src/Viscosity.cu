@@ -37,7 +37,8 @@ __host__ float AspectRatio(float r)
   rmin *= scale;
   rmax *= scale;
   if (r < rmin) aspectratio *= TRANSITIONRATIO;
-  if ((r >= rmin) && (r <= rmax)) {
+  if ((r >= rmin) && (r <= rmax))
+  {
     aspectratio *= expf((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
   }
   return aspectratio;

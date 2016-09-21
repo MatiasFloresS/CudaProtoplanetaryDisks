@@ -15,13 +15,13 @@ using namespace std;
 
 extern float *SigmaInf_d, *AspectRatioRmed_d, *vrad_d,  OMEGAFRAME, OmegaFrame1, *press, *CellAbscissa, \
 *CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime, CVNR, *CellAbscissa_d, *CellOrdinate_d, \
-*temperature_d, *energy_d, *temperature, *vtheta_d, *press_d, *Rinf_d, *cosns_d, *sinns_d, \
+*temperature_d, *energy_d, *temperature, *vtheta_d, *press_d, *Rinf_d, *cosns_d, *sinns_d, *Qbase_d, \
 *SoundSpeed_d, *viscosity_array_d, *ThetaMomP_d, *ThetaMomM_d, *RadMomP_d, *RadMomM_d, *extlabel_d, *QStar_d, \
-*Qbase_d, *vt_cent, THICKNESSSMOOTHING, G;
+*vt_cent, THICKNESSSMOOTHING, G, *SoundSpeed, *AspectRatioRmed;
 
 float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup, *invdiffRmed, *invRmed, \
 *Radii, *SigmaMed, *SigmaInf, *EnergyMed, *cosns, *sinns, mdcp, exces_mdcp = 0.0, ScalingFactor = 1.0, \
-*forcesxi, *forcesyi, *forcesxo, *forcesyo, *vradint, *pot, *vrad, *vthetaint, *vtheta, *powRmed, *densint_d, \
+*forcesxi, *forcesyi, *forcesxo, *forcesyo, *vradint, *pot, *vthetaint, *powRmed, *densint_d, \
 *temperatureint, *densint, *vradnew, *vthetanew, *energyint, *fieldsrc, *vt_int, *GLOBAL_bufarray, *Surf_d, \
 *vradint_d, *pot_d, *vthetaint_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *vthetanew_d, *vradnew_d, \
 *temperatureint_d, *energyint_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMed , *viscosity_array, *Drr, \
@@ -32,21 +32,18 @@ float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup
 *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens, *mean_dens2, *mean_energy, *mean_energy2, *cs0_d, *cs1_d, *csnrm1_d, \
 *csnrm2_d, *mean_dens_d, *mean_dens_d2, *mean_energy_d, *mean_energy_d2, *forcesxi_d, *forcesyi_d, *forcesxo_d, \
 *forcesyo_d, dphi, invdphi, onethird, *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Rmed_d, *dens_d, *Gr, \
-*Gphi, *SG_Accr_d, *SG_Acct_d, *SG_Accr, *SG_Acct, *asdasd;
+*Gphi, *SG_Accr_d, *SG_Acct_d, *SG_Accr, *SG_Acct;
 
 extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, IsDisk, Cooling;
 static int StillWriteOneOutput, InnerOutputCounter=0;
 int nrad2pot, nsec2pot, blocksize = 16, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 256, \
-nrad2potSG;
+nrad2potSG, nsec2potSG, size_grid2;
 
 bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
 
-dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4;
-
+dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3;
 cufftHandle planf, planb;
-
 cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc;
-
 cufftReal *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
 
 __host__ int main(int argc, char *argv[])
@@ -58,77 +55,76 @@ __host__ int main(int argc, char *argv[])
   PlanetarySystem *sys;
   Force *force;
 
-  float *label, *dens, *energy, xpl, ypl;
+  float *label, *dens, *energy, *vrad, *vtheta, xpl, ypl;
 
   if (argc == 1) PrintUsage (argv[0]);
 
   strcpy (ParameterFile, "");
-  for (int i = 1; i < argc; i++) {
-    if (*(argv[i]) == '-') {
+  for (int i = 1; i < argc; i++)
+  {
+    if (*(argv[i]) == '-')
+    {
       if (strspn (argv[i], "-secndovtpfamzib0123456789") != strlen (argv[i]))
-	PrintUsage (argv[0]);
-      if (strchr (argv[i], 'n'))
-	disable = true;
-      if (strchr (argv[i], 'e'))
-	Stockholm = true;
-      if (strchr (argv[i], 'v'))
-	verbose = true;
-      if (strchr (argv[i], 't'))
-	TimeInfo = true;
-      if (strchr (argv[i], 'c'))
-	SloppyCFL = true;
-      if (strchr (argv[i], 'p'))
-	Profiling = true;
-      if (strchr (argv[i], 'd'))
-	debug = true;
-      if (strchr (argv[i], 'b'))
-	CentrifugalBalance = true;
-      if (strchr (argv[i], 'm'))
-	Merge = true;
-      if (strchr (argv[i], 'a'))
-	MonitorIntegral = true;
-      if (strchr (argv[i], 'z'))
-	FakeSequential = true;
-      if (strchr (argv[i], 'i')) {
-	StoreSigma = true;
-	if (Adiabaticc)
-	  StoreEnergy = true;
-      }
-      if (strchr (argv[i], '0'))
-	OnlyInit = true;
-      if ((argv[i][1] >= '1') && (argv[i][1] <= '9')) {
-	GotoNextOutput = true;
-	StillWriteOneOutput = (int)(argv[i][1]-'0');
-      }
-      if (strchr (argv[i], 's')) {
-	Restart = true;
-	i++;
-	NbRestart = atoi(argv[i]);
-	if ((NbRestart < 0)) {
-	  printf ("Incorrect restart number\n");
-	  PrintUsage (argv[0]);
-	}
-      }
-      if (strchr (argv[i], 'o')) {
-	OverridesOutputdir = true;
-	i++;
-	sprintf (NewOutputdir, "%s", argv[i]);
-      } else {
-	if (strchr (argv[i], 'f')) {
-	  i++;
-	  ScalingFactor = atof(argv[i]);
-	  printf ("Scaling factor = %g\n", ScalingFactor);
-	  if ((ScalingFactor <= 0)) {
-	    printf ("Incorrect scaling factor\n");
 	    PrintUsage (argv[0]);
-	  }
-	}
+      if (strchr (argv[i], 'n')) disable = true;
+      if (strchr (argv[i], 'e')) Stockholm = true;
+      if (strchr (argv[i], 'v')) verbose = true;
+      if (strchr (argv[i], 't')) TimeInfo = true;
+      if (strchr (argv[i], 'c')) SloppyCFL = true;
+      if (strchr (argv[i], 'p')) Profiling = true;
+      if (strchr (argv[i], 'd')) debug = true;
+      if (strchr (argv[i], 'b')) CentrifugalBalance = true;
+      if (strchr (argv[i], 'm')) Merge = true;
+      if (strchr (argv[i], 'a')) MonitorIntegral = true;
+      if (strchr (argv[i], 'z')) FakeSequential = true;
+      if (strchr (argv[i], 'i'))
+      {
+        StoreSigma = true;
+	      if (Adiabaticc) StoreEnergy = true;
+      }
+      if (strchr (argv[i], '0')) OnlyInit = true;
+      if ((argv[i][1] >= '1') && (argv[i][1] <= '9'))
+      {
+	       GotoNextOutput = true;
+	       StillWriteOneOutput = (int)(argv[i][1]-'0');
+      }
+      if (strchr (argv[i], 's'))
+      {
+        Restart = true;
+	      i++;
+	      NbRestart = atoi(argv[i]);
+	      if ((NbRestart < 0))
+        {
+          printf ("Incorrect restart number\n");
+	        PrintUsage (argv[0]);
+        }
+      }
+      if (strchr (argv[i], 'o'))
+      {
+        OverridesOutputdir = true;
+	      i++;
+	      sprintf (NewOutputdir, "%s", argv[i]);
+      }
+      else
+      {
+        if (strchr (argv[i], 'f'))
+        {
+	        i++;
+	        ScalingFactor = atof(argv[i]);
+	        printf ("Scaling factor = %g\n", ScalingFactor);
+	        if ((ScalingFactor <= 0))
+          {
+	          printf ("Incorrect scaling factor\n");
+	          PrintUsage (argv[0]);
+          }
+        }
       }
     }
     else strcpy (ParameterFile, argv[i]);
   }
 
-  if ( (StoreSigma || StoreEnergy) && !(Restart)) {
+  if ( (StoreSigma || StoreEnergy) && !(Restart))
+  {
     printf ("You cannot use tabulated surface density\n");
     printf ("or surface internal energy in a non-restart run.\n");
     printf ("Aborted\n");
@@ -136,21 +132,25 @@ __host__ int main(int argc, char *argv[])
   }
   if (ParameterFile[0] == 0) PrintUsage (argv[0]);
 
-
   ReadFile(ParameterFile);
-  size_grid = (NRAD+1)*NSEC;
+  size_grid = NRAD*NSEC;
+  size_grid2 = (NRAD+1)*NSEC;
 
   if(!IsPow2(NRAD+1)) nrad2pot = NearestPowerOf2(NRAD+1);
   if(!IsPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
 
   if(!IsPow2(2*NRAD)) nrad2potSG = NearestPowerOf2(2*NRAD);
 
-  if ((cufftPlan2d(&planf, 2*NRAD, NSEC, CUFFT_R2C)) != CUFFT_SUCCESS) {
+  if(!IsPow2(2*(NSEC/2+1))) nsec2potSG = NearestPowerOf2(2*(NSEC/2+1));
+
+  if ((cufftPlan2d(&planf, 2*NRAD, NSEC, CUFFT_R2C)) != CUFFT_SUCCESS)
+  {
     printf("cufft plan error\n");
     exit(-1);
   }
 
-  if ((cufftPlan2d(&planb, 2*NRAD, (NSEC/2 + 1), CUFFT_C2R)) != CUFFT_SUCCESS) {
+  if ((cufftPlan2d(&planb, 2*NRAD, (NSEC/2 + 1), CUFFT_C2R)) != CUFFT_SUCCESS)
+  {
     printf("cufft plan error\n");
     exit(-1);
   }
@@ -168,9 +168,6 @@ __host__ int main(int argc, char *argv[])
   dim3 dimG3(nsec2pot/blocksize, nrad2potSG/blocksize);
   dimGrid3 = dimG3;
 
-  dim3 dimG4(NSEC/2 +1, nrad2potSG/blocksize);
-  dimGrid4 = dimG4;
-
   dphi = 2.0*CUDART_PI_F/NSEC;
   invdphi = 1.0/dphi;
   onethird = 1.0/3.0;
@@ -179,7 +176,9 @@ __host__ int main(int argc, char *argv[])
   if (disable == YES) exit(0);
   printf("Allocating arrays...\n");
 
-  dens = (float *) malloc(sizeof(float)*(size_grid));
+  vtheta = (float *) malloc(sizeof(float)*size_grid2);
+  vrad = (float *) malloc(sizeof(float)*size_grid2);
+  dens = (float *) malloc(sizeof(float)*size_grid2);
   energy = (float *) malloc(sizeof(float)*size_grid);
   label = (float *) malloc(sizeof(float)*size_grid);
   CreateArrays();
@@ -205,13 +204,12 @@ __host__ int main(int argc, char *argv[])
 
   /* If energy equation is taken into account, we initialize the gas
      thermal energy  */
-  if ( Adiabaticc ) {
-      InitGasEnergy (energy);
-  }
+  if ( Adiabaticc ) InitGasEnergy (energy);
 
   cudamalloc(label, dens);
 
-  if ( SelfGravity ) {
+  if ( SelfGravity )
+  {
 
     /* If SelfGravity = YES or Z, planets are initialized feeling disk
        potential. Only the surface density is required to calculate
@@ -228,9 +226,14 @@ __host__ int main(int argc, char *argv[])
     SGP_St_d, dens_d, Rmed_d, nrad2potSG);
     gpuErrchk(cudaDeviceSynchronize());
 
-    //gpuErrchk(cudaMemcpy(asdasd, SGP_Kr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
-    //gpuErrchk(cudaMemcpy(asdasd2, SGP_Kt_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(SG_Accr, SGP_Kr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
 
+    FILE *f;
+    f = fopen("SGP_Kr_d.txt","w");
+
+    for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+
+    fclose(f);
 
 
     if ((cufftExecR2C(planf, (cufftReal *)SGP_Sr_d, (cufftComplex *)SGP_Sr_dc))!= \
@@ -243,7 +246,7 @@ __host__ int main(int argc, char *argv[])
 
     if ((cufftExecR2C(planf, (cufftReal *)SGP_St_d, (cufftComplex *)SGP_St_dc))!= \
       CUFFT_SUCCESS)
-    {
+      {
         printf("cufft execR2C error\n");
         exit(-1);
     }
@@ -265,7 +268,7 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    fftkernelmul<<<dimGrid4, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, \
+    fftkernelmul<<<dimGrid3, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, \
       SGP_Sr_dc, SGP_St_dc, NSEC, G, NRAD);
     gpuErrchk(cudaDeviceSynchronize());
 
@@ -290,23 +293,18 @@ __host__ int main(int argc, char *argv[])
       NRAD, NSEC, Rmed_d, Gr_d, Gphi_d, G);
     gpuErrchk(cudaDeviceSynchronize());
 
-
     gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
 
-    FILE *f;
+
     f = fopen("SG_Accr.txt","w");
 
-    for (int i = 0; i < NRAD*NSEC; i++)
-    {
-      fprintf(f, "%.12f\n",SG_Accr[i] );
-    }
+    for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+
     fclose(f);
 
-    exit(1);
-
-    //compute_selfgravity (gas_density, gas_v_rad, gas_v_theta, foostep, updatevelocities);
     //init_planetarysys_withSG (sys);
   }
+
   ListPlanets (sys);
   OmegaFrame1 = OMEGAFRAME;
 
@@ -328,19 +326,16 @@ __host__ int main(int argc, char *argv[])
   MultiplyPolarGridbyConstant<<<dimGrid2, dimBlock2>>>(dens_d, NRAD, NSEC, ScalingFactor);
   gpuErrchk(cudaDeviceSynchronize());
 
-  for (int i  = 0; i < size_grid; i++) {
-    pot[i] = 0.00001*i;
-  }
+  for (int i  = 0; i < size_grid; i++) pot[i] = 0.00001*i;
 
- for (int i = 0; i < NRAD; i++) {
-   powRmed[i] = powf(Rmed[i],-2.5+SIGMASLOPE);
- }
+  for (int i = 0; i < NRAD; i++) powRmed[i] = powf(Rmed[i],-2.5+SIGMASLOPE);
 
-
-  for (int i = 0; i <= NTOT; i++) {
+  for (int i = 0; i <= NTOT; i++)
+  {
     InnerOutputCounter++;
 
-    if (InnerOutputCounter == 1) {
+    if (InnerOutputCounter == 1)
+    {
       InnerOutputCounter = 0;
       WriteBigPlanetSystemFile (sys, TimeStep);
       UpdateLog(force, dens, sys, TimeStep, PhysicalTime, dimfxy, i);
@@ -362,9 +357,13 @@ __host__ int main(int argc, char *argv[])
 
     if (Adiabaticc)
     {
+      for (int i = 0; i < NRAD; i++) AspectRatioRmed[i] = AspectRatio(Rmed[i]);
+      gpuErrchk(cudaMemcpy(AspectRatioRmed_d, AspectRatioRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+
       ComputeSoundSpeed<<<dimGrid2, dimBlock2>>>(SoundSpeed_d, dens_d, Rmed_d, energy_d, NSEC, NRAD,
          Adiabaticc, ADIABATICINDEX, FLARINGINDEX, AspectRatioRmed_d);
       gpuErrchk(cudaDeviceSynchronize());
+
       /* it is necesary to update computation of soundspeed if one uses
         alphaviscosity in Fviscosity. It is not necesary in locally
         isothermal runs since cs is constant. It is computed here for
@@ -400,19 +399,7 @@ __host__ int main(int argc, char *argv[])
   FreePlanetary (sys);
   FreeForce (force);
 
-
-  // FILE *f;
-  // f = fopen("datos.txt","w");
-  //
-  // for (int i = 0; i < NRAD*NSEC; i++)
-  // {
-  //   fprintf(f, "%f\n",dens[i] );
-  // }
-  //
-  // fclose(f);
-
-
-  FreeArrays(dens, energy, label);
+  FreeArrays(dens, energy, label, vrad, vtheta);
   FreeCuda();
 
 	return EXIT_SUCCESS;
@@ -502,9 +489,8 @@ __host__ void FreeCuda()
   cudaFree(SG_Acct_d);
 }
 
-__host__ void FreeArrays(float *dens, float *energy, float *label)
+__host__ void FreeArrays(float *dens, float *energy, float *label, float *vrad, float *vtheta)
 {
-
   free(vt_cent);
   free(Rinf);
   free(Rmed);
@@ -577,31 +563,31 @@ __host__ void FreeArrays(float *dens, float *energy, float *label)
 
 __host__ void DeviceToHostcudaMemcpy(float *dens, float *energy, float *label, float *temperature, float *vrad, float *vtheta)
 {
-  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(dens, dens_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(temperature, temperature_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(label, label_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(vtheta, vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(vtheta, vtheta_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
 
 }
 
-__host__ void Substep1cudamalloc()
+__host__ void Substep1cudamalloc(float *vrad, float *vtheta)
 {
 
-  gpuErrchk(cudaMemcpy(vradint_d, vradint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vradint_d, vradint, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(pot_d, pot, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vthetaint_d, vthetaint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vtheta_d, vtheta, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vthetaint_d, vthetaint, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vtheta_d, vtheta, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(invdiffRmed_d, invdiffRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(invRinf_d, invRinf, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(powRmed_d, powRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(invdiffRsup_d, invdiffRsup, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(temperatureint_d, temperatureint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(densint_d, densint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vradnew_d, vradnew, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vthetanew_d, vthetanew, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(densint_d, densint, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vradnew_d, vradnew, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vthetanew_d, vthetanew, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(energyint_d, energyint, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(qplus_d, qplus, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(energynew_d, energynew, size_grid*sizeof(float), cudaMemcpyHostToDevice));
@@ -613,7 +599,6 @@ __host__ void Substep1cudamalloc()
 
 __host__ float CircumPlanetaryMasshost(float *dens, float xpl, float ypl)
 {
-
   float *mdcp0, *mdcp0_d;
 
   mdcp0 = (float *)malloc(size_grid*sizeof(float));
@@ -639,7 +624,7 @@ __host__ float CircumPlanetaryMasshost(float *dens, float xpl, float ypl)
 __host__ void Substep1host(float *dens, float *vrad, float *vtheta, float dt, int i)
 {
 
-  if(i == 0) Substep1cudamalloc();
+  if(i == 0) Substep1cudamalloc(vrad, vtheta);
 
   Substep1<<<dimGrid2, dimBlock2>>>(press_d, dens_d, vradint_d, invdiffRmed_d,pot_d,Rinf_d,
     invRinf_d, vrad_d, vthetaint_d, vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame1, ZMPlus,
@@ -670,30 +655,24 @@ __host__ void Substep3host(float *dens, float dt)
      NRAD, NSEC, Rmed_d, Cooling, energynew_d, dt, EnergyMed_d, SigmaMed_d, CoolingTimeMed_d, energy_d,
      ADIABATICINDEX, QplusMed_d);
   gpuErrchk(cudaDeviceSynchronize());
-
 }
 
 __host__ void ActualiseGasVtheta(float *vtheta, float *vthetanew)
 {
-  gpuErrchk(cudaMemcpy(vtheta_d, vthetanew_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+  gpuErrchk(cudaMemcpy(vtheta_d, vthetanew_d, size_grid2*sizeof(float), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
-
 }
 
 __host__ void ActualiseGasVrad(float *vrad, float *vradnew)
 {
-
-  gpuErrchk(cudaMemcpy(vrad_d, vradnew_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+  gpuErrchk(cudaMemcpy(vrad_d, vradnew_d, size_grid2*sizeof(float), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
-
 }
 
 __host__ void ActualiseGasEnergy(float *energy, float *energynew)
 {
-
   gpuErrchk(cudaMemcpy(energy_d, energynew_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
-
 }
 
 __host__ void CreateArrays()
@@ -703,16 +682,14 @@ __host__ void CreateArrays()
   SigmaInf = (float *) malloc(sizeof(float)*NRAD);
   vt_int = (float *) malloc(sizeof(float)*NRAD);
   GLOBAL_bufarray = (float *)malloc(sizeof(float)*NRAD);
-  vrad = (float *) malloc(sizeof(float)*size_grid);
-  vtheta = (float *) malloc(sizeof(float)*size_grid);
-  vradint = (float *) malloc(sizeof(float)*size_grid);
+  vradint = (float *) malloc(sizeof(float)*size_grid2);
   pot = (float *) malloc(sizeof(float)*size_grid);
-  vthetaint = (float *) malloc(sizeof(float)*size_grid);
+  vthetaint = (float *) malloc(sizeof(float)*size_grid2);
   powRmed = (float *) malloc(sizeof(float)*NRAD);
   temperatureint = (float *)malloc(sizeof(float)*size_grid);
-  densint = (float *)malloc(sizeof(float)*size_grid);
-  vradnew = (float *)malloc(sizeof(float)*size_grid);
-  vthetanew = (float *)malloc(sizeof(float)*size_grid);
+  densint = (float *)malloc(sizeof(float)*size_grid2);
+  vradnew = (float *)malloc(sizeof(float)*size_grid2);
+  vthetanew = (float *)malloc(sizeof(float)*size_grid2);
   energyint = (float *)malloc(sizeof(float)*size_grid);
   energynew = (float *)malloc(sizeof(float)*size_grid);
   forcesxi = (float *)malloc(sizeof(float)*dimfxy);
@@ -735,7 +712,7 @@ __host__ void CreateArrays()
   RadMomP = (float *)malloc(sizeof(float)*size_grid);
   RadMomM = (float *)malloc(sizeof(float)*size_grid);
   extlabel = (float *)malloc(sizeof(float)*size_grid);
-  densStar = (float *)malloc(sizeof(float)*size_grid);
+  densStar = (float *)malloc(sizeof(float)*size_grid2);
   QStar = (float *)malloc(sizeof(float)*size_grid);
   Qbase = (float *)malloc(sizeof(float)*size_grid);
   cs0 = (float *)malloc(sizeof(float)*NSEC);
@@ -750,13 +727,12 @@ __host__ void CreateArrays()
   Gphi = (float *)malloc(sizeof(float)*NRAD*NSEC);
   SG_Accr = (float *)malloc(sizeof(float)*NRAD*NSEC);
   SG_Acct = (float *)malloc(sizeof(float)*NRAD*NSEC);
-  asdasd = (float *)malloc(sizeof(float)*2*NRAD*NSEC);
 }
 
 __host__ void cudamalloc(float *label, float *dens)
 {
   gpuErrchk(cudaMalloc((void**)&Rmed_d, NRAD*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&dens_d, size_grid2*sizeof(float)));
   gpuErrchk(cudaMalloc(&forcesxi_d, dimfxy*sizeof(float)));
   gpuErrchk(cudaMalloc(&forcesxo_d, dimfxy*sizeof(float)));
   gpuErrchk(cudaMalloc(&forcesyi_d, dimfxy*sizeof(float)));
@@ -768,13 +744,13 @@ __host__ void cudamalloc(float *label, float *dens)
   gpuErrchk(cudaMalloc((void**)&CoolingTimeMed_d,NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&QplusMed_d,NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&temperatureint_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&densint_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vradnew_d,size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vthetanew_d,size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&densint_d,size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&vradnew_d,size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&vthetanew_d,size_grid2*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&energyint_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vradint_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&vradint_d, size_grid2*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&pot_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vthetaint_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&vthetaint_d, size_grid2*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&invdiffRmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&invRinf_d,NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&powRmed_d,NRAD*sizeof(float)));
@@ -811,7 +787,6 @@ __host__ void cudamalloc(float *label, float *dens)
   gpuErrchk(cudaMalloc((void**)&SGP_Kr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
   gpuErrchk(cudaMalloc((void**)&SGP_St_d, 2*NRAD*NSEC*sizeof(cufftReal)));
   gpuErrchk(cudaMalloc((void**)&SGP_Sr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
-
   gpuErrchk(cudaMalloc((void**)&SGP_Kt_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&SGP_Kr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&SGP_St_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
@@ -825,7 +800,7 @@ __host__ void cudamalloc(float *label, float *dens)
   gpuErrchk(cudaMalloc((void**)&SG_Acct_d, NRAD*NSEC*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Drr_d, Drr, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(Dpp_d, Dpp, size_grid*sizeof(float), cudaMemcpyHostToDevice ));
   gpuErrchk(cudaMemcpy(divergence_d, divergence, size_grid*sizeof(float), cudaMemcpyHostToDevice ));

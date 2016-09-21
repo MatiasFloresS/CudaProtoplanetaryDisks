@@ -5,13 +5,13 @@
 using namespace std;
 
 extern int blocksize, nsec2pot, nrad2pot, NRAD, NSEC, YES, LogGrid, size_grid, SelfGravity, ViscosityAlpha, \
-Cooling;
+Adiabaticc, Cooling, size_grid2;
 
 extern bool CentrifugalBalance;
 extern string OUTPUTDIR;
 
 extern float RMAX, RMIN, PI, MU, R,*invRmed, *invRinf, *invSurf, *invdiffRmed, *invdiffRsup, *Radii, \
-*GLOBAL_bufarray, *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns, Adiabaticc, ADIABATICINDEX, \
+*GLOBAL_bufarray, *invdiffSurf, *Rinf, *Rmed, *Rsup, *Surf, *cosns, *sinns, ADIABATICINDEX, \
 FLARINGINDEX, *vt_int, OmegaFrame1, *SigmaInf, G, ASPECTRATIO, SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT, \
 *CoolingTimeMed, *QplusMed , *viscosity_array, *dens_d, *Rmed_d;
 
@@ -50,32 +50,35 @@ __host__ void FillPolar1DArray()
   inputcharname[sizeof(inputcharname)-1]=0;
 
   input = fopen (inputcharname, "r");
-  if (input == NULL) {
+  if (input == NULL)
+  {
     printf("Warning : no `radii.dat' file found. Using default.\n");
-    if (LogGrid == YES) {
-      for (i = 0; i <= NRAD; i++) {
-	         Radii[i] = RMIN*expf(i*logf(RMAX/RMIN)/NRAD);
-      }
-    } else {
-      for (i = 0; i <= NRAD; i++) {
-	         Radii[i] = RMIN+drrsep*i;
-      }
+    if (LogGrid == YES)
+    {
+      for (i = 0; i <= NRAD; i++) Radii[i] = RMIN*expf(i*logf(RMAX/RMIN)/NRAD);
     }
-  } else {
+    else {
+      for (i = 0; i <= NRAD; i++) Radii[i] = RMIN+drrsep*i;
+    }
+  }
+  else
+  {
     printf("Reading 'radii.dat' file.\n");
-    for (i = 0; i <= NRAD; i++) {
+    for (i = 0; i <= NRAD; i++)
+    {
       fscanf (input, "%f", &temporary);
       Radii[i] = (float)temporary;
     }
   }
 
-
-  for (i = 0; i < NRAD; i++) {
+  for (i = 0; i < NRAD; i++)
+  {
     Rmed[i] = 2.0/3.0*(Radii[i+1]*Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]*Radii[i]);
     Rmed[i] = Rmed[i] / (Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]);
   }
 
-  for (i = 0; i < NRAD; i++) {
+  for (i = 0; i < NRAD; i++)
+  {
     Rinf[i] = Radii[i];
     Rsup[i] = Radii[i+1];
     Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
@@ -88,21 +91,19 @@ __host__ void FillPolar1DArray()
   }
 
   Rinf[NRAD]=Radii[NRAD];
-  for (i = 1; i < NRAD; i++) {
-    invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
-  }
+  for (i = 1; i < NRAD; i++) invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
 
   char outputcharname[100];
   strncpy(outputcharname, OutputName.c_str(), sizeof(outputcharname));
   outputcharname[sizeof(outputcharname)-1]=0;
   output = fopen (outputcharname, "w");
-  if (output == NULL) {
+  if (output == NULL)
+  {
     printf ("Can't write %s.\nProgram stopped.\n", outputcharname);
     exit (1);
   }
-  for (i = 0; i <= NRAD; i++) {
-    fprintf (output, "%f\n", Radii[i]);
-  }
+  for (i = 0; i <= NRAD; i++)fprintf (output, "%f\n", Radii[i]);
+
   fclose (output);
   if (input != NULL) fclose (input);
 }
@@ -119,7 +120,8 @@ __host__ void InitEuler (float *dens, float *energy, float *vrad, float *vtheta)
   SoundSpeed = (float *)malloc(sizeof(float)*size_grid);
   temperature = (float *)malloc(sizeof(float)*size_grid);
 
-  for (int i = 0; i < NSEC; i++) {
+  for (int i = 0; i < NSEC; i++)
+  {
       cosns[i] = cos((2.0*CUDART_PI_F*i)/NSEC);
       sinns[i] = sin((2.0*CUDART_PI_F*i)/NSEC);
   }
@@ -162,7 +164,8 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
   /* Pressure is already initialized: cf initeuler in SourceEuler.c ...
     Initialization of azimutal velocity with exact centrifugal balance */
 
-  if (CentrifugalBalance) {
+  if (CentrifugalBalance)
+  {
     /* vt_int \equiv Romega = grad(P)/sigma + \partial(phi)/\partial(r) - acc_sg_radial
     ./bin/fargoGPU  -b in/template.par */
 
@@ -170,7 +173,8 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
     Make1Dprofilehost(press);
 
     /* global axisymmetric pressure field */
-    for (int i = 1; i < NRAD; i++) {
+    for (int i = 1; i < NRAD; i++)
+    {
       vt_int[i] = ( GLOBAL_bufarray[i] - GLOBAL_bufarray[i-1]) / \
       (.5*(Sigma(Rmed[i]) + Sigma(Rmed[i-1])))/(Rmed[i]-Rmed[i-1]);
     }
@@ -199,7 +203,8 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
     FillQplus();
   }
 
-  for (int i = 0; i <= NRAD; i++) {
+  for (int i = 0; i <= NRAD; i++)
+  {
     if (i == NRAD) viscosity_array[i] = FViscosity(Rmed[NRAD-1]);
     else viscosity_array[i] = FViscosity(Rmed[i]);
   }
@@ -214,13 +219,13 @@ __host__ void InitGasVelocitieshost(float *vrad, float *vtheta)
   IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame1, Rinf_d); // falta vt_cent_d
 
   gpuErrchk(cudaDeviceSynchronize());
-  gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(vtheta, vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(vtheta, vtheta_d, size_grid2*sizeof(float), cudaMemcpyDeviceToHost));
 
   for (int i = 0; i < NSEC; i++) vrad[i] = vrad[i+NSEC*NRAD] = 0.0;
 
-  gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vtheta_d, vtheta, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vtheta_d, vtheta, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
 
 }
 
@@ -235,8 +240,8 @@ __host__ void Computecudamalloc(float *dens, float *energy, float *vrad, float *
   gpuErrchk(cudaMalloc((void**)&AspectRatioRmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&press_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&temperature_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vrad_d, size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&vtheta_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&vrad_d, size_grid2*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&vtheta_d, size_grid2*sizeof(float)));
   //gpuErrchk(cudaMalloc((void**)&vt_cent_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&SigmaInf_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Rinf_d, NRAD*sizeof(float)));
@@ -250,8 +255,8 @@ __host__ void Computecudamalloc(float *dens, float *energy, float *vrad, float *
   gpuErrchk(cudaMemcpy(AspectRatioRmed_d, AspectRatioRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(press_d, press, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(temperature_d, temperature, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vtheta_d, vtheta, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vrad_d, vrad, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(vtheta_d, vtheta, size_grid2*sizeof(float), cudaMemcpyHostToDevice));
   //gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(SigmaInf_d, SigmaInf, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Rinf_d, Rinf, NRAD*sizeof(float), cudaMemcpyHostToDevice));

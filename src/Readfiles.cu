@@ -136,17 +136,17 @@ __host__ void ReadFile(char *ParameterFile)
       printf("Unable to read %s . Program stopped. \n", ParameterFile);
       exit(1);
     }
-    while (fgets(s, 349, input) != NULL) {
+    while (fgets(s, 349, input) != NULL)
+    {
       success = sscanf(s, "%s ", nm);
-      if ((nm[0] != '#') && (success == 1)) {  /* # begins a comment line */
+      if ((nm[0] != '#') && (success == 1))
+      {  /* # begins a comment line */
         s1 = s + strlen(nm);
         sscanf(s1 + strspn(s1, "\t :=>_"), "%f", &temp);
         sscanf(s1 + strspn(s1, "\t :=>_"), "%289s ", stringval);
         valuef = (float) temp;
         valuei = (int) temp;
-        for (int i = 0; i < strlen(nm); i++) {
-  	nm[i] = (char) toupper(nm[i]);
-        }
+        for (int i = 0; i < strlen(nm); i++) nm[i] = (char) toupper(nm[i]);
         SearchVariable(nm, stringval);
       }
     }
@@ -165,7 +165,8 @@ __host__ void ReadFile(char *ParameterFile)
     if (RADIALSPACING.compare("Logarithm") == 0) LogGrid = YES;
     if (DISK.compare("NO") == 0) IsDisk = NO;
     if (FRAME.compare("COROTATING") == 0) Corotating = YES;
-    if (FRAME.compare("GUIDING-CENTER") == 0){
+    if (FRAME.compare("Guiding-Center") == 0)
+    {
       GuidingCenter = YES;
       Corotating = YES;
     }
@@ -177,24 +178,28 @@ __host__ void ReadFile(char *ParameterFile)
     if (WRITEQPLUS.compare("YES") == 0) Write_Qplus = YES;
     if (INDIRECTTERM.compare("NO") == 0) Indirect_Term = NO;
     if (SELFGRAVITY.compare("YES") == 0) SelfGravity = YES;
-    if (SELFGRAVITY.compare("Z") == 0){
+    if (SELFGRAVITY.compare("Z") == 0)
+    {
       SelfGravity = YES;
       SGZeroMode = YES;
     }
     if (ZMPLUS.compare("YES") == 0) ZMPluss = YES;
-    if ((ZMPluss) && (!SGZeroMode)) {
+    if ((ZMPluss) && (!SGZeroMode))
+    {
       printf("This is not very meaningfull to involve the anisotropic pressure model (ZMPluss=Yes) \
       without taking into account the axisymmetric component of the disk self-gravity. I decided to \
       put ZMPluss = No. Please check again!");
       ZMPluss = NO;
     }
 
-    if (ADIABATIC.compare("YES") == 0){
+    if (ADIABATIC.compare("YES") == 0)
+    {
       Adiabaticc = YES;
       Write_Temperature = YES;
     }
     if (COOLING.compare("YES") == 0) Cooling = YES;
-    if ((Adiabaticc) && (ADIABATICINDEX == 1)){
+    if ((Adiabaticc) && (ADIABATICINDEX == 1))
+    {
       printf("You cannot have Adiabatic = YES and AdiabatcIndex = 1. I decided to put Adiabatic = No,\
        to simulate a locally isothermal equation of state. Please check that it what you really wanted to do!\n");
       Adiabaticc = NO;
@@ -203,32 +208,37 @@ __host__ void ReadFile(char *ParameterFile)
     if (EXCLUDEHILL.compare("YES") == 0) ExcludeHill = YES;
     if (CICPLANET.compare("YES") == 0) CICPlanet = YES;
     if (FORCEDCIRCULAR.compare("YES") == 0) ForcedCircular = YES;
-    if ((ALPHAVISCOSITY != 0.0) && (VISCOSITY != 0.0)) {
+    if ((ALPHAVISCOSITY != 0.0) && (VISCOSITY != 0.0))
+    {
       printf("You cannot use at the same time\n");
       printf("VISCOSITY and ALPHAVISCOSITY.\n");
       printf("Edit the parameter file so as to remove\n");
       printf("one of these variables and run again.\n");
       exit(1);
     }
-    if (ALPHAVISCOSITY != 0.0) {
+    if (ALPHAVISCOSITY != 0.0)
+    {
       ViscosityAlpha = YES;
       printf("Viscosity is of alpha type\n");
     }
-    if ((THICKNESSSMOOTHING != 0.0) && (ROCHESMOOTHING != 0.0)) {
+    if ((THICKNESSSMOOTHING != 0.0) && (ROCHESMOOTHING != 0.0))
+    {
       printf("You cannot use at the same time\n");
       printf("ThicknessSmoothing and RocheSmoothing.\n");
       printf("Edit the parameter file so as to remove\n");
       printf("one of these variables and run again.\n");
       exit(1);
     }
-    if ((THICKNESSSMOOTHING <= 0.0) && (ROCHESMOOTHING <= 0.0)) {
+    if ((THICKNESSSMOOTHING <= 0.0) && (ROCHESMOOTHING <= 0.0))
+    {
       printf("A non-vanishing potential smoothing length is required.\n");
       printf("Please use either of the following variables:\n");
       printf("ThicknessSmoothing *or* RocheSmoothing.\n");
       printf("before launching the run again.\n");
       exit(1);
     }
-    if (ROCHESMOOTHING != 0.0) {
+    if (ROCHESMOOTHING != 0.0)
+    {
       RocheSmoothing = YES;
       printf("Planet potential smoothing scales with their Hill sphere.\n");
     }

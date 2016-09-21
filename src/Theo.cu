@@ -9,7 +9,8 @@ COOLINGTIME0;
 
 __host__ void FillSigma ()
 {
-    for (int i = 0; i < NRAD; i++) {
+    for (int i = 0; i < NRAD; i++)
+    {
       SigmaMed[i] = Sigma(Rmed[i]);
       SigmaInf[i] = Sigma(Rinf[i]);
     }
@@ -17,16 +18,15 @@ __host__ void FillSigma ()
 
 __host__ void FillEnergy ()
 {
-  for (int i = 0; i < NRAD; i++) {
-    EnergyMed[i] = Energy(Rmed[i]);
-  }
+  for (int i = 0; i < NRAD; i++) EnergyMed[i] = Energy(Rmed[i]);
 }
 
 /* Thermal energy */
 __host__ float Energy(float r)
 {
   float energy0;
-  if (ADIABATICINDEX == 1.0) {
+  if (ADIABATICINDEX == 1.0)
+  {
     fprintf(stderr, "The adiabatic index must differ from unity to initialized \
     the gas internal energy. I must exit.\n");
     exit(1);
@@ -57,16 +57,12 @@ __host__ float CoolingTime(float r)
 
 __host__ void FillCoolingTime()
 {
-  for (int i = 0; i < NRAD; i++) {
-    CoolingTimeMed[i] = CoolingTime(Rmed[i]);
-  }
+  for (int i = 0; i < NRAD; i++) CoolingTimeMed[i] = CoolingTime(Rmed[i]);
 }
 
 __host__ void FillQplus()
 {
-  for (int i = 0; i < NRAD; i++) {
-    QplusMed[i] = Qplusinit(Rmed[i]);
-  }
+  for (int i = 0; i < NRAD; i++) QplusMed[i] = Qplusinit(Rmed[i]);
 }
 
 __host__ float Qplusinit(float r)

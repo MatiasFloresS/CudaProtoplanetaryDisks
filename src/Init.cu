@@ -9,7 +9,7 @@ extern int NRAD, NSEC, nsec2pot, blocksize, nrad2pot, size_grid;
 extern float *Rmed, *Rmed_d, *label_d;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void Initialization (float *dens, float *energy, float *vrad, float * vtheta, float * label, PlanetarySystem *sys)
+__host__ void Initialization (float *dens, float *energy, float *vrad, float *vtheta, float * label, PlanetarySystem *sys)
 {
   float rp, rhill, xp, yp;
   xp = sys->x[0];

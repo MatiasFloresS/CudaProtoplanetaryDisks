@@ -22,7 +22,7 @@ __host__ void Transport (float *dens, float *vrad, float *vtheta, float *energy,
     ExtQty<<<dimGrid2, dimBlock2>>>(extlabel_d, dens_d, label_d, NSEC, NRAD);
     gpuErrchk(cudaDeviceSynchronize());
   }
-    /* No-Alternate Directionnal Splitting */
+  /* No-Alternate Directionnal Splitting */
   OneWindRad (dens, vrad, energy, dt);
 
 }

@@ -23,12 +23,15 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
   sys = AllocPlanetSystem (nb);
   input = fopen (filename, "r");
   sys->nb = nb;
-  while (fgets(s, 510, input) != NULL) {
+  while (fgets(s, 510, input) != NULL)
+  {
     sscanf(s, "%s ", nm);
-    if (isalpha(s[0])) {
+    if (isalpha(s[0]))
+    {
       s1 = s + strlen(nm);
       sscanf(s1 + strspn(s1, "\t :=>_"), "%f %f %f %s %s", &dist, &mass, &accret, test1, test2);
-      if ( CICPlanet ) {
+      if ( CICPlanet )
+      {
         // initialization puts centered-in-cell planets (with excentricity = 0 only)
         j = 0;
         while ( Rmed[j] < dist ) j++;
@@ -68,11 +71,13 @@ __host__ int FindNumberOfPlanets (char *filename)
   char s[512];
   int cont=0;
   input = fopen (filename, "r");
-  if (input == NULL) {
+  if (input == NULL)
+  {
     fprintf(stderr, "Error : can't find '%s'.\n",filename);
     exit(1);
   }
-  while (fgets(s, 510, input) != NULL) {
+  while (fgets(s, 510, input) != NULL)
+  {
     if (isalpha(s[0])) cont++;
   }
   fclose (input);
@@ -85,7 +90,8 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
   bool *feeldisk, *feelothers;
   PlanetarySystem *sys;
   sys = (PlanetarySystem *)malloc (sizeof(PlanetarySystem));
-  if (sys == NULL) {
+  if (sys == NULL)
+  {
     fprintf(stderr, "Not enough memory.\n");
     exit(1);
   }
@@ -95,14 +101,16 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
   vx   = (float *)malloc (sizeof(float)*(nb+1));
   mass = (float *)malloc (sizeof(float)*(nb+1));
   acc  = (float *)malloc (sizeof(float)*(nb+1));
-  if ((x == NULL) || (y == NULL) || (vx == NULL) || (vy == NULL) || (acc == NULL) || (mass == NULL)) {
+  if ((x == NULL) || (y == NULL) || (vx == NULL) || (vy == NULL) || (acc == NULL) || (mass == NULL))
+  {
     fprintf (stderr, "Not enough memory.\n");
     exit (1);
   }
 
   feeldisk   = (bool *)malloc (sizeof(float)*(nb+1));
   feelothers = (bool *)malloc (sizeof(float)*(nb+1));
-  if ((feeldisk == NULL) || (feelothers == NULL)) {
+  if ((feeldisk == NULL) || (feelothers == NULL))
+  {
     fprintf (stderr, "Not enough memory.\n");
     exit (1);
   }
@@ -115,7 +123,8 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
   sys->FeelDisk = feeldisk;
   sys->FeelOthers = feelothers;
 
-  for (int i = 0; i < nb; i++) {
+  for (int i = 0; i < nb; i++)
+  {
     x[i] = y[i] = vx[i] = vy[i] = mass[i] = acc[i] = 0.0;
     feeldisk[i] = feelothers[i] = YES;
   }
@@ -127,31 +136,27 @@ __host__ void ListPlanets (PlanetarySystem *sys)
   int nb;
   int i;
   nb = sys->nb;
-  for (i = 0; i < nb; i++) {
+  for (i = 0; i < nb; i++)
+  {
     printf ("Planet number %d\n", i);
     printf ("---------------\n");
     printf ("x = %f\ty = %f\n", sys->x[i],sys->y[i]);
     printf ("vx = %f\tvy = %f\n", sys->vx[i],sys->vy[i]);
-    if (sys->acc[i] == 0.0)
-      printf ("Non-accreting.\n");
-    else
-      printf ("accretion time = %f\n", 1.0/(sys->acc[i]));
-    if (sys->FeelDisk[i] == YES) {
-      printf ("Feels the disk potential\n");
-    } else {
-      printf ("Doesn't feel the disk potential\n");
-    }
-    if (sys->FeelOthers[i] == YES) {
-      printf ("Feels the other planets potential\n");
-    } else {
-      printf ("Doesn't feel the other planets potential\n");
-    }
+    if (sys->acc[i] == 0.0) printf ("Non-accreting.\n");
+    else printf ("accretion time = %f\n", 1.0/(sys->acc[i]));
+    if (sys->FeelDisk[i] == YES) printf ("Feels the disk potential\n");
+    else printf ("Doesn't feel the disk potential\n");
+
+    if (sys->FeelOthers[i] == YES)  printf ("Feels the other planets potential\n");
+    else printf ("Doesn't feel the other planets potential\n");
+
     printf ("\n");
   }
 }
 
 __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
 {
+
   float d1, d2, cross;
   float x,y, vx, vy, m, h, d, Ax, Ay, e, a, E, M;
   float xc, yc, vxc, vyc, omega;
@@ -168,54 +173,53 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   Ay = y*vx*vx-x*vx*vy-G*m*y/d;
   e = sqrtf(Ax*Ax+Ay*Ay)/m;
   a = h*h/G/m/(1.-e*e);
-  if (e == 0.0) {
-    arg = 1.0;
-  } else {
-    arg = (1.0-d/a)/e;
-  }
-  if (fabsf(arg) >= 1.0)
-    E = PI*(1.-arg/fabsf(arg))/2.;
-  else
-    E = acosf((1.0-d/a)/e);
+  if (e == 0.0) arg = 1.0;
+  else arg = (1.0-d/a)/e;
+
+  if (fabsf(arg) >= 1.0) E = PI*(1.-arg/fabsf(arg))/2.;
+  else E = acosf((1.0-d/a)/e);
 
   if ((x*y*(vy*vy-vx*vx)+vx*vy*(x*x-y*y)) < 0) E= -E;
   M = E-e*sinf(E);
 
-  omega = sqrtf(m/a/a/a);
   PerihelionPA=atan2f(Ay,Ax);
-  if (GuidingCenter == YES) {
+  omega = sqrtf(m/a/a/a);
+  if (GuidingCenter == YES)
+  {
     xc = a*cosf(M+PerihelionPA);
     yc = a*sinf(M+PerihelionPA);
     vxc = -a*omega*sinf(M+PerihelionPA);
     vyc =  a*omega*cosf(M+PerihelionPA);
   }
-  if (e < 1e-8) {
+  if (e < 1e-8)
+  {
     xc = x;
     yc = y;
     vxc = vx;
     vyc = vy;
   }
-  switch (action) {
-  case 0:
-    Xplanet = xc;
-    Yplanet = yc;
-    return 0.;
-    break;
-  case 1:
-    x = xc;
-    y = yc;
-    vx = vxc;
-    vy = vyc;
-    d2 = sqrtf(x*x+y*y);
-    d1 = sqrtf(Xplanet*Xplanet+Yplanet*Yplanet);
-    cross = Xplanet*y-x*Yplanet;
-    Xplanet = x;
-    Yplanet = y;
-    return asinf(cross/(d1*d2));
-    break;
-  case 2:
-    return omega;
-    break;
+  switch (action)
+  {
+    case 0:
+      Xplanet = xc;
+      Yplanet = yc;
+      return 0.;
+      break;
+    case 1:
+      x = xc;
+      y = yc;
+      vx = vxc;
+      vy = vyc;
+      d2 = sqrtf(x*x+y*y);
+      d1 = sqrtf(Xplanet*Xplanet+Yplanet*Yplanet);
+      cross = Xplanet*y-x*Yplanet;
+      Xplanet = x;
+      Yplanet = y;
+      return asinf(cross/(d1*d2));
+      break;
+    case 2:
+      return omega;
+      break;
   }
   return 0.0;
 }

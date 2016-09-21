@@ -43,10 +43,12 @@ __host__ void EmptyPlanetSystemFile(PlanetarySystem *sys)
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++)
+  {
     sprintf (name2, "%s%d.dat", name,i);
     output = fopen (name2, "w");
-    if (output == NULL) {
+    if (output == NULL)
+    {
       fprintf(stderr, "Can't write %s file. Aborting\n", name2);
       exit(1);
     }
@@ -57,7 +59,8 @@ __host__ void EmptyPlanetSystemFile(PlanetarySystem *sys)
 __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
 {
   int n = sys->nb;
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++)
+  {
     Xplanet = sys->x[i];
     Yplanet = sys->y[i];
     VXplanet = sys->vx[i];
@@ -70,7 +73,8 @@ __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
 __host__ void WritePlanetSystemFile (PlanetarySystem *sys, int TimeStep)
 {
   int n = sys->nb;
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++)
+  {
     Xplanet = sys->x[i];
     Yplanet = sys->y[i];
     VXplanet = sys->vx[i];
@@ -91,7 +95,8 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
   name[sizeof(name)-1] = 0;
   sprintf (name2, "%s%d.dat", name,n);
   output = fopen (name2, "a");
-  if (output == NULL) {
+  if (output == NULL)
+  {
     fprintf(stderr, "Can't write 'bigplanet.dat' file. Aborting.\n");
     exit(1);
   }

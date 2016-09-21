@@ -95,7 +95,6 @@ __global__ void Substep3(float *dens, float *qplus, float *viscosity_array, floa
       energynew[i*nsec + j] = num/den;
     }
   }
-
 }
 
 
@@ -152,10 +151,8 @@ __global__ void ComputeSoundSpeed(float *SoundSpeed, float *dens, float *Rmed, f
 
   if (i<nrad && j<nsec)
   {
-    if (!Adiabaticc){
-      SoundSpeed[j+i*nsec] = AspectRatioRmed[i]*sqrtf(1.0*1.0/Rmed[i])*powf(Rmed[i], FLARINGINDEX);
-    }
-    else SoundSpeed[j+i*nsec] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0))*energy[j+i*nsec]/dens[j+i*nsec];
+    if (!Adiabaticc) SoundSpeed[j+i*nsec] = AspectRatioRmed[i]*sqrtf(1.0*1.0/Rmed[i])*powf(Rmed[i], FLARINGINDEX);
+    else SoundSpeed[j+i*nsec] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec]);
   }
 }
 
@@ -168,9 +165,7 @@ __global__ void ComputePressureField(float *SoundSpeed, float *dens, float *pres
 
   if (i<nrad && j<nsec)
   {
-    if (~Adiabaticc){
-      press[j+i*nsec] = dens[j+i*nsec]*SoundSpeed[j+i*nsec]*SoundSpeed[j+i*nsec];
-    }
+    if (~Adiabaticc) press[j+i*nsec] = dens[j+i*nsec]*SoundSpeed[j+i*nsec]*SoundSpeed[j+i*nsec];
     else press[j+i*nsec] = (ADIABATICINDEX-1.0)*energy[j+i*nsec];
   }
 }
@@ -183,9 +178,7 @@ __global__ void ComputeTemperatureField(float *dens, float *temperature, float *
 
   if (i<nrad && j<nsec)
   {
-    if (~Adiabaticc){
-      temperature[j+i*nsec] = MU/R*press[j+i*nsec]/dens[j+i*nsec];
-    }
+    if (~Adiabaticc) temperature[j+i*nsec] = MU/R*press[j+i*nsec]/dens[j+i*nsec];
     else temperature[j+i*nsec] = MU/R*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec];
   }
 }
@@ -421,8 +414,7 @@ __global__ void Substep2(float *dens, float *vradint, float *vthetaint, float *t
   if (i<nrad && j<nsec)
   {
     vradnew[i*nsec + j] = vradint[i*nsec + j] - dt*2.0/(dens[i*nsec + j] + dens[(i-1)*nsec + j])*(densint[i*nsec + j] - densint[(i-1)*nsec + j]) *\
-    invdiffRmed[i];
-
+      invdiffRmed[i];
   }
   i-=1;
 
@@ -430,7 +422,6 @@ __global__ void Substep2(float *dens, float *vradint, float *vthetaint, float *t
   {
     vthetanew[i*nsec + j] = vthetaint[i*nsec + j] - dt*2.0/(dens[i*nsec + j] + dens[i*nsec + ((j-1)+nsec)%nsec])*(densint[i*nsec + j] - \
       densint[(i-1)*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
-
   }
   if (Adiabaticc)
   {
@@ -440,7 +431,6 @@ __global__ void Substep2(float *dens, float *vradint, float *vthetaint, float *t
     {
       energyint[i*nsec + j] = energy[i*nsec + j] - dt*densint[i*nsec + j]*(vradint[i*nsec + j+1] - vradint[i*nsec + j])*invdiffRsup[i] - \
       dt*temperatureint[i*nsec + j]*(vthetaint[i*nsec + (j+1)%nsec] - vthetaint[i*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
-
     }
   }
 }
@@ -531,9 +521,11 @@ __global__ void NonReflectingBoundary(float *dens, float *energy, int i_angle, i
     }
     if (j-i_angle2 < 0)
     {
-      vrad_med = SoundSpeed[i*nsec + j]*(dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
-      vrad[i*nsec + j] = 2.*vrad_med - vrad[(i-1)*nsec + j];
+      dens[i*nsec + j] = dens[j-i_angle2 + i*nsec];
+      energy[i*nsec + j] = energy[j-i_angle2 + i*nsec];
     }
+    vrad_med = SoundSpeed[i*nsec + j]*(dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
+    vrad[i*nsec + j] = 2.*vrad_med - vrad[(i-1)*nsec + j];
   }
 }
 
@@ -601,7 +593,8 @@ __global__ void InitGasVelocities(float *viscosity_array, int nsec, int nrad, in
         r = Rmed[nrad - 1];
         ri = Rinf[nrad - 1];
       }
-      else {
+      else
+      {
         r = Rmed[i];
         ri = Rinf[i];
       }
@@ -701,7 +694,6 @@ __global__ void ViscousTerms(float *vradial, float *vazimutal , float *Drr, floa
      if (i > 0) Trp[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
          viscosity_array[i]*Drp[i*nsec + j];
    }
-
  }
 
 __global__ void LRMomenta(float *RadMomP, float *RadMomM, float *ThetaMomP, float *ThetaMomM, float *dens,
@@ -757,10 +749,8 @@ __global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int 
     else
       QStar[i*nsec + j] = Qbase[i*nsec + j]-(Rmed[i+1]-Rmed[i]+vrad[i*nsec + j]*dt)*0.5*dq;
   }
-  if (j<nsec)
-  {
-    QStar[j] = QStar[j+nsec*nrad] = 0.0;
-  }
+  if (j<nsec)  QStar[j] = QStar[j+nsec*nrad] = 0.0;
+
 }
 
 __global__ void fftkernel(float *Radii, cufftReal *SGP_Kr, cufftReal *SGP_Kt, float SGP_eps, int nrad, int nsec,
@@ -797,7 +787,7 @@ cufftReal *SGP_Sr, cufftReal *SGP_St, float *dens, float *Rmed, int nrad2pot)
     if (i<nrad)
     {
       SGP_Sr[i*nsec + j] = dens[i*nsec + j]*sqrtf(Rmed[i]/Rmed[0]);
-      SGP_St[i*nsec + j] = SGP_Sr[i*nsec + j]*Rmed[i]*Rmed[0];
+      SGP_St[i*nsec + j] = SGP_Sr[i*nsec + j]*Rmed[i]/Rmed[0];
     }
     else
     {
@@ -828,8 +818,10 @@ __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex 
 
       Gphi[i*nsec2 + j].y = -G*(SGP_Kt[i*nsec2 + j].x * SGP_St[i*nsec2 + j].y + \
         SGP_Kt[i*nsec2 + j].y * SGP_St[i*nsec2 + j].x);
+
   }
-  else{
+  else
+  {
     Gr[i*nsec2 + j].x = Gr[i*nsec2 + j].y = 0.0;
     Gphi[i*nsec2 + j].x = Gphi[i*nsec2 + j].y = 0.0;
   }

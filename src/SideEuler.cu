@@ -5,7 +5,7 @@
 extern int OpenInner, YES, blocksize2, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, \
 Evanescent;
 
-extern float *SigmaMed, *vrad, *energy, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, \
+extern float *SigmaMed, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, \
 FLARINGINDEX, *vrad_d, *dens_d, *energy_d, *SoundSpeed_d, *AspectRatioRmed_d, *Rmed_d, *mean_dens, *mean_energy, \
 *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *mean_dens_d, *mean_energy_d, *cs0_d, *cs1_d, \
 *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2;
@@ -30,9 +30,10 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
       ComputeSoundSpeed<<<dimGrid2, dimBlock2>>>(SoundSpeed_d, dens_d, Rmed_d, energy_d, NSEC, NRAD,
          Adiabaticc, ADIABATICINDEX, FLARINGINDEX, AspectRatioRmed_d);
       gpuErrchk(cudaDeviceSynchronize());
+
     }
     NonReflectingBoundaryhost(dens, energy, vrad);
-
+    gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost ));
 
   }
   if (Evanescent == YES) EvanescentBoundary (vrad, vtheta, step);
@@ -43,18 +44,22 @@ __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad)
 
   ReduceCshost();
 
-  int i;
-  float dangle, i_angle, dangle2, i_angle2;
+  int i,i_angle, i_angle2;
+  float dangle, dangle2 ;
 
   i = 1;
   dangle = (pow(Rinf[i],-1.5)-1.0)/(.5*(cs0_r+cs1_r));
   dangle *= (Rmed[i] - Rmed[i-1]);
-  i_angle = (int)(dangle/2.0/CUDART_PI_F*(float)NSEC+.5);
 
+  i_angle = (int)(dangle/2.0/CUDART_PI_F*(float)NSEC+.5);
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
   dangle2 *= (Rmed[i]-Rmed[i-1]);
-  i_angle2 = (int)(dangle/2.0/CUDART_PI_F*(float)NSEC+.5);
+  i_angle2 = (int)(dangle2/2.0/CUDART_PI_F*(float)NSEC+.5);
+
+  // printf("%d %d\n",i_angle , i_angle2);
+  // printf("%f %f\n",dangle, dangle2 );
+  // printf("%f %f %f %f\n", cs0_r, cs1_r, csnrm1_r, csnrm2_r);
 
   NonReflectingBoundary<<<dimGrid, dimBlock>>>(dens_d, energy_d, i_angle, NSEC, vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
@@ -78,7 +83,6 @@ __host__ void ReduceCshost()
   cs1_r = DeviceReduce(cs1_d, NSEC) / NSEC;
   csnrm1_r = DeviceReduce(csnrm1_d, NSEC) / NSEC;
   csnrm2_r = DeviceReduce(csnrm2_d, NSEC) / NSEC;
-
 }
 
 __host__ void ReduceMeanHost(float *dens, float *energy)

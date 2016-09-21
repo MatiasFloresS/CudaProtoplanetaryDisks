@@ -28,7 +28,8 @@ __host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outpu
   input = OUTPUTDIR +"tqwk";
   strncpy(filename, input.c_str(), sizeof(filename));
   filename[sizeof(filename)-1]=0;
-  for (int i = 0; i < nb; i++) {
+  for (int i = 0; i < nb; i++)
+  {
     x = sys->x[i];
     y = sys->y[i];
     vx = sys->vx[i];
@@ -46,7 +47,8 @@ __host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outpu
     globalforce = fc->GlobalForce;
     sprintf (filename2, "%s%d.dat", filename,i);
     out = fopen(filename2, "a");
-    if (out == NULL){
+    if (out == NULL)
+    {
       fprintf(stderr, "Can't open %s\n",filename2 );
       fprintf(stderr, "Aborted.\n");
     }
@@ -78,7 +80,6 @@ __host__ Force *AllocateForce (int dimfxy)
 __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, int p,
   int i, float a, float rh)
 {
-
   globalforce = fc->GlobalForce;
 
   gpuErrchk(cudaMemset(forcesxi_d, 0, dimfxy*sizeof(float)));
