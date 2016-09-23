@@ -36,12 +36,12 @@ float *Rinf, *Rmed, *Rsup, *Surf, *invRinf, *invSurf, *invdiffSurf, *invdiffRsup
 
 extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, IsDisk, Cooling;
 static int StillWriteOneOutput, InnerOutputCounter=0;
-int nrad2pot, nsec2pot, blocksize = 16, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 256, \
+int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 256, \
 nrad2potSG, nsec2potSG, size_grid2;
 
 bool ZMPlus = false, verbose = false, Restart = false, TimeToWrite;
 
-dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3;
+dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4;
 cufftHandle planf, planb;
 cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc;
 cufftReal *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
@@ -136,7 +136,7 @@ __host__ int main(int argc, char *argv[])
   size_grid = NRAD*NSEC;
   size_grid2 = (NRAD+1)*NSEC;
 
-  if(!IsPow2(NRAD+1)) nrad2pot = NearestPowerOf2(NRAD+1);
+  if(!IsPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD+1);
   if(!IsPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
 
   if(!IsPow2(2*NRAD)) nrad2potSG = NearestPowerOf2(2*NRAD);
@@ -167,6 +167,9 @@ __host__ int main(int argc, char *argv[])
 
   dim3 dimG3(nsec2pot/blocksize, nrad2potSG/blocksize);
   dimGrid3 = dimG3;
+
+  dim3 dimG4(nsec2potSG/blocksize, nrad2potSG/blocksize);
+  dimGrid4 = dimG4;
 
   dphi = 2.0*CUDART_PI_F/NSEC;
   invdphi = 1.0/dphi;
@@ -226,17 +229,29 @@ __host__ int main(int argc, char *argv[])
     SGP_St_d, dens_d, Rmed_d, nrad2potSG);
     gpuErrchk(cudaDeviceSynchronize());
 
-    gpuErrchk(cudaMemcpy(SG_Accr, SGP_Kr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
+    // FILE *f;
+    //
+    // gpuErrchk(cudaMemcpy(SG_Accr, SGP_Kr_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    // f = fopen("SGP_Kr_d.txt","w");
+    // for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+    // fclose(f);
+    //
+    // gpuErrchk(cudaMemcpy(SG_Accr, SGP_Kt_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    // f = fopen("SGP_Kt_d.txt","w");
+    // for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+    // fclose(f);
+    //
+    // gpuErrchk(cudaMemcpy(SG_Accr, SGP_Sr_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    // f = fopen("SGP_Sr_d.txt","w");
+    // for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+    // fclose(f);
+    //
+    // gpuErrchk(cudaMemcpy(SG_Accr, SGP_St_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    // f = fopen("SGP_St_d.txt","w");
+    // for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+    // fclose(f);
 
-    FILE *f;
-    f = fopen("SGP_Kr_d.txt","w");
-
-    for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
-
-    fclose(f);
-
-
-    if ((cufftExecR2C(planf, (cufftReal *)SGP_Sr_d, (cufftComplex *)SGP_Sr_dc))!= \
+    if ((cufftExecR2C(planf, SGP_Sr_d, SGP_Sr_dc))!= \
       CUFFT_SUCCESS)
     {
         printf("cufft execR2C error\n");
@@ -244,7 +259,7 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    if ((cufftExecR2C(planf, (cufftReal *)SGP_St_d, (cufftComplex *)SGP_St_dc))!= \
+    if ((cufftExecR2C(planf, SGP_St_d, SGP_St_dc))!= \
       CUFFT_SUCCESS)
       {
         printf("cufft execR2C error\n");
@@ -252,7 +267,7 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    if ((cufftExecR2C(planf, (cufftReal *)SGP_Kt_d, (cufftComplex *)SGP_Kt_dc))!= \
+    if ((cufftExecR2C(planf, SGP_Kt_d, SGP_Kt_dc))!= \
       CUFFT_SUCCESS)
     {
         printf("cufft execR2C error\n");
@@ -260,7 +275,7 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    if ((cufftExecR2C(planf, (cufftReal *)SGP_Kr_d, (cufftComplex *)SGP_Kr_dc))!= \
+    if ((cufftExecR2C(planf, SGP_Kr_d, SGP_Kr_dc))!= \
       CUFFT_SUCCESS)
     {
         printf("cufft execR2C error\n");
@@ -268,12 +283,14 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    fftkernelmul<<<dimGrid3, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, \
+    printf("%f\n", G);
+    fftkernelmul<<<dimGrid4, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, \
       SGP_Sr_dc, SGP_St_dc, NSEC, G, NRAD);
     gpuErrchk(cudaDeviceSynchronize());
 
 
-    if ((cufftExecC2R(planb, (cufftComplex *)Gr_dc, (cufftReal *)Gr_d))!= \
+
+    if ((cufftExecC2R(planb, Gr_dc, Gr_d))!= \
       CUFFT_SUCCESS)
     {
         printf("cufft execC2R error\n");
@@ -281,26 +298,35 @@ __host__ int main(int argc, char *argv[])
     }
     gpuErrchk(cudaDeviceSynchronize());
 
-    if ((cufftExecC2R(planb, (cufftComplex *)Gphi_dc, (cufftReal *)Gphi_d))!= \
+    if ((cufftExecC2R(planb, Gphi_dc, Gphi_d))!= \
       CUFFT_SUCCESS)
     {
         printf("cufft execC2R error\n");
         exit(-1);
     }
     gpuErrchk(cudaDeviceSynchronize());
+
+    // gpuErrchk(cudaMemcpy(SG_Accr, Gphi_d, 2*size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    //
+    // FILE *f;
+    // f = fopen("SG_Accr.txt","w");
+    //
+    // for (int i = 0; i < size_grid; i++) fprintf(f, "%f\n",SG_Accr[i] );
+    //
+    // fclose(f);
 
     kernelSg_Acc <<<dimGrid2, dimBlock2>>>(SG_Accr_d, SG_Acct_d, dens_d, SGP_rstep, SGP_tstep, SGP_eps,
       NRAD, NSEC, Rmed_d, Gr_d, Gphi_d, G);
     gpuErrchk(cudaDeviceSynchronize());
 
-    gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, (NRAD*NSEC)*sizeof(float), cudaMemcpyDeviceToHost));
-
-
-    f = fopen("SG_Accr.txt","w");
-
-    for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
-
-    fclose(f);
+    // gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, size_grid*sizeof(cufftReal), cudaMemcpyDeviceToHost));
+    //
+    // f = fopen("SG_Accr.txt","w");
+    //
+    // for (int i = 0; i < NRAD*NSEC; i++) fprintf(f, "%f\n",SG_Accr[i] );
+    //
+    // fclose(f);
+    // exit(-1);
 
     //init_planetarysys_withSG (sys);
   }
@@ -723,10 +749,10 @@ __host__ void CreateArrays()
   mean_dens2 = (float *)malloc(sizeof(float)*NSEC);
   mean_energy = (float *)malloc(sizeof(float)*NSEC);
   mean_energy2 = (float *)malloc(sizeof(float)*NSEC);
-  Gr = (float *)malloc(sizeof(float)*NRAD*NSEC);
-  Gphi = (float *)malloc(sizeof(float)*NRAD*NSEC);
-  SG_Accr = (float *)malloc(sizeof(float)*NRAD*NSEC);
-  SG_Acct = (float *)malloc(sizeof(float)*NRAD*NSEC);
+  Gr = (float *)malloc(sizeof(float)*size_grid);
+  Gphi = (float *)malloc(sizeof(float)*size_grid);
+  SG_Accr = (cufftReal *)malloc(sizeof(cufftReal)*size_grid);
+  SG_Acct = (cufftReal *)malloc(sizeof(cufftReal)*size_grid);
 }
 
 __host__ void cudamalloc(float *label, float *dens)
@@ -783,21 +809,21 @@ __host__ void cudamalloc(float *label, float *dens)
   gpuErrchk(cudaMalloc((void**)&mean_energy_d, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_dens_d2, NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mean_energy_d2, NSEC*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Kt_d, 2*NRAD*NSEC*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Kr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_St_d, 2*NRAD*NSEC*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&SGP_Sr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Kt_d, 2*size_grid*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Kr_d, 2*size_grid*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_St_d, 2*size_grid*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SGP_Sr_d, 2*size_grid*sizeof(cufftReal)));
   gpuErrchk(cudaMalloc((void**)&SGP_Kt_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&SGP_Kr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&SGP_St_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&SGP_Sr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&Gr_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
   gpuErrchk(cudaMalloc((void**)&Gphi_dc, 2*NRAD*(NSEC/2 + 1)*sizeof(cufftComplex)));
-  gpuErrchk(cudaMalloc((void**)&Gr_d, 2*NRAD*NSEC*sizeof(cufftReal)));
-  gpuErrchk(cudaMalloc((void**)&Gphi_d, 2*NRAD*NSEC*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&Gr_d, 2*size_grid*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&Gphi_d, 2*size_grid*sizeof(cufftReal)));
   gpuErrchk(cudaMalloc((void**)&Radii_d, (NRAD+1)*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&SG_Accr_d, NRAD*NSEC*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&SG_Acct_d, NRAD*NSEC*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&SG_Accr_d, size_grid*sizeof(cufftReal)));
+  gpuErrchk(cudaMalloc((void**)&SG_Acct_d, size_grid*sizeof(cufftReal)));
 
   gpuErrchk(cudaMemcpy(Rmed_d, Rmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(dens_d, dens, size_grid2*sizeof(float), cudaMemcpyHostToDevice));

@@ -784,10 +784,18 @@ cufftReal *SGP_Sr, cufftReal *SGP_St, float *dens, float *Rmed, int nrad2pot)
     SGP_Kt[i*nsec + j] = sinj;
     SGP_Kt[i*nsec + j] *= den_SGP_K;
 
+
+    // SGP_Kt[i*nsec + j] = 1.0;
+    // SGP_Kr[i*nsec + j] = 1.0;
+
+
     if (i<nrad)
     {
       SGP_Sr[i*nsec + j] = dens[i*nsec + j]*sqrtf(Rmed[i]/Rmed[0]);
       SGP_St[i*nsec + j] = SGP_Sr[i*nsec + j]*Rmed[i]/Rmed[0];
+      // SGP_Sr[i*nsec + j] = 1.0;
+      // SGP_St[i*nsec + j] = 1.0;
+
     }
     else
     {
@@ -822,8 +830,8 @@ __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex 
   }
   else
   {
-    Gr[i*nsec2 + j].x = Gr[i*nsec2 + j].y = 0.0;
-    Gphi[i*nsec2 + j].x = Gphi[i*nsec2 + j].y = 0.0;
+    //Gr[i*nsec2 + j].x = Gr[i*nsec2 + j].y = 0.0;
+    //Gphi[i*nsec2 + j].x = Gphi[i*nsec2 + j].y = 0.0;
   }
 }
 
@@ -843,8 +851,11 @@ __global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , floa
     normaccr /= sqrtf(divRmed);
     normacct /= (divRmed * sqrtf(divRmed));
 
-    SG_Accr[i*nsec + j] = Gr[i*nsec + j]* normaccr;
-    SG_Accr[i*nsec + j] += G*dens[i*nsec + j]*SGP_rstep*SGP_tstep / SGP_eps;
-    SG_Acct[i*nsec + j] = Gphi[i*nsec + j]* normacct;
+    // SG_Accr[i*nsec + j] = Gr[i*nsec + j]* normaccr;
+    // SG_Accr[i*nsec + j] += G*dens[i*nsec + j]*SGP_rstep*SGP_tstep / SGP_eps;
+    // SG_Acct[i*nsec + j] = Gphi[i*nsec + j]* normacct;
+
+    SG_Accr[i*nsec + j] = Gr[i*nsec + j];
+    SG_Acct[i*nsec + j] = Gphi[i*nsec + j];
   }
 }
