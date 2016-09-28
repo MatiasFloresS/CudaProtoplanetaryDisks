@@ -55,7 +55,7 @@ __host__ void FillPolar1DArray()
     printf("Warning : no `radii.dat' file found. Using default.\n");
     if (LogGrid == YES)
     {
-      for (i = 0; i <= NRAD; i++) Radii[i] = RMIN*expf(i*logf(RMAX/RMIN)/NRAD);
+      for (i = 0; i <= NRAD; i++) Radii[i] = RMIN*exp((float)i/NRAD*log(RMAX / RMIN));
     }
     else {
       for (i = 0; i <= NRAD; i++) Radii[i] = RMIN+drrsep*i;
@@ -73,8 +73,8 @@ __host__ void FillPolar1DArray()
 
   for (i = 0; i < NRAD; i++)
   {
-    Rmed[i] = 2.0/3.0*(Radii[i+1]*Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]*Radii[i]);
-    Rmed[i] = Rmed[i] / (Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]);
+    //Rmed[i] = 2.0/3.0*(Radii[i+1]*Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]*Radii[i]);
+    //Rmed[i] = Rmed[i] / (Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]);
   }
 
   for (i = 0; i < NRAD; i++)
