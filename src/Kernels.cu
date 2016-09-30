@@ -754,7 +754,7 @@ __global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int 
 }
 
 __global__ void fftkernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
-cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftReal *SG_Acct)
+cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftComplex *real, float *Kr_aux, float *Kt_aux)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -763,49 +763,14 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftReal 
 
   if (i<2*nrad && j<nsec)
   {
-    if (i<nrad)
-    {
-      radii = Radii[i]/Radii[0];
-      u = logf(radii);
-    }
-    else
-    {
-      radii = Radii[2*nrad-i]/Radii[0];
-      u = -logf(radii);
-    }
-
-    theta = 2.0*(float)j  / (float)nsec;
-    coshu = coshf(u);
-    expu = expf(u);
-
-    // #if (__CUDA_ARCH__ >= 300)
-    //  sincospif(theta, &sinj, &cosj);
-    // #else
-    //   cosj = cospif(theta);
-    //   sinj = sinpif(theta);
-    // #endif
-
-    sinj = sinf(M_PI*theta);
-    cosj = cosf(M_PI*theta);
-
-    base = SGP_eps*SGP_eps*expu + 2.0* (coshu - cosj);
-    den_SGP_K = powf(base , -1.5);
-
-    SGP_Kt[i*nsec + j].x = sinj;
-    SGP_Kt[i*nsec + j].x *= den_SGP_K;
-
-    SGP_Kr[i*nsec + j].x = 1.0 + SGP_eps*SGP_eps - cosj*expf(-u);
-    SGP_Kr[i*nsec + j].x *= den_SGP_K;
-
-
+    SGP_Kr[i*nsec + j].x = Kr_aux[i*nsec + j];
     SGP_Kr[i*nsec + j].y = 0.;
-    SGP_Sr[i*nsec + j].y = 0.;
 
+    SGP_Kt[i*nsec + j].x = Kt_aux[i*nsec + j];
     SGP_Kt[i*nsec + j].y = 0.;
-    SGP_St[i*nsec + j].y = 0.;
 
-    // if(i<nrad)
-    //   SG_Acct[i*nsec + j] = SGP_Kt[i*nsec+j].x;
+    SGP_Sr[i*nsec + j].y = 0.;
+    SGP_St[i*nsec + j].y = 0.;
 
     if (i<nrad)
     {
@@ -815,35 +780,37 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftReal 
     }
     else
     {
-      SGP_Sr[i*nsec + j].x = SGP_St[i*nsec + j].x = 0.;
+      SGP_Sr[i*nsec + j].x = 0.;
+      SGP_St[i*nsec + j].x = 0.;
     }
 
-    if(i<nrad)
-      SG_Acct[i*nsec + j] = SGP_St[i*nsec+j].x;
+    if(i<2*nrad) real[i*nsec + j].x = SGP_Kt[i*nsec+j].x;
 
   }
 }
 
 __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad)
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad, cufftComplex *real)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<2*nrad && j<nsec)
   {
-    Gphi[i*nsec + j].x = -G*(SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].x - \
+    Gphi[i*nsec + j].x = (SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].x - \
       SGP_Kt[i*nsec + j].y * SGP_St[i*nsec + j].y);
 
-    Gphi[i*nsec + j].y = -G*(SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].y + \
+    Gphi[i*nsec + j].y = (SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].y + \
       SGP_Kt[i*nsec + j].y * SGP_St[i*nsec + j].x);
 
-    Gr[i*nsec + j].x = -G*(SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].x - \
+    Gr[i*nsec + j].x = (SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].x - \
       SGP_Kr[i*nsec + j].y * SGP_Sr[i*nsec + j].y);
 
-    Gr[i*nsec + j].y = -G*(SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].y + \
+    Gr[i*nsec + j].y = (SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].y + \
       SGP_Kr[i*nsec + j].y *SGP_Sr[i*nsec + j].x);
 
+    real[i*nsec+j].x = SGP_Kr[i*nsec+j].x;
+    real[i*nsec+j].y = SGP_Kr[i*nsec+j].y;
 
   }
   else
@@ -853,7 +820,7 @@ __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex 
   }
 }
 
-__global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
+__global__ void kernelSg_Acc (cufftComplex *SG_Accr, cufftComplex *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -868,9 +835,9 @@ __global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , floa
     normacct = normaccr;
     normaccr /= sqrtf(divRmed);
     normacct /= (divRmed * sqrtf(divRmed));
-    SG_Acct[i*nsec + j] = Gphi[i*nsec + j].x / ((float)(2*nrad) * (float) nsec);// * normaccr;
+    SG_Acct[i*nsec + j].x = Gphi[i*nsec + j].x;// / ((float)(2*nrad) * (float) nsec);// * normaccr;
 
-    SG_Accr[i*nsec + j] = Gr[i*nsec + j].x * normaccr;
+    SG_Accr[i*nsec + j].x = Gr[i*nsec + j].x; // ((float)(2*nrad) * (float) nsec); //* normaccr;
     //SG_Accr[i*nsec + j] += G*dens[i*nsec + j]*SGP_rstep*SGP_tstep / SGP_eps;
 
   }

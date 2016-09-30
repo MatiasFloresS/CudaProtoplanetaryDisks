@@ -17,9 +17,11 @@ FLARINGINDEX, *vt_int, OmegaFrame1, *SigmaInf, G, ASPECTRATIO, SIGMA0, SIGMASLOP
 
 float *press, *CellAbscissa, *CellOrdinate, *AspectRatioRmed, *SoundSpeed, *temperature, *vtheta_d, \
 *CellAbscissa_d, *CellOrdinate_d, *sinns_d, *cosns_d, *vt_cent, *Rinf_d, *SigmaInf_d, *vrad_d, *SoundSpeed_d, \
-*energy_d, *AspectRatioRmed_d, *press_d, *temperature_d, *viscosity_array_d;
+*energy_d, *AspectRatioRmed_d, *press_d, *temperature_d, *viscosity_array_d, *Kr_aux, *Kt_aux;
 
 extern dim3 dimGrid2, dimBlock2;
+
+double *Radii2;
 
 __host__ void FillPolar1DArray()
 {
@@ -33,6 +35,7 @@ __host__ void FillPolar1DArray()
   OutputName = OUTPUTDIR +"used_rad.dat";
 
   Radii = (float *) malloc(sizeof(float)*(NRAD+1));
+  Radii2 = (double *) malloc(sizeof(double)*(NRAD+1));
   vt_cent = (float *) malloc(sizeof(float)*NRAD);
   Rinf = (float *) malloc(sizeof(float)*(NRAD));
   Rmed = (float *) malloc(sizeof(float)*(NRAD));
@@ -49,13 +52,57 @@ __host__ void FillPolar1DArray()
   strncpy(inputcharname, InputName.c_str(), sizeof(inputcharname));
   inputcharname[sizeof(inputcharname)-1]=0;
 
+  double u, theta, base,algo, den_SGP_K, algo2;
+
+  Kr_aux = (float *)malloc(sizeof(float)*2*size_grid);
+  Kt_aux = (float *)malloc(sizeof(float)*2*size_grid);
+
   input = fopen (inputcharname, "r");
   if (input == NULL)
   {
     printf("Warning : no `radii.dat' file found. Using default.\n");
     if (LogGrid == YES)
     {
-      for (i = 0; i <= NRAD; i++) Radii[i] = RMIN*exp((float)i/NRAD*log(RMAX / RMIN));
+      for (i = 0; i <= NRAD; i++)
+      {
+        Radii2[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX / RMIN));
+        Radii[i] = (float) Radii2[i];
+      }
+
+
+      for (i = 0; i < 2*NRAD; i++)
+      {
+        if(i<NRAD) u = log(Radii2[i]/Radii2[0]);
+        else u = -log(Radii2[2*NRAD-i]/Radii2[0]);
+
+
+
+        for (int j = 0; j < NSEC; j++) {
+          theta = 2.0*M_PI*(double)j  / (double)NSEC;
+          base = 0.03*0.03 * exp(u) + 2.0* (cosh(u) - cos(theta));
+          den_SGP_K = pow(base , -1.5);
+
+          algo = 1.0 + 0.03*0.03 - cos(theta) * exp(-u);
+          algo *= den_SGP_K;
+
+          algo2 = sin(theta) * den_SGP_K;
+          if ( i==10 && j == 10) printf("%g\n",algo2 );
+          Kr_aux[i*NSEC+j] = (float) algo;
+          Kt_aux[i*NSEC+j] = (float) algo2;
+        }
+
+      }
+
+
+      // FILE *f;
+      // f = fopen("Kr.raw", "w");
+      //
+      // for (int i = 0; i < NRAD; i++) {
+      //   for (int j = 0; j < NSEC; j++) {
+      //     fwrite((void *) &Kr_aux[i*NSEC+j], 1, sizeof(float), f);
+      //   }
+      // }
+      // fclose(f);
     }
     else {
       for (i = 0; i <= NRAD; i++) Radii[i] = RMIN+drrsep*i;
@@ -83,7 +130,7 @@ __host__ void FillPolar1DArray()
     Rsup[i] = Radii[i+1];
     Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
     Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
-    Surf[i] = PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(float)NSEC;
+    Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(float)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
     invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);

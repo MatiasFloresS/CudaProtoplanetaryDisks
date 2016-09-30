@@ -94,10 +94,10 @@ __global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int 
   float *invdiffRmed, float *Rmed);
 
 __global__ void fftkernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, float *SG_Acct);
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftComplex *real, float *Kr_aux, float *Kt_aux);
 
 __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad);
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad, cufftComplex *real);
 
-__global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
+__global__ void kernelSg_Acc (cufftComplex *SG_Accr, cufftComplex *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G);
