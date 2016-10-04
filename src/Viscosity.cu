@@ -1,7 +1,4 @@
 #include "Main.cuh"
-#include "Kernels.cuh"
-
-using namespace std;
 
 extern int NSEC, size_grid, nsec2pot, nrad2pot, blocksize, NRAD;
 

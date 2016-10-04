@@ -1,6 +1,4 @@
 #include "Main.cuh"
-#include "TransportEuler.cuh"
-#include "Kernels.cuh"
 
 extern int NRAD, NSEC, size_grid, nsec2pot, blocksize, nrad2pot, AdvecteLabel, YES;
 

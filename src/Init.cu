@@ -1,9 +1,5 @@
 #include "Main.cuh"
-#include "Types.cuh"
-#include "SourceEuler.cuh"
-#include "Kernels.cuh"
-#include "Output.cuh"
-#include "Init.cuh"
+
 
 extern int NRAD, NSEC, nsec2pot, blocksize, nrad2pot, size_grid;
 extern float *Rmed, *Rmed_d, *label_d;

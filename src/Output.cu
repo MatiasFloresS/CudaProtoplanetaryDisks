@@ -1,6 +1,4 @@
 #include "Main.cuh"
-#include "Types.cuh"
-#include "Output.cuh"
 
 using namespace std;
 
@@ -142,7 +140,7 @@ __host__ void SendOutput (int index, float *dens, float *vrad, float *vtheta, fl
     }
     if (Write_Energy == YES) WriteDiskPolar(energy, "gasenergy", index);
     if (Write_Temperature == YES) WriteDiskPolar(temperature, "gastemperature", index);
-    // if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity,index);
+    //if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity,index);
     //if (Write_Qplus == YES) WriteDiskPolar(Qplus, index);
     if (AdvecteLabel == YES) WriteDiskPolar(label, "gaslabel", index);
   }

@@ -1,5 +1,3 @@
-#include "Main.cuh"
-
 __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, float *vtheta, float step);
 __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad);
 __host__ void ReduceMeanHost(float *dens, float *energy);

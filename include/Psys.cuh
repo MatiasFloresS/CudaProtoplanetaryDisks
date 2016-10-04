@@ -1,5 +1,3 @@
-#include "Types.cuh"
-
 __host__ int FindNumberOfPlanets (char *filename);
 __host__ void ListPlanets (PlanetarySystem *sys);
 __host__ PlanetarySystem *InitPlanetarySystem(char *filename);

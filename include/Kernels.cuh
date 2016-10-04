@@ -1,6 +1,3 @@
-#include "math_constants.h"
-#include <stdio.h>
-#include <cufft.h>
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -94,10 +91,16 @@ __global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int 
   float *invdiffRmed, float *Rmed);
 
 __global__ void fftkernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftComplex *real, float *Kr_aux, float *Kt_aux);
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, float *Kr_aux, float *Kt_aux);
 
 __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad, cufftComplex *real);
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad);
 
-__global__ void kernelSg_Acc (cufftComplex *SG_Accr, cufftComplex *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
+__global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G);
+
+__global__ void update_sgvelocity(float *vrad, float *vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
+  float *invdiffRmed, float dt, int nrad, int nsec);
+
+__global__ void azimutalvelocity_withSG(float *vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
+  float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec);

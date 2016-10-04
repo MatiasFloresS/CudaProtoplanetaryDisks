@@ -1,5 +1,6 @@
-#include "Kernels.cuh"
-#include <stdio.h>
+#include "Main.cuh"
+
+
 using namespace std;
 
 extern int blocksize2, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
@@ -386,7 +387,7 @@ __global__ void MultiplyPolarGridbyConstant(float *dens, int nrad, int nsec, flo
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<nrad+1 && j<nsec) dens[j+i*nsec] *= ScalingFactor;
+  if (i<nrad && j<nsec) dens[j+i*nsec] *= ScalingFactor;
 }
 
 __global__ void Substep2(float *dens, float *vradint, float *vthetaint, float *temperatureint, int nrad,
@@ -569,7 +570,7 @@ __host__ void Make1Dprofilehost(float *gridfield)
 {
 
   gpuErrchk(cudaMemcpy(gridfield_d, gridfield, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(GLOBAL_bufarray_d, GLOBAL_bufarray, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+  //gpuErrchk(cudaMemcpy(GLOBAL_bufarray_d, GLOBAL_bufarray, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
   Make1Dprofile<<<dimGrid, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
@@ -754,7 +755,7 @@ __global__ void StarRad (float *Qbase, float *vrad, float *QStar, float dt, int 
 }
 
 __global__ void fftkernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
-cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftComplex *real, float *Kr_aux, float *Kt_aux)
+cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, float *Kr_aux, float *Kt_aux)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -784,43 +785,33 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, cufftCompl
       SGP_St[i*nsec + j].x = 0.;
     }
 
-    if(i<2*nrad) real[i*nsec + j].x = SGP_Kt[i*nsec+j].x;
-
   }
 }
 
 __global__ void fftkernelmul(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad, cufftComplex *real)
+  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<2*nrad && j<nsec)
   {
-    Gphi[i*nsec + j].x = (SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].x - \
+    Gphi[i*nsec + j].x = -G*(SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].x - \
       SGP_Kt[i*nsec + j].y * SGP_St[i*nsec + j].y);
 
-    Gphi[i*nsec + j].y = (SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].y + \
+    Gphi[i*nsec + j].y = -G*(SGP_Kt[i*nsec + j].x * SGP_St[i*nsec + j].y + \
       SGP_Kt[i*nsec + j].y * SGP_St[i*nsec + j].x);
 
-    Gr[i*nsec + j].x = (SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].x - \
+    Gr[i*nsec + j].x = -G*(SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].x - \
       SGP_Kr[i*nsec + j].y * SGP_Sr[i*nsec + j].y);
 
-    Gr[i*nsec + j].y = (SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].y + \
+    Gr[i*nsec + j].y = -G*(SGP_Kr[i*nsec + j].x * SGP_Sr[i*nsec + j].y + \
       SGP_Kr[i*nsec + j].y *SGP_Sr[i*nsec + j].x);
 
-    real[i*nsec+j].x = SGP_Kr[i*nsec+j].x;
-    real[i*nsec+j].y = SGP_Kr[i*nsec+j].y;
-
-  }
-  else
-  {
-    //Gr[i*nsec + j].x = Gr[i*nsec + j].y = 0.0;
-    //Gphi[i*nsec + j].x = Gphi[i*nsec + j].y = 0.0;
   }
 }
 
-__global__ void kernelSg_Acc (cufftComplex *SG_Accr, cufftComplex *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
+__global__ void kernelSg_Acc (float *SG_Accr, float *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -835,10 +826,52 @@ __global__ void kernelSg_Acc (cufftComplex *SG_Accr, cufftComplex *SG_Acct, floa
     normacct = normaccr;
     normaccr /= sqrtf(divRmed);
     normacct /= (divRmed * sqrtf(divRmed));
-    SG_Acct[i*nsec + j].x = Gphi[i*nsec + j].x;// / ((float)(2*nrad) * (float) nsec);// * normaccr;
+    SG_Acct[i*nsec + j] = Gphi[i*nsec + j].x * normaccr;
 
-    SG_Accr[i*nsec + j].x = Gr[i*nsec + j].x; // ((float)(2*nrad) * (float) nsec); //* normaccr;
-    //SG_Accr[i*nsec + j] += G*dens[i*nsec + j]*SGP_rstep*SGP_tstep / SGP_eps;
+    SG_Accr[i*nsec + j] = Gr[i*nsec + j].x * normaccr;
+    SG_Accr[i*nsec + j] += G*dens[i*nsec + j]*SGP_rstep*SGP_tstep / SGP_eps;
 
+  }
+}
+
+__global__ void update_sgvelocity(float *vrad, float *vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
+  float *invdiffRmed, float dt, int nrad, int nsec)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  int jm1, lm1;
+
+  /* Here we update velocity fields to take into acount self-gravity */
+  if (i<nrad && j<nsec)
+  {
+    //printf("%f\n",dt );
+    /* We compute VRAD - half-centered in azimuth - from centered-in-cell radial sg acceleration. */
+    if (i > 0) vrad[i*nsec + j] =  dt*((Rinf[i] - Rmed[i-1]) * SG_Accr[i*nsec + j] + \
+    (Rmed[i] - Rinf[i]) * SG_Accr[(i-1)*nsec + j]) *invdiffRmed[i]; // caso !SGZeroMode
+
+    /* We compute VTHETA - half-centered in radius - from centered-in-cell azimutal sg acceleration. */
+    if (j==0) jm1 = nsec-1;
+    else jm1 = j-1;
+    lm1 = i*nsec + jm1;
+    vtheta[i*nsec + j] = 0.5 * dt * ( SG_Acct[i*nsec + j] + SG_Acct[lm1]);
+  }
+}
+
+__global__ void azimutalvelocity_withSG(float *vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
+  float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  float omegakep, omega, invr;
+  if (i<nrad && j<nsec)
+  {
+    invr = 1./Rmed[i];
+    omegakep = sqrtf(G*1.0*invr*invr*invr);
+    omega = sqrt(omegakep*omegakep* (1.0 - (1.+SIGMASLOPE-2.0*FLARINGINDEX)*powf(ASPECTRATIO,2.0)* \
+      powf(Rmed[i],2.0*FLARINGINDEX)) - invr*GLOBAL_bufarray[i]);
+
+    vtheta[i*nsec + j] = Rmed[i]*omega;
   }
 }

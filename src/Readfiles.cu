@@ -1,5 +1,5 @@
 #include "Main.cuh"
-#include "Readfiles.cuh"
+
 using namespace std;
 
 extern char NewOutputdir[1024];
