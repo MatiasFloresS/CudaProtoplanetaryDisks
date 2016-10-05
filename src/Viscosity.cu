@@ -67,7 +67,7 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
   if (ViscosityAlpha)
   {
     gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-    Make1Dprofilehost (SoundSpeed);
+    Make1Dprofile (SoundSpeed);
   }
 
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
@@ -76,13 +76,13 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
   if (option == 1)
   {
 
-    ViscousTerms<<<dimGrid2, dimBlock2>>>(vrad_d, vtheta_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
+    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(vrad_d, vtheta_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
       invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, Trr_d, Tpp_d, dens_d, viscosity_array_d,
       onethird, Trp_d, invRinf_d);
   }
   else
   {
-    ViscousTerms<<<dimGrid2, dimBlock2>>>(vradint_d, vthetaint_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
+    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(vradint_d, vthetaint_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
       invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, Trr_d, Tpp_d, dens_d, viscosity_array_d,
       onethird, Trp_d, invRinf_d);
   }

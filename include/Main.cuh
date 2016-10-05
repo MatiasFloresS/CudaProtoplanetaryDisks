@@ -27,15 +27,15 @@
 
 
 
-__host__ void ReadFile(char *ParameterFile);
+__host__ void ReadVariables(char *ParameterFile);
 __host__ void TellEverything();
 __host__ void PrintUsage(char *argv);
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT);
-__host__ float CircumPlanetaryMasshost(float *dens, float xpl, float ypl);
-__host__ void MultiplyPolarGridbyConstanthost(float *dens);
-__host__ void Substep1host(float *dens, float *vrad, float *vtheta, float dt, int i);
-__host__ void Substep2host(float *dens, float *energy, float dt);
-__host__ void Substep3host(float *dens, float dt);
+__host__ float CircumPlanetaryMass(float *dens, PlanetarySystem *sys);
+__host__ void MultiplyPolarGridbyConstant();
+__host__ void Substep1(float *dens, float *vrad, float *vtheta, float dt, int i);
+__host__ void Substep2(float dt);
+__host__ void Substep3(float *dens, float dt);
 __host__ void ActualiseGasVrad(float *vrad, float *vradnew);
 __host__ void ActualiseGasVtheta(float *vtheta, float *vthetanew);
 __host__ float FViscosity(float r);
@@ -51,3 +51,4 @@ __host__ void Init_planetarysys_withSG(PlanetarySystem *sys);
 __host__ void cudamalloc(float *label, float *dens, float *vrad, float *vtheta);
 __host__ void executeExeC2Cforward();
 __host__ void executeExeC2Cbackward();
+__host__ void compute_selfgravity(float *dens, float *vrad, float *vtheta, float foostep);

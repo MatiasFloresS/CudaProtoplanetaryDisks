@@ -122,7 +122,7 @@ __host__ float TellNbOutputs (float time)
   return (time/DT/NINTERM);
 }
 
-__host__ void ReadFile(char *ParameterFile)
+__host__ void ReadVariables(char *ParameterFile)
 {
 
     char nm[300], s[350], stringval[290];

@@ -17,7 +17,7 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
 
   if(OpenInner == YES)
   {
-    OpenBoundary<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
+    OpenBoundaryKernel<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
     gpuErrchk(cudaDeviceSynchronize());
   }
 
@@ -25,22 +25,20 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
   {
     if (Adiabaticc)
     {
-      ComputeSoundSpeed<<<dimGrid2, dimBlock2>>>(SoundSpeed_d, dens_d, Rmed_d, energy_d, NSEC, NRAD,
-         Adiabaticc, ADIABATICINDEX, FLARINGINDEX, AspectRatioRmed_d);
-      gpuErrchk(cudaDeviceSynchronize());
+      ComputeSoundSpeed();
 
     }
-    NonReflectingBoundaryhost(dens, energy, vrad);
+    NonReflectingBoundary(dens, energy, vrad);
     gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost ));
 
   }
   if (Evanescent == YES) EvanescentBoundary (vrad, vtheta, step);
 }
 
-__host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad)
+__host__ void NonReflectingBoundary(float *dens, float *energy, float *vrad)
 {
 
-  ReduceCshost();
+  ReduceCs();
 
   int i,i_angle, i_angle2;
   float dangle, dangle2 ;
@@ -59,22 +57,22 @@ __host__ void NonReflectingBoundaryhost(float *dens, float *energy, float *vrad)
   // printf("%f %f\n",dangle, dangle2 );
   // printf("%f %f %f %f\n", cs0_r, cs1_r, csnrm1_r, csnrm2_r);
 
-  NonReflectingBoundary<<<dimGrid, dimBlock>>>(dens_d, energy_d, i_angle, NSEC, vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
+  NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(dens_d, energy_d, i_angle, NSEC, vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
   gpuErrchk(cudaDeviceSynchronize());
 
-  ReduceMeanHost(dens,energy);
+  ReduceMean(dens,energy);
 
-  MinusMean<<<dimGrid, dimBlock>>>(dens_d, energy_d, SigmaMed[0], mean_dens_r, mean_dens_r2, mean_energy_r,
+  MinusMeanKernel<<<dimGrid, dimBlock>>>(dens_d, energy_d, SigmaMed[0], mean_dens_r, mean_dens_r2, mean_energy_r,
   mean_energy_r2, EnergyMed[0], NSEC, NRAD, SigmaMed[NRAD-1], EnergyMed[NRAD-1]);
   gpuErrchk(cudaDeviceSynchronize());
 
 }
 
-__host__ void ReduceCshost()
+__host__ void ReduceCs()
 {
 
-  ReduceCs<<<dimGrid, dimBlock>>> (SoundSpeed_d, cs0_d, cs1_d, csnrm1_d, csnrm2_d, NSEC, NRAD);
+  ReduceCsKernel<<<dimGrid, dimBlock>>> (SoundSpeed_d, cs0_d, cs1_d, csnrm1_d, csnrm2_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
   cs0_r = DeviceReduce(cs0_d, NSEC) / NSEC;
@@ -83,10 +81,10 @@ __host__ void ReduceCshost()
   csnrm2_r = DeviceReduce(csnrm2_d, NSEC) / NSEC;
 }
 
-__host__ void ReduceMeanHost(float *dens, float *energy)
+__host__ void ReduceMean(float *dens, float *energy)
 {
 
-  ReduceMean<<<dimGrid, dimBlock>>>(dens_d, energy_d, NSEC, mean_dens_d, mean_energy_d, mean_dens_d2, mean_energy_d2, NRAD);
+  ReduceMeanKernel<<<dimGrid, dimBlock>>>(dens_d, energy_d, NSEC, mean_dens_d, mean_energy_d, mean_dens_d2, mean_energy_d2, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
   mean_dens_r = DeviceReduce(mean_dens_d, NSEC) / NSEC;

@@ -1,7 +1,12 @@
-__host__ void FillPolar1DArray();
+__host__ void FillPolar1DArrays();
 __host__ void InitEuler (float *dens, float *energy, float *vrad, float *vtheta);
 __host__ float AspectRatio(float r);
-__host__ void InitGasVelocitieshost(float *vrad, float *vtheta);
+__host__ void InitGasVelocities(float *vrad, float *vtheta);
 __host__ void Computecudamalloc(float *dens, float *energy, float *vrad, float *vtheta);
 __host__ float ConstructSequence(float *u, float *v, int n);
 __host__ void init_azimutalvelocity_withSG(float *vtheta);
+__host__ bool DetectCrash (float *array);
+__host__ void ComputePressureField();
+__host__ void ComputeSoundSpeed();
+__host__ void ComputeTemperatureField();
+__host__ void InitComputeAccel();
