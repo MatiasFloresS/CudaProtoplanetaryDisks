@@ -41,12 +41,10 @@ __host__ void PrintUsage (char *execname)
   printf("     proceed to the next nth output and exit\n");
   printf("     This option must stand alone on one switch (-va -4 is legal, -v4a is not)\n");
   exit(1);
-
 }
 
 __host__ void TellEverything()
 {
-
   float temp, nbfileoutput;
   printf ("\nDisc properties:\n");
   printf ("----------------\n");
@@ -96,10 +94,8 @@ __host__ void TellEverything()
   printf ("There will be in total %d outputs\n", NTOT/NINTERM);
   printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
   nbfileoutput = 3.0;
-  if (Adiabaticc == YES)
-    nbfileoutput += 1.0;
-  if (AdvecteLabel == YES)
-    nbfileoutput += 1.0;
+  if (Adiabaticc == YES) nbfileoutput += 1.0;
+  if (AdvecteLabel == YES) nbfileoutput += 1.0;
   temp =nbfileoutput*NRAD*NSEC*sizeof(float);
   temp *= (float)NTOT/(float)NINTERM;
   temp /= 1024.0*1024.0;
@@ -107,7 +103,6 @@ __host__ void TellEverything()
   printf ("Check (eg by issuing a 'df' command) that you have enough disk space,\n");
   printf ("otherwise you will get a system full and the code will stop.\n");
   fflush (stdout);
-
 }
 
 __host__ float TellNbOrbits (float time)
@@ -122,7 +117,6 @@ __host__ float TellNbOutputs (float time)
 
 __host__ void ReadVariables(char *ParameterFile)
 {
-
     char nm[300], s[350], stringval[290];
     char *s1;
     int success, valuei;
@@ -152,7 +146,6 @@ __host__ void ReadVariables(char *ParameterFile)
     // for(int i = 0; i < RADIALSPACING.size(); i++) {
       // std::cout  << RADIALSPACING[i];
     // }
-
 
     if (LABELADVECTION.compare("YES") == 0) AdvecteLabel = YES;
     if (OUTERSOURCEMASS.compare("YES") == 0) OuterSourceMass = YES;

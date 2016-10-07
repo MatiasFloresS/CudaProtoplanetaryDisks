@@ -16,7 +16,6 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
   bool feeldis, feelothers;
   //   extern boolean CICPlanet, ForcedCircular;
 
-
   nb = FindNumberOfPlanets(filename);
   printf("%d planet(s) found.\n",nb);
   sys = AllocPlanetSystem (nb);
@@ -47,8 +46,8 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
       if (tolower(*test2) == 'n') feelothers = NO;
       sys->x[i] = (float)dist*(1.0+ECCENTRICITY);
       sys->y[i] = 0.0;
-      sys->vy[i] = (float)sqrtf(G*(1.0+mass)/dist)*			\
-  	   sqrtf( (1.0-ECCENTRICITY)/(1.0+ECCENTRICITY) );
+      sys->vy[i] = (float)sqrt(G*(1.0+mass)/dist)*			\
+  	   sqrt((1.0-ECCENTRICITY)/(1.0+ECCENTRICITY));
       sys->vx[i] = -0.0000000001*sys->vy[i];
       sys->acc[i] = accret;
       sys->FeelDisk[i] = feeldis;
@@ -56,7 +55,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
       i++;
     }
   }
-  HillRadius = sys->x[0] * powf( sys->mass[0]/3., 1./3. );
+  HillRadius = sys->x[0] * pow( sys->mass[0]/3., 1./3. );
   // printf("%f\n",sys->x[0] );
   // printf("%f\n",sys->mass[0] );
   // printf("%f\n", HillRadius);
@@ -87,8 +86,9 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
 {
   float *mass, *x, *y, *vx, *vy, *acc;
   bool *feeldisk, *feelothers;
+  int i;
   PlanetarySystem *sys;
-  sys = (PlanetarySystem *)malloc (sizeof(PlanetarySystem));
+  sys = (PlanetarySystem *)malloc(sizeof(PlanetarySystem));
   if (sys == NULL)
   {
     fprintf(stderr, "Not enough memory.\n");
@@ -115,14 +115,14 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
   }
   sys->x = x;
   sys->y = y;
-  sys->vx= vx;
-  sys->vy= vy;
-  sys->acc=acc;
+  sys->vx = vx;
+  sys->vy = vy;
+  sys->acc = acc;
   sys->mass = mass;
   sys->FeelDisk = feeldisk;
   sys->FeelOthers = feelothers;
 
-  for (int i = 0; i < nb; i++)
+  for (i = 0; i < nb; i++)
   {
     x[i] = y[i] = vx[i] = vy[i] = mass[i] = acc[i] = 0.0;
     feeldisk[i] = feelothers[i] = YES;
@@ -166,11 +166,11 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   vyc = vy= sys->vy[0];
   m = sys->mass[0]+1.;
   h = x*vy-y*vx;
-  d = sqrtf(x*x+y*y);
+  d = sqrt(x*x+y*y);
 
   Ax = x*vy*vy-y*vx*vy-G*m*x/d;
   Ay = y*vx*vx-x*vx*vy-G*m*y/d;
-  e = sqrtf(Ax*Ax+Ay*Ay)/m;
+  e = sqrt(Ax*Ax+Ay*Ay)/m;
   a = h*h/G/m/(1.-e*e);
   if (e == 0.0) arg = 1.0;
   else arg = (1.0-d/a)/e;
@@ -182,7 +182,7 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   M = E-e*sinf(E);
 
   PerihelionPA=atan2f(Ay,Ax);
-  omega = sqrtf(m/a/a/a);
+  omega = sqrt(m/a/a/a);
   if (GuidingCenter == YES)
   {
     xc = a*cosf(M+PerihelionPA);
@@ -209,8 +209,8 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
       y = yc;
       vx = vxc;
       vy = vyc;
-      d2 = sqrtf(x*x+y*y);
-      d1 = sqrtf(Xplanet*Xplanet+Yplanet*Yplanet);
+      d2 = sqrt(x*x+y*y);
+      d1 = sqrt(Xplanet*Xplanet+Yplanet*Yplanet);
       cross = Xplanet*y-x*Yplanet;
       Xplanet = x;
       Yplanet = y;

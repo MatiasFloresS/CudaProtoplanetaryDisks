@@ -15,44 +15,34 @@ extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, float *vtheta, float step)
 {
 
-  if(OpenInner == YES) OpenBoundary();
-
+  if(OpenInner == YES) OpenBoundary ();
 
   if (NonReflecting == YES)
   {
-    if (Adiabaticc)
-    {
-      ComputeSoundSpeed();
+    if (Adiabaticc) ComputeSoundSpeed ();
 
-    }
-    NonReflectingBoundary(dens, energy, vrad);
-    gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost ));
-
+    NonReflectingBoundary (dens, energy, vrad);
+    gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   }
   if (Evanescent == YES) EvanescentBoundary (vrad, vtheta, step);
 }
 
-__host__ void NonReflectingBoundary(float *dens, float *energy, float *vrad)
+__host__ void NonReflectingBoundary (float *dens, float *energy, float *vrad)
 {
+  int i,i_angle, i_angle2;
+  float dangle, dangle2;
 
   ReduceCs();
-
-  int i,i_angle, i_angle2;
-  float dangle, dangle2 ;
 
   i = 1;
   dangle = (pow(Rinf[i],-1.5)-1.0)/(.5*(cs0_r+cs1_r));
   dangle *= (Rmed[i] - Rmed[i-1]);
-
   i_angle = (int)(dangle/2.0/M_PI*(float)NSEC+.5);
+
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
   dangle2 *= (Rmed[i]-Rmed[i-1]);
   i_angle2 = (int)(dangle2/2.0/M_PI*(float)NSEC+.5);
-
-  // printf("%d %d\n",i_angle , i_angle2);
-  // printf("%f %f\n",dangle, dangle2 );
-  // printf("%f %f %f %f\n", cs0_r, cs1_r, csnrm1_r, csnrm2_r);
 
   NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(dens_d, energy_d, i_angle, NSEC, vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
@@ -66,29 +56,26 @@ __host__ void NonReflectingBoundary(float *dens, float *energy, float *vrad)
 
 }
 
-__host__ void ReduceCs()
+__host__ void ReduceCs ()
 {
-
   ReduceCsKernel<<<dimGrid, dimBlock>>> (SoundSpeed_d, cs0_d, cs1_d, csnrm1_d, csnrm2_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
-  cs0_r = DeviceReduce(cs0_d, NSEC) / NSEC;
-  cs1_r = DeviceReduce(cs1_d, NSEC) / NSEC;
+  cs0_r    = DeviceReduce(cs0_d, NSEC) / NSEC;
+  cs1_r    = DeviceReduce(cs1_d, NSEC) / NSEC;
   csnrm1_r = DeviceReduce(csnrm1_d, NSEC) / NSEC;
   csnrm2_r = DeviceReduce(csnrm2_d, NSEC) / NSEC;
 }
 
-__host__ void ReduceMean(float *dens, float *energy)
+__host__ void ReduceMean (float *dens, float *energy)
 {
-
   ReduceMeanKernel<<<dimGrid, dimBlock>>>(dens_d, energy_d, NSEC, mean_dens_d, mean_energy_d, mean_dens_d2, mean_energy_d2, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
-  mean_dens_r = DeviceReduce(mean_dens_d, NSEC) / NSEC;
-  mean_dens_r2 = DeviceReduce(mean_dens_d2, NSEC) / NSEC;
-  mean_energy_r = DeviceReduce(mean_energy_d, NSEC) / NSEC;
+  mean_dens_r    = DeviceReduce(mean_dens_d, NSEC)    / NSEC;
+  mean_dens_r2   = DeviceReduce(mean_dens_d2, NSEC)   / NSEC;
+  mean_energy_r  = DeviceReduce(mean_energy_d, NSEC)  / NSEC;
   mean_energy_r2 = DeviceReduce(mean_energy_d2, NSEC) / NSEC;
-
 }
 
 __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step)
@@ -104,7 +91,7 @@ __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step)
   //viscosity = Rmed[];
 }
 
-__host__ void OpenBoundary()
+__host__ void OpenBoundary ()
 {
   OpenBoundaryKernel<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
   gpuErrchk(cudaDeviceSynchronize());

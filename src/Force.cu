@@ -1,7 +1,6 @@
 #include "Main.cuh"
 
 extern string OUTPUTDIR;
-float *globalforce, *localforce;
 
 extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, \
 *forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d, \
@@ -12,19 +11,20 @@ extern int size_grid, blocksize, NRAD, NSEC, nsec2pot, nrad2pot;
 extern dim3 dimGrid2, dimBlock2;
 
 __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *dens, float *energy, int TimeStep,
-  float PhysicalTime, int dimfxy, int p)
+  float PhysicalTime, int dimfxy)
 {
   FILE *out;
   float x, y, r, m, vx, vy, smoothing, a, rh;
   float *globalforce;
   char filename[500];
   char filename2[500];
-  int nb=sys->nb;
+  int i, nb;
+  nb=sys->nb;
   string input;
   input = OUTPUTDIR +"tqwk";
   strncpy(filename, input.c_str(), sizeof(filename));
   filename[sizeof(filename)-1]=0;
-  for (int i = 0; i < nb; i++)
+  for (i = 0; i < nb; i++)
   {
     x = sys->x[i];
     y = sys->y[i];
@@ -38,7 +38,7 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *dens, float 
     if (RocheSmoothing) smoothing = r*pow(m/3.,1./3.)*ROCHESMOOTHING;
     else smoothing = Compute_smoothing(r);
 
-    ComputeForce (force, dens, x, y, smoothing, m, dimfxy, p, i, a, rh);
+    ComputeForce (force, dens, x, y, smoothing, m, dimfxy, a, rh);
 
     globalforce = force->GlobalForce;
     sprintf (filename2, "%s%d.dat", filename,i);
@@ -73,9 +73,10 @@ __host__ Force *AllocateForce (int dimfxy)
   return force;
 }
 
-__host__ void ComputeForce (Force *force, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, int p,
-  int i, float a, float rh)
+__host__ void ComputeForce (Force *force, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, float a, float rh)
 {
+  float *globalforce;
+  int k;
   globalforce = force->GlobalForce;
 
   gpuErrchk(cudaMemset(forcesxi_d, 0, dimfxy*sizeof(float)));
@@ -92,7 +93,7 @@ __host__ void ComputeForce (Force *force, float *dens, float x, float y, float r
   gpuErrchk(cudaMemcpy(forcesxo, forcesxo_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(forcesyo, forcesyo_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
 
-  for (int k = 0; k < dimfxy; k++)
+  for (k = 0; k < dimfxy; k++)
   {
     globalforce[k]            = forcesxi[k];
     globalforce[k + dimfxy]   = forcesxo[k];
