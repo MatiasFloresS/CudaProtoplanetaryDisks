@@ -90,19 +90,19 @@ __global__ void ExtQtyKernel(float *extlabel, float *dens, float *label, int nse
 __global__ void StarRadKernel(float *Qbase, float *vrad, float *QStar, float dt, int nrad, int nsec,
   float *invdiffRmed, float *Rmed);
 
-__global__ void fftKernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
+__global__ void FftKernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
   cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, float *Kr_aux, float *Kt_aux);
 
-__global__ void fftmulKernel(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
+__global__ void FftmulKernel(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
   cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad);
 
 __global__ void Sg_AccKernel(float *SG_Accr, float *SG_Acct, float *dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G);
 
-__global__ void update_sgvelocityKernel(float *vrad, float *vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
+__global__ void Update_sgvelocityKernel(float *vrad, float *vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
   float *invdiffRmed, float dt, int nrad, int nsec);
 
-__global__ void azimutalvelocity_withSGKernel(float *vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
+__global__ void Azimutalvelocity_withSGKernel(float *vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
   float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec);
 
-__global__ void crashKernel(float *array, int NRAD, int NSEC, bool Crash);
+__global__ void CrashKernel(float *array, int NRAD, int NSEC, bool Crash);

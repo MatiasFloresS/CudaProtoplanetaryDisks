@@ -1,8 +1,5 @@
 #include "Main.cuh"
 
-
-using namespace std;
-
 extern int blocksize2, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
 extern float *GLOBAL_bufarray, *gridfield_d, *GLOBAL_bufarray_d;
 extern dim3 dimGrid, dimBlock;
@@ -752,7 +749,7 @@ __global__ void StarRadKernel (float *Qbase, float *vrad, float *QStar, float dt
 
 }
 
-__global__ void fftKernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
+__global__ void FftKernel(float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
 cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, float *Kr_aux, float *Kt_aux)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -786,7 +783,7 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *dens, float *Rmed, float *Kr_
   }
 }
 
-__global__ void fftmulKernel(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
+__global__ void FftmulKernel(cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
   cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -832,7 +829,7 @@ __global__ void Sg_AccKernel (float *SG_Accr, float *SG_Acct, float *dens , floa
   }
 }
 
-__global__ void update_sgvelocityKernel(float *vrad, float *vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
+__global__ void Update_sgvelocityKernel(float *vrad, float *vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
   float *invdiffRmed, float dt, int nrad, int nsec)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -856,7 +853,7 @@ __global__ void update_sgvelocityKernel(float *vrad, float *vtheta, float *SG_Ac
   }
 }
 
-__global__ void azimutalvelocity_withSGKernel(float *vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
+__global__ void Azimutalvelocity_withSGKernel(float *vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
   float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -874,7 +871,7 @@ __global__ void azimutalvelocity_withSGKernel(float *vtheta, float *Rmed, float 
   }
 }
 
-__global__ void crashKernel(float *array, int nrad, int nsec, bool Crash)
+__global__ void CrashKernel(float *array, int nrad, int nsec, bool Crash)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;

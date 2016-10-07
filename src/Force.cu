@@ -1,19 +1,18 @@
 #include "Main.cuh"
 
-using namespace std;
-
 extern string OUTPUTDIR;
 float *globalforce, *localforce;
 
 extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, \
-*forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d,
+*forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d, \
 *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
 
 extern bool RocheSmoothing;
 extern int size_grid, blocksize, NRAD, NSEC, nsec2pot, nrad2pot;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outputnb, float time2, int dimfxy, int p)
+__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *dens, float *energy, int TimeStep,
+  float PhysicalTime, int dimfxy, int p)
 {
   FILE *out;
   float x, y, r, m, vx, vy, smoothing, a, rh;
@@ -31,17 +30,17 @@ __host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outpu
     y = sys->y[i];
     vx = sys->vx[i];
     vy = sys->vy[i];
-    r = sqrtf(x*x+y*y);
+    r = sqrt(x*x+y*y);
     m = sys->mass[i];
-    a = sqrtf(x*x+y*y);
-    rh = powf(m/3., 1./3.)*a+1e-15;
+    a = sqrt(x*x+y*y);
+    rh = pow(m/3., 1./3.)*a+1e-15;
 
-    if (RocheSmoothing) smoothing = r*powf(m/3.,1./3.)*ROCHESMOOTHING;
+    if (RocheSmoothing) smoothing = r*pow(m/3.,1./3.)*ROCHESMOOTHING;
     else smoothing = Compute_smoothing(r);
 
-    ComputeForce (fc, dens, x, y, smoothing, m, dimfxy, p, i, a, rh);
+    ComputeForce (force, dens, x, y, smoothing, m, dimfxy, p, i, a, rh);
 
-    globalforce = fc->GlobalForce;
+    globalforce = force->GlobalForce;
     sprintf (filename2, "%s%d.dat", filename,i);
     out = fopen(filename2, "a");
     if (out == NULL)
@@ -50,15 +49,15 @@ __host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *sys, int outpu
       fprintf(stderr, "Aborted.\n");
     }
 
-    fprintf(out, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n", outputnb, \
-      x*fc->fy_inner-y*fc->fx_inner, \
-      x*fc->fy_outer-y*fc->fx_outer, \
-      x*fc->fy_ex_inner-y*fc->fx_ex_inner, \
-      x*fc->fy_ex_outer-y*fc->fx_ex_outer, \
-      vx*fc->fx_inner+vy*fc->fy_inner , \
-      vx*fc->fx_outer+vy*fc->fy_outer , \
-      vx*fc->fx_ex_inner+vy*fc->fy_ex_inner , \
-      vx*fc->fx_ex_outer+vy*fc->fy_ex_outer , time2);
+    fprintf(out, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n", TimeStep, \
+      x*force->fy_inner-y*force->fx_inner, \
+      x*force->fy_outer-y*force->fx_outer, \
+      x*force->fy_ex_inner-y*force->fx_ex_inner, \
+      x*force->fy_ex_outer-y*force->fx_ex_outer, \
+      vx*force->fx_inner+vy*force->fy_inner , \
+      vx*force->fx_outer+vy*force->fy_outer , \
+      vx*force->fx_ex_inner+vy*force->fy_ex_inner , \
+      vx*force->fx_ex_outer+vy*force->fy_ex_outer , PhysicalTime);
     fclose (out);
   }
 }
@@ -74,10 +73,10 @@ __host__ Force *AllocateForce (int dimfxy)
   return force;
 }
 
-__host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, int p,
+__host__ void ComputeForce (Force *force, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, int p,
   int i, float a, float rh)
 {
-  globalforce = fc->GlobalForce;
+  globalforce = force->GlobalForce;
 
   gpuErrchk(cudaMemset(forcesxi_d, 0, dimfxy*sizeof(float)));
   gpuErrchk(cudaMemset(forcesxo_d, 0, dimfxy*sizeof(float)));
@@ -101,22 +100,22 @@ __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmo
     globalforce[k + 3*dimfxy] = forcesyo[k];
   }
 
-  fc->fx_inner = globalforce[0];
-  fc->fx_ex_inner = globalforce[dimfxy-1];
-  fc->fx_outer = globalforce[dimfxy];
-  fc->fx_ex_outer = globalforce[2*dimfxy-1];
-  fc->fy_inner = globalforce[2*dimfxy];
-  fc->fy_ex_inner = globalforce[3*dimfxy-1];
-  fc->fy_outer = globalforce[3*dimfxy];
-  fc->fy_ex_outer = globalforce[4*dimfxy-1];
-  fc->GlobalForce = globalforce;
+  force->fx_inner = globalforce[0];
+  force->fx_ex_inner = globalforce[dimfxy-1];
+  force->fx_outer = globalforce[dimfxy];
+  force->fx_ex_outer = globalforce[2*dimfxy-1];
+  force->fy_inner = globalforce[2*dimfxy];
+  force->fy_ex_inner = globalforce[3*dimfxy-1];
+  force->fy_outer = globalforce[3*dimfxy];
+  force->fy_ex_outer = globalforce[4*dimfxy-1];
+  force->GlobalForce = globalforce;
 
 }
 
 __host__ float Compute_smoothing(float r)
 {
   float smooth;
-  smooth = THICKNESSSMOOTHING * AspectRatio(r) * powf(r, 1.0+FLARINGINDEX);
+  smooth = THICKNESSSMOOTHING * AspectRatio(r) * pow(r, 1.0+FLARINGINDEX);
   return smooth;
 }
 

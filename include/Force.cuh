@@ -1,4 +1,5 @@
-__host__ void UpdateLog (Force *fc, float *dens, PlanetarySystem *psys,  int outputnb, float time, int dimfxy, int p);
+__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *dens, float *energy, int TimeStep, float PhysicalTime,
+   int dimfxy, int p);
 __host__ Force *AllocateForce (int dimfxy);
 __host__ void ComputeForce (Force *fc, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, int p,
    int i, float a, float rh);

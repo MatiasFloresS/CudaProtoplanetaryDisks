@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include <cstdarg>
 #include <iostream>
@@ -8,9 +7,7 @@
 #include <unistd.h>
 #include <cufft.h>
 #include "math_constants.h"
-#include <cufft.h>
 #include "cuda_runtime.h"
-
 
 #include "Types.cuh"
 #include "Kernels.cuh"
@@ -25,30 +22,27 @@
 #include "Readfiles.cuh"
 #include "Theo.cuh"
 
-
+using namespace std;
 
 __host__ void ReadVariables(char *ParameterFile);
 __host__ void TellEverything();
 __host__ void PrintUsage(char *argv);
 __host__ void UpdateVelocitiesWithViscosity(float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT);
-__host__ float CircumPlanetaryMass(float *dens, PlanetarySystem *sys);
-__host__ void MultiplyPolarGridbyConstant();
-__host__ void Substep1(float *dens, float *vrad, float *vtheta, float dt, int i);
-__host__ void Substep2(float dt);
-__host__ void Substep3(float *dens, float dt);
-__host__ void ActualiseGasVrad(float *vrad, float *vradnew);
-__host__ void ActualiseGasVtheta(float *vtheta, float *vthetanew);
-__host__ float FViscosity(float r);
+__host__ void MultiplyPolarGridbyConstant(float *dens);
 __host__ void FreeCuda();
-__host__ void Substep1cudamalloc(float *vrad, float *vtheta);
-__host__ void ActualiseGasEnergy(float *energy, float *energynew);
 __host__ void FreeArrays();
 __host__ void DeviceToHostcudaMemcpy(float *dens, float *energy, float *label, float *temperature, float *vrad, float *vtheta);
 __host__ void ComputeViscousTerms (float *vrad, float *vtheta, float *dens, int option);
 __host__ void Viscouscudamalloc();
 __host__ void CreateArrays();
 __host__ void Init_planetarysys_withSG(PlanetarySystem *sys);
-__host__ void cudamalloc(float *label, float *dens, float *vrad, float *vtheta);
-__host__ void executeExeC2Cforward();
-__host__ void executeExeC2Cbackward();
-__host__ void compute_selfgravity(float *dens, float *vrad, float *vtheta, float foostep);
+__host__ void Cudamalloc(float *label, float *dens, float *vrad, float *vtheta);
+__host__ void ExecuteExeC2Cforward();
+__host__ void ExecuteExeC2Cbackward();
+__host__ void Compute_selfgravity(float *dens, float *vrad, float *vtheta, float foostep);
+__host__ void Fft();
+__host__ void Fftmul();
+__host__ void Sg_Acc();
+__host__ void Update_sgvelocity(float foostep);
+__host__ float FViscosity(float r);
+__host__ float CircumPlanetaryMass(float *dens, PlanetarySystem *sys);

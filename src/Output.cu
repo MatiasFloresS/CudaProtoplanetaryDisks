@@ -1,7 +1,5 @@
 #include "Main.cuh"
 
-using namespace std;
-
 extern string OUTPUTDIR;
 
 extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, \

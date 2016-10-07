@@ -1,7 +1,5 @@
 #include "Main.cuh"
 
-using namespace std;
-
 extern char NewOutputdir[1024];
 extern int NINTERM, NTOT, NRAD, NSEC, YES, NO, OverridesOutputdir;
 

@@ -31,7 +31,7 @@ __host__ float Energy(float r)
     exit(1);
   }
   else
-    energy0 = R/MU/(ADIABATICINDEX-1.0)*SIGMA0*powf(ASPECTRATIO,2.0)*powf(r,-SIGMASLOPE-1.0+2.0*FLARINGINDEX);
+    energy0 = R/MU/(ADIABATICINDEX-1.0)*SIGMA0*pow(ASPECTRATIO,2.0)*pow(r,-SIGMASLOPE-1.0+2.0*FLARINGINDEX);
   return energy0;
 }
 
@@ -44,13 +44,13 @@ __host__ float Sigma(float r)
   /* profile, if a cavity is defined. It first needs */
   /* to relax towards steady state, on a viscous time scale */
 
-  return cavity*ScalingFactor*SIGMA0*powf(r,-SIGMASLOPE);
+  return cavity*ScalingFactor*SIGMA0*pow(r,-SIGMASLOPE);
 }
 
 __host__ float CoolingTime(float r)
 {
   float ct0;
-  ct0 = COOLINGTIME0*powf(r,2.0+2.0*FLARINGINDEX);
+  ct0 = COOLINGTIME0*pow(r,2.0+2.0*FLARINGINDEX);
   return ct0;
 }
 
@@ -68,6 +68,6 @@ __host__ float Qplusinit(float r)
 {
   float qp0, viscosity;
   viscosity = FViscosity(r);
-  qp0 = 2.25*viscosity*SIGMA0*powf(r,-SIGMASLOPE-3.0);
+  qp0 = 2.25*viscosity*SIGMA0*pow(r,-SIGMASLOPE-3.0);
   return qp0;
 }

@@ -16,12 +16,12 @@ extern dim3 dimGrid2, dimBlock2;
 __host__ void UpdateVelocitiesWithViscosity(float *vrad, float *vtheta, float *dens, float DeltaT)
 {
 
-  /*UpdateVelocities<<<dimGrid, dimBlock>>>(vt_d,vr_d,invRmed_d,Rmed_d, Rsup_d, Rinf_d,
-    invdiffRmed_d, invdiffSup_d,  rho_d, invRinf_d, Trr_d, Tpp_d, DeltaT, nrad, nsec);
-
-    float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
-      float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
-      float *Trp, float *Tpp, float DeltaT, int nrad, int nsec*/
+  // UpdateVelocities<<<dimGrid, dimBlock>>>(vt_d,vr_d,invRmed_d,Rmed_d, Rsup_d, Rinf_d,
+  //   invdiffRmed_d, invdiffSup_d,  rho_d, invRinf_d, Trr_d, Tpp_d, DeltaT, nrad, nsec);
+  //
+  //   float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
+  //     float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
+  //     float *Trp, float *Tpp, float DeltaT, int nrad, int nsec
 }
 
 __host__ float AspectRatio(float r)
@@ -36,7 +36,7 @@ __host__ float AspectRatio(float r)
   if (r < rmin) aspectratio *= TRANSITIONRATIO;
   if ((r >= rmin) && (r <= rmax))
   {
-    aspectratio *= expf((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
+    aspectratio *= exp((rmax-r)/(rmax-rmin)*log(TRANSITIONRATIO));
   }
   return aspectratio;
 }
@@ -49,7 +49,7 @@ __host__ float FViscosity(float r)
   if (ViscosityAlpha)
   {
     while (Rmed[i] < r) i++;
-    viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * powf(r, 1.5);
+    viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * pow(r, 1.5);
   }
   rmin = CAVITYRADIUS-CAVITYWIDTH*ASPECTRATIO;
   rmax = CAVITYRADIUS+CAVITYWIDTH*ASPECTRATIO;
@@ -57,7 +57,7 @@ __host__ float FViscosity(float r)
   rmin *= scale;
   rmax *= scale;
   if (r < rmin) viscosity *= CAVITYRATIO;
-  if ((r >= rmin) && (r <= rmax)) viscosity *= expf((rmax-r)/(rmax-rmin)*logf(CAVITYRATIO));
+  if ((r >= rmin) && (r <= rmax)) viscosity *= exp((rmax-r)/(rmax-rmin)*log(CAVITYRATIO));
   return viscosity;
 }
 

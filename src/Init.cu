@@ -1,18 +1,17 @@
 #include "Main.cuh"
 
-
 extern int NRAD, NSEC, nsec2pot, blocksize, nrad2pot, size_grid;
 extern float *Rmed, *Rmed_d, *label_d;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void Initialization (float *dens, float *energy, float *vrad, float *vtheta, float * label, PlanetarySystem *sys)
+__host__ void Initialization (float *dens, float *vrad, float *vtheta, float *energy, float *label, PlanetarySystem *sys)
 {
-  InitEuler (dens, energy, vrad, vtheta);
-  InitLabel (sys);
+  InitEuler (vrad, vtheta, dens, energy);
+  InitLabel (label, sys);
   WriteDim();
 }
 
-__host__ void InitLabel(PlanetarySystem *sys)
+__host__ void InitLabel (float *label, PlanetarySystem *sys)
 {
   float xp,yp, rhill, rp;
   xp = sys->x[0];

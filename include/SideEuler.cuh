@@ -6,3 +6,4 @@ __host__ void MinusMean(float *dens, float *energy);
 __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step);
 __host__ void Cscudamalloc();
 __host__ void Meancudamalloc();
+__host__ void OpenBoundary();

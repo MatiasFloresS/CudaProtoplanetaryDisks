@@ -39,7 +39,6 @@ __host__ void OneWindRad (float *dens, float *vrad, float *energy, float dt)
   StarRadKernel<<<dimGrid2, dimBlock2>>> (Qbase_d, vrad_d, QStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d);
   gpuErrchk(cudaDeviceSynchronize());
   ActualiseGasDens (densint, dens);
-
 }
 
 __host__ void ActualiseGasDens(float *densint, float *dens)

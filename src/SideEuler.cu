@@ -15,11 +15,8 @@ extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, float *vtheta, float step)
 {
 
-  if(OpenInner == YES)
-  {
-    OpenBoundaryKernel<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
-    gpuErrchk(cudaDeviceSynchronize());
-  }
+  if(OpenInner == YES) OpenBoundary();
+
 
   if (NonReflecting == YES)
   {
@@ -47,11 +44,11 @@ __host__ void NonReflectingBoundary(float *dens, float *energy, float *vrad)
   dangle = (pow(Rinf[i],-1.5)-1.0)/(.5*(cs0_r+cs1_r));
   dangle *= (Rmed[i] - Rmed[i-1]);
 
-  i_angle = (int)(dangle/2.0/CUDART_PI_F*(float)NSEC+.5);
+  i_angle = (int)(dangle/2.0/M_PI*(float)NSEC+.5);
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
   dangle2 *= (Rmed[i]-Rmed[i-1]);
-  i_angle2 = (int)(dangle2/2.0/CUDART_PI_F*(float)NSEC+.5);
+  i_angle2 = (int)(dangle2/2.0/M_PI*(float)NSEC+.5);
 
   // printf("%d %d\n",i_angle , i_angle2);
   // printf("%f %f\n",dangle, dangle2 );
@@ -98,11 +95,17 @@ __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step)
 {
   float Tin, Tout, DRMIN, DRMAX;
   /* Orbital period at inner and outer boundary */
-  Tin = 2.0*CUDART_PI_F*pow(Rmed[0],3./2);;
-  Tout = 2.0*CUDART_PI_F*pow(Rmed[NRAD-1],3./2);
+  Tin = 2.0*M_PI*pow(Rmed[0],3./2);;
+  Tout = 2.0*M_PI*pow(Rmed[NRAD-1],3./2);
   /* DRMIN AND DRMAX are global Radii boundaries of killing wave zones */
   DRMIN = Rmed[0]*1.25;
   DRMAX = Rmed[NRAD-1]*0.84;
 
   //viscosity = Rmed[];
+}
+
+__host__ void OpenBoundary()
+{
+  OpenBoundaryKernel<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
+  gpuErrchk(cudaDeviceSynchronize());
 }
