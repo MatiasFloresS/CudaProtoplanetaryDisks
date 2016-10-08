@@ -224,14 +224,17 @@ __host__ int main (int argc, char *argv[])
   if (Corotating) OmegaFrame1 = GetPsysInfo (sys, FREQUENCY);
 
   /* Only gas velocities remain to be initialized */
-  Initialization (dens, energy, vrad, vtheta, label, sys);
+  Initialization (dens, vrad, vtheta, energy, label, sys);
+
 
   /* Initial gas_density is used to compute the circumplanetary mass with initial
      density field */
   mdcp = CircumPlanetaryMass (dens, sys);
+  printf("mdcp = %.10f\n",mdcp );
 
   EmptyPlanetSystemFile (sys);
   PhysicalTimeInitial = PhysicalTime;
+
   MultiplyPolarGridbyConstant(dens);
 
   for (int i = 0; i <= 1000; i++)
@@ -263,11 +266,11 @@ __host__ int main (int argc, char *argv[])
   FreePlanetary (sys);
   FreeForce (force);
 
-  // free(dens);
-  // free(energy);
-  // free(label);
-  // free(vrad);
-  // free(vtheta);
+  free(dens);
+  free(energy);
+  free(label);
+  free(vrad);
+  free(vtheta);
   FreeArrays();
   FreeCuda();
   if (SelfGravity) // && !SGZeroMode
@@ -374,61 +377,61 @@ __host__ void FreeArrays ()
   free(invRinf);
   free(array);
   free(mdcp0);
-  // free(invSurf);
-  // free(invRmed);
-  // free(invdiffSurf);
-  // free(invdiffRsup);
-  // free(invdiffRmed);
-  // free(EnergyMed);
-  // free(SigmaMed);
-  // free(SigmaInf);
-  // free(vt_int);
-  // free(GLOBAL_bufarray);
-  // free(vradint);
-  // free(pot);
-  // free(vthetaint);
-  // free(powRmed);
-  // free(temperatureint);
-  // free(densint);
-  // free(vradnew);
-  // free(vthetanew);
-  // free(energyint);
-  // free(energynew);
-  // free(forcesxi);
-  // free(forcesyi);
-  // free(forcesxo);
-  // free(forcesyo);
-  //
-  // free(QplusMed);
-  // free(CoolingTimeMed);
-  // free(viscosity_array);
-  // free(Drr);
-  // free(Dpp);
-  // free(divergence);
-  // free(Drp);
-  // free(Trr);
-  // free(Tpp);
-  // free(Trp);
-  // free(cs0);
-  // free(cs1);
-  // free(csnrm1);
-  // free(csnrm2);
-  // free(mean_dens);
-  // free(mean_dens2);
-  // free(mean_energy);
-  // free(mean_energy2);
-  // free(qplus);
-  // free(ThetaMomP);
-  // free(ThetaMomM);
-  // free(RadMomP);
-  // free(RadMomM);
-  // free(extlabel);
-  // free(QStar);
-  // free(Qbase);
-  // free(densStar);
-  // free(Radii);
-  // free(SG_Accr);
-  // free(SG_Acct);
+  free(invSurf);
+  free(invRmed);
+  free(invdiffSurf);
+  free(invdiffRsup);
+  free(invdiffRmed);
+  free(EnergyMed);
+  free(SigmaMed);
+  free(SigmaInf);
+  free(vt_int);
+  free(GLOBAL_bufarray);
+  free(vradint);
+  free(pot);
+  free(vthetaint);
+  free(powRmed);
+  free(temperatureint);
+  free(densint);
+  free(vradnew);
+  free(vthetanew);
+  free(energyint);
+  free(energynew);
+  free(forcesxi);
+  free(forcesyi);
+  free(forcesxo);
+  free(forcesyo);
+
+  free(QplusMed);
+  free(CoolingTimeMed);
+  free(viscosity_array);
+  free(Drr);
+  free(Dpp);
+  free(divergence);
+  free(Drp);
+  free(Trr);
+  free(Tpp);
+  free(Trp);
+  free(cs0);
+  free(cs1);
+  free(csnrm1);
+  free(csnrm2);
+  free(mean_dens);
+  free(mean_dens2);
+  free(mean_energy);
+  free(mean_energy2);
+  free(qplus);
+  free(ThetaMomP);
+  free(ThetaMomM);
+  free(RadMomP);
+  free(RadMomM);
+  free(extlabel);
+  free(QStar);
+  free(Qbase);
+  free(densStar);
+  free(Radii);
+  free(SG_Accr);
+  free(SG_Acct);
   //
 
 }

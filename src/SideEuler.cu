@@ -14,7 +14,6 @@ extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
 __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, float *vtheta, float step)
 {
-
   if(OpenInner == YES) OpenBoundary ();
 
   if (NonReflecting == YES)
@@ -30,19 +29,34 @@ __host__ void ApplyBoundaryCondition (float *dens, float *energy, float *vrad, f
 __host__ void NonReflectingBoundary (float *dens, float *energy, float *vrad)
 {
   int i,i_angle, i_angle2;
-  float dangle, dangle2;
+  double dangle, dangle2;
 
   ReduceCs();
 
   i = 1;
   dangle = (pow(Rinf[i],-1.5)-1.0)/(.5*(cs0_r+cs1_r));
+  printf("%f\n", Rinf[i]);
+  printf("cs0%f\n",cs0_r );
+  printf("cs1%f\n",cs1_r );
+  printf("dangle%g\n",dangle );
   dangle *= (Rmed[i] - Rmed[i-1]);
+  printf("rmd %.10f\n", Rmed[i]);
+  printf("rmd %.10f\n", Rmed[i-1]);
   i_angle = (int)(dangle/2.0/M_PI*(float)NSEC+.5);
+  printf("%f\n", (dangle/2.0/M_PI*(float)NSEC+.5));
 
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
+  printf("dangle2%g\n",dangle2 );
   dangle2 *= (Rmed[i]-Rmed[i-1]);
+  printf("rmd %g\n", Rmed[i]-Rmed[i-1]);
   i_angle2 = (int)(dangle2/2.0/M_PI*(float)NSEC+.5);
+  printf("cs0%f\n",csnrm1_r );
+  printf("cs1%f\n",csnrm2_r );
+  printf("%d\n", i_angle2);
+  printf("%f\n", (dangle2/2.0/M_PI*(float)NSEC+.5));
+
+  exit(-1);
 
   NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(dens_d, energy_d, i_angle, NSEC, vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);

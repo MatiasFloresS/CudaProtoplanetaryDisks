@@ -22,8 +22,8 @@ __global__ void Substep3Kernel (float *dens, float *qplus, float *viscosity_arra
   float *divergence, int nrad, int nsec, float *Rmed, int Cooling, float *energynew, float dt, float *EnergyMed,
   float *SigmaMed, float *CoolingTimeMed, float *energy, float ADIABATICINDEX, float *QplusMed);
 
-__global__ void UpdateVelocitiesKernel (float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
-  float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
+__global__ void UpdateVelocitiesKernel (float *vthetaint, float *vradint, float *invRmed, float *Rmed, float *Rsup,
+  float *Rinf, float *invdiffRmed, float *invdiffRsup, float *dens, float *invRinf, float *Trr,
   float *Trp, float *Tpp, float DeltaT, int nrad, int nsec);
 
 __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate, float *Rmed,

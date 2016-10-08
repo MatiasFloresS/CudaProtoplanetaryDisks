@@ -95,7 +95,7 @@ __global__ void Substep3Kernel (float *dens, float *qplus, float *viscosity_arra
   }
 }
 
-__global__ void UpdateVelocitiesKernel (float *vtheta, float *vrad, float *invRmed, float *Rmed, float *Rsup,
+__global__ void UpdateVelocitiesKernel (float *vthetaint, float *vradint, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *dens, float *invRinf, float *Trr,
   float *Trp, float *Tpp, float DeltaT, int nrad, int nsec)
 {
@@ -110,7 +110,7 @@ __global__ void UpdateVelocitiesKernel (float *vtheta, float *vrad, float *invRm
   /* vtheta first */
   if (i<nrad-1 && j<nsec)
   {
-    vtheta[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*Trp[(i+1)*nsec+ j]-Rinf[i]*Trp[i*nsec +j])*invdiffRsup[i] + \
+    vthetaint[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*Trp[(i+1)*nsec+ j]-Rinf[i]*Trp[i*nsec +j])*invdiffRsup[i] + \
     (Tpp[i*nsec +j]-Tpp[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec) + 0.5*(Trp[i*nsec + j] + Trp[(i+1)*nsec +j]))/ \
     (0.5*(dens[i*nsec +j]+dens[i*nsec + ((j-1)+nsec)%nsec]));
   }
@@ -118,7 +118,7 @@ __global__ void UpdateVelocitiesKernel (float *vtheta, float *vrad, float *invRm
   /* now vrad */
   if (i<nrad && j<nsec)
   {
-    vrad[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*Trr[i*nsec +j]- Rmed[i-1]*Trr[(i-1)*nsec + j])*invdiffRmed[i] + \
+    vradint[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*Trr[i*nsec +j]- Rmed[i-1]*Trr[(i-1)*nsec + j])*invdiffRmed[i] + \
     (Trp[i*nsec + (j+1)%nsec] -Trp[i*nsec + j])*1.0/(2.0*CUDART_PI_F/nsec) - 0.5*(Trp[i*nsec +j] + Trp[(i-1)*nsec + j]))/ \
     (0.5*(dens[i*nsec +j] + dens[(i-1)*nsec + j]));
 
@@ -205,8 +205,8 @@ __global__ void CircumPlanetaryMassKernel (float *dens, float *Surf, float *Cell
   if (i<nrad && j<nsec)
   {
     dist = sqrtf((CellAbscissa[j+i*nsec]-xpl)*(CellAbscissa[j+i*nsec]-xpl) + (CellOrdinate[j+i*nsec]-ypl)*(CellOrdinate[j+i*nsec]-ypl));
-
     if (dist < HillRadius) mdcp0[j+i*nsec] =  Surf[i]* dens[j+i*nsec];
+    else mdcp0[i*nsec + j] = 0.0;
   }
 }
 
@@ -577,7 +577,7 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
 
     float omega, r, ri;
 
-    if (i <= nrad && j < nsec)
+    if (i < nrad && j < nsec)
     {
       if (i == nrad)
       {

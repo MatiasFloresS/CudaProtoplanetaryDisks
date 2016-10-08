@@ -7,21 +7,19 @@ extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LA
 ALPHAVISCOSITY, *vrad_d, *vtheta_d, *Drr_d, *Dpp_d, *divergence_d, *Drp_d, *invdiffRsup_d, *Rinf_d, *Dpp, \
 *invdiffRmed_d, *Trr_d, *Tpp_d, *dens_d, *viscosity_array_d, *Trp_d, *divergence, *Drr, *Drp, *Trr, *Trp, \
 *Tpp, *invRinf_d, *Rsup, *invRmed, *vthetaint_d, *vradint_d, *viscosity_array, *Rsup_d, *invRmed_d, \
-dphi, invdphi, onethird;
+dphi, invdphi, onethird, *vradint, *vthetaint, *Rmed_d, *invdiffRsup_d;
 
 float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateVelocitiesWithViscosity(float *vrad, float *vtheta, float *dens, float DeltaT)
+__host__ void UpdateVelocitiesWithViscosity(float *vradint, float *vthetaint, float *dens, float DeltaT)
 {
 
-  // UpdateVelocities<<<dimGrid, dimBlock>>>(vt_d,vr_d,invRmed_d,Rmed_d, Rsup_d, Rinf_d,
-  //   invdiffRmed_d, invdiffSup_d,  rho_d, invRinf_d, Trr_d, Tpp_d, DeltaT, nrad, nsec);
+  UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(vthetaint_d, vradint_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
+    invdiffRmed_d, invdiffRsup_d,  dens_d, invRinf_d, Trr_d, Trp_d, Tpp_d, DeltaT, NRAD, NSEC);
+    gpuErrchk(cudaDeviceSynchronize());
 
-  //   float *vt, float *vr, float *invRmed, float *Rmed, float *Rsup,
-  //     float *Rinf, float *invdiffRmed, float *invdiffRsup, float *rho, float *invRinf, float *Trr,
-  //     float *Trp, float *Tpp, float DeltaT, int nrad, int nsec
 }
 
 __host__ float AspectRatio(float r)

@@ -60,12 +60,15 @@ __host__ void FillPolar1DArrays ()
   {
     printf("Warning : no `radii.dat' file found. Using default.\n");
     if (LogGrid == YES)
-    {
+    { printf("entro\n" );
       for (i = 0; i <= NRAD; i++)
       {
         Radii2[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX / RMIN));
         Radii[i] = (float) Radii2[i];
       }
+
+
+
 
 
       for (i = 0; i < 2*NRAD; i++)
@@ -104,14 +107,14 @@ __host__ void FillPolar1DArrays ()
 
   for (i = 0; i < NRAD; i++)
   {
-    Rinf[i] = Radii[i];
-    Rsup[i] = Radii[i+1];
-    Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
-    Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
-    Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(float)NSEC;
+    Rinf[i] = Radii2[i];
+    Rsup[i] = Radii2[i+1];
+    Rmed[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]);
+    Rmed[i] = Rmed[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]);
+    Surf[i] = M_PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
+    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]);
     invRinf[i] = 1.0/Rinf[i];
   }
 
@@ -149,8 +152,8 @@ __host__ void InitEuler (float *vrad, float *vtheta, float *dens, float *energy)
 
   for (int i = 0; i < NSEC; i++)
   {
-      cosns[i] = cos((2.0*M_PI*i)/NSEC);
-      sinns[i] = sin((2.0*M_PI*i)/NSEC);
+      cosns[i] = cos((2.0*M_PI*i)/(float)NSEC);
+      sinns[i] = sin((2.0*M_PI*i)/(float)NSEC);
   }
 
   for (int i = 0; i < NRAD; i++) AspectRatioRmed[i] = AspectRatio(Rmed[i]);
@@ -261,8 +264,8 @@ __host__ void Computecudamalloc (float *energy)
   gpuErrchk(cudaMemcpy(cosns_d, cosns, NSEC*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(sinns_d, sinns, NSEC*sizeof(float), cudaMemcpyHostToDevice));
 
-  gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  // gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  // gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(SoundSpeed_d, SoundSpeed,     size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(energy_d, energy,             size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(press_d, press,               size_grid*sizeof(float), cudaMemcpyHostToDevice));
@@ -445,7 +448,7 @@ __host__ void AlgoGas (Force *force, float *dens, float *vrad, float *vtheta, fl
       CrashedEnergy = DetectCrash (energy);
       if (CrashedDens == YES || CrashedEnergy == YES)
       {
-        fprintf(stdout, "\nCrash! at time %d\n", PhysicalTime);
+        //fprintf(stdout, "\nCrash! at time %d\n", PhysicalTime);
       }
       // if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
@@ -454,7 +457,7 @@ __host__ void AlgoGas (Force *force, float *dens, float *vrad, float *vtheta, fl
       Substep2 (dt);
       ActualiseGasVrad (vrad, vradnew);
       ActualiseGasVtheta (vtheta, vthetanew);
-      //ApplyBoundaryCondition (dens, energy, vrad, vtheta, dt);
+      ApplyBoundaryCondition (dens, energy, vrad, vtheta, dt);
 
       if (Adiabaticc)
       {
@@ -490,7 +493,7 @@ __host__ void Substep1 (float *dens, float *vrad, float *vtheta, float dt, int i
     }
 
   ComputeViscousTerms (vradint, vthetaint, dens, 0);
-  //UpdateVelocitiesWithViscosity(vradint, vthetaint, dens, dt);
+  UpdateVelocitiesWithViscosity(vradint, vthetaint, dens, dt);
 
   //if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
 

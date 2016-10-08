@@ -46,3 +46,4 @@ __host__ void Sg_Acc ();
 __host__ void Update_sgvelocity (float DeltaT);
 __host__ float FViscosity (float r);
 __host__ float CircumPlanetaryMass (float *dens, PlanetarySystem *sys);
+__host__ void UpdateVelocitiesWithViscosity(float *vrad, float *vtheta, float *dens, float DeltaT);
