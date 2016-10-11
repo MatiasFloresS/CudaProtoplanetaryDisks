@@ -106,3 +106,7 @@ __global__ void Azimutalvelocity_withSGKernel (float *vtheta, float *Rmed, float
   float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec);
 
 __global__ void CrashKernel (float *array, int NRAD, int NSEC, bool Crash);
+
+__global__ void EvanescentBoundaryKernel(float *Rmed, float *vrad, float *vtheta, float *energy, float *dens, float *AspectRatioRmed, float *viscosity_array,
+  float DRMIN, float DRMAX, int nrad, int nsec, float Tin, float Tout, float step, float G, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray,
+  float OmegaFrame1, float *SigmaMed, float *EnergyMed, int Adiabaticc, int SelfGravity);

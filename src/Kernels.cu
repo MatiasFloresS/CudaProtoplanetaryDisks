@@ -495,10 +495,15 @@ __global__ void NonReflectingBoundaryKernel (float *dens, float *energy, int i_a
       energy[j+i_angle - nsec] = energy[i*nsec + j];
     }
 
-    if(j+i_angle < 0)
+    else if(j+i_angle < 0)
     {
       dens[j+i_angle + nsec] = dens[i*nsec + j];
       energy[j+i_angle + nsec] = energy[i*nsec + j];
+    }
+    else
+    {
+      dens[j+i_angle] = dens[i*nsec + j];
+      energy[j+i_angle] = energy[i*nsec + j];
     }
     vrad_med = -SoundSpeed[i*nsec + j]*(dens[i*nsec + j]-SigmaMed)/SigmaMed;
     vrad[i*nsec + j] = 2.*vrad_med-vrad[(i+1)*nsec + j];
@@ -512,10 +517,15 @@ __global__ void NonReflectingBoundaryKernel (float *dens, float *energy, int i_a
       dens[i*nsec + j] = dens[j-i_angle2 + (i-2)*nsec ];
       energy[i*nsec + j] = energy[j-i_angle2 + (i-2)*nsec ];
     }
-    if (j-i_angle2 < 0)
+    else if (j-i_angle2 < 0)
     {
       dens[i*nsec + j] = dens[j-i_angle2 + i*nsec];
       energy[i*nsec + j] = energy[j-i_angle2 + i*nsec];
+    }
+    else
+    {
+      dens[i*nsec + j] = dens[j-i_angle2 + (i-1)*nsec];
+      energy[i*nsec + j] = energy[j-i_angle2 + (i-1)*nsec];
     }
     vrad_med = SoundSpeed[i*nsec + j]*(dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
     vrad[i*nsec + j] = 2.*vrad_med - vrad[(i-1)*nsec + j];
@@ -877,4 +887,51 @@ __global__ void CrashKernel (float *array, int nrad, int nsec, bool Crash)
     else
       array[i*nsec + j] = 0.0;
   }
+}
+
+__global__ void EvanescentBoundaryKernel(float *Rmed, float *vrad, float *vtheta, float *energy, float *dens, float *AspectRatioRmed, float *viscosity_array,
+  float DRMIN, float DRMAX, int nrad, int nsec, float Tin, float Tout, float step, float G, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray,
+  float OmegaFrame1, float *SigmaMed, float *EnergyMed, int Adiabaticc, int SelfGravity)
+{
+    int j = threadIdx.x + blockDim.x*blockIdx.x;
+    int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+    float damping, lambda, vtheta0, vrad0, energy0, dens0;
+    if (i<nrad && j<nsec)
+    {
+      if ((Rmed[i] < DRMIN) || (Rmed[i] > DRMAX))
+      {  /* Damping operates only inside the wave killing zones */
+        if(Rmed[i] < DRMIN)
+        {
+          damping = (Rmed[i]-DRMIN)/(Rmed[0]-DRMIN);
+          lambda = damping*damping*10.0*step/Tin;
+        }
+        if (Rmed[i] > DRMAX)
+        {
+          damping = (Rmed[i]-DRMAX)/(Rmed[nrad-1]-DRMAX);
+          lambda = damping*damping*10.0*step/Tout;
+        }
+        if(!SelfGravity)
+        {
+          vtheta0 = sqrtf(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*powf(AspectRatioRmed[i],2.0) * \
+          powf(Rmed[i],2.0*FLARINGINDEX)));
+        }
+        if (SelfGravity)
+        {
+          vtheta0 = sqrtf(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*powf(AspectRatioRmed[i],2.0) * \
+          powf(Rmed[i],2.0*FLARINGINDEX)) - Rmed[i]*GLOBAL_bufarray[i]);
+        }
+        /* this could be refined if CentrifugalBalance is used... */
+        vtheta0 -= Rmed[i]*OmegaFrame1;
+        vrad0 = -3.0*viscosity_array[i]/Rmed[i]*(-SIGMASLOPE+.5);
+        dens0 = SigmaMed[i];
+        energy0 = EnergyMed[i];
+
+        vrad[i*nsec + j] = (vrad[i*nsec + j] + lambda*vrad0)/(1.0+lambda);
+        vtheta[i*nsec + j] = (vtheta[i*nsec + j] + lambda*vtheta0)/(1.0+lambda);
+        dens[i*nsec + j] = (dens[i*nsec + j] + lambda*dens0)/(1.0+lambda);
+        if (Adiabaticc)
+          energy[i*nsec + j] = (energy[i*nsec + j] + lambda*energy0)/(1.0+lambda);
+      }
+    }
 }

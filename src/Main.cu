@@ -266,13 +266,15 @@ __host__ int main (int argc, char *argv[])
   FreePlanetary (sys);
   FreeForce (force);
 
-  free(dens);
-  free(energy);
-  free(label);
-  free(vrad);
-  free(vtheta);
-  FreeArrays();
-  FreeCuda();
+
+//  FreeCuda();
+//  FreeArrays();
+//  free(dens);
+//  free(energy);
+//  free(label);
+//  free(vrad);
+//  free(vtheta);
+
   if (SelfGravity) // && !SGZeroMode
   {
       cufftDestroy(planf);

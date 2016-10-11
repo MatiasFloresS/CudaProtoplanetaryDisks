@@ -109,12 +109,12 @@ __host__ void FillPolar1DArrays ()
   {
     Rinf[i] = Radii2[i];
     Rsup[i] = Radii2[i+1];
-    Rmed[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]);
-    Rmed[i] = Rmed[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]);
-    Surf[i] = M_PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC;
+    Rmed[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]); // 2/3*(Rsup^3 - Rinf^3)
+    Rmed[i] = Rmed[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]); // Rmed /(Rsup^2 - Rinf^2)
+    Surf[i] = M_PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC;  // (Rsup^2 - Rinf^2)
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]);
+    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]); // 1.0 / (Rsup - Rinf)
     invRinf[i] = 1.0/Rinf[i];
   }
 
