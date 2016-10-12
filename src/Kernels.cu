@@ -4,7 +4,7 @@ extern int blocksize2, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
 extern float *GLOBAL_bufarray, *gridfield_d, *GLOBAL_bufarray_d;
 extern dim3 dimGrid, dimBlock;
 
-__global__ void Substep1Kernel (float *press, float *dens, float *vradint, float *invdiffRmed, float *pot,
+__global__ void Substep1Kernel (float *Pressure, float *dens, float *VradInt, float *invdiffRmed, float *pot,
    float *Rinf, float *invRinf, float *vrad, float *vthetaint, float *vtheta, float *Rmed, float dt,
    int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE,
    float *powRmed)
@@ -17,11 +17,11 @@ __global__ void Substep1Kernel (float *press, float *dens, float *vradint, float
 
   if (i<nrad && j<nsec)
   {
-    gradp = 2.0*(press[i*nsec + j] - press[(i-1)*nsec + j])/(dens[i*nsec + j] + dens[(i-1)*nsec + j])*invdiffRmed[i];
+    gradp = 2.0*(Pressure[i*nsec + j] - Pressure[(i-1)*nsec + j])/(dens[i*nsec + j] + dens[(i-1)*nsec + j])*invdiffRmed[i];
     gradphi = (pot[i*nsec + j]-pot[(i-1)*nsec + j])*invdiffRmed[i];
-    vt2 = press[i*nsec + j] + press[(i-1)*nsec + j] + press[i*nsec + (j+1)%nsec] + press[(i-1)*nsec + (j+1)%nsec];
+    vt2 = Pressure[i*nsec + j] + Pressure[(i-1)*nsec + j] + Pressure[i*nsec + (j+1)%nsec] + Pressure[(i-1)*nsec + (j+1)%nsec];
     vt2 = vt2/4.0+Rinf[i]*OmegaFrame;
-    vradint[i*nsec + j] = vrad[i*nsec + j] + dt*(-gradp - gradphi + vt2*vt2*invRinf[i]);
+    VradInt[i*nsec + j] = vrad[i*nsec + j] + dt*(-gradp - gradphi + vt2*vt2*invRinf[i]);
   }
 
   i-=1;
@@ -29,7 +29,7 @@ __global__ void Substep1Kernel (float *press, float *dens, float *vradint, float
   // i=0->nrad ,   j=0->nsec
   if (i<nrad && j<nsec)
   {
-    gradp = 2.0*(press[i*nsec + j] - press[i*nsec + ((j-1)+nsec)%nsec])/(dens[i*nsec +j] +dens[i*nsec + ((j-1)+nsec)%nsec]) \
+    gradp = 2.0*(Pressure[i*nsec + j] - Pressure[i*nsec + ((j-1)+nsec)%nsec])/(dens[i*nsec +j] +dens[i*nsec + ((j-1)+nsec)%nsec]) \
     *1.0/(2.0*CUDART_PI_F/nsec*Rmed[i]);
 
     if (ZMPlus) gradp *= 1; //gradp *= SG_aniso_coeff;  Definir mas adelante SG_aniso_coeff
@@ -63,7 +63,8 @@ __global__ void Substep3Kernel (float *dens, float *qplus, float *viscosity_arra
     else qplus[i*nsec + j] = 0.0;
 
   }
-
+  __syncthreads();
+  i-= 1;
   if (i==0 && j<nsec)
   {
     /* We calculate the heating source term Qplus for i=0 */
@@ -76,6 +77,8 @@ __global__ void Substep3Kernel (float *dens, float *qplus, float *viscosity_arra
     else qplus[i*nsec + j] = 0.0;
   }
 
+  __syncthreads();
+
   if (i<nrad && j<nsec)
   {
     if (!Cooling)
@@ -84,7 +87,7 @@ __global__ void Substep3Kernel (float *dens, float *qplus, float *viscosity_arra
       den = 1.0+(ADIABATICINDEX-1.0)*dt*divergence[i*nsec + j];
       energynew[i*nsec + j] = num/den;
     }
-    if (Cooling)
+    else
     {
       num = EnergyMed[i]*dt*dens[i*nsec + j]/SigmaMed[i] + CoolingTimeMed[i]*energy[i*nsec + j] + \
         dt*CoolingTimeMed[i]*(qplus[i*nsec + j]-QplusMed[i]*dens[i*nsec + j]/SigmaMed[i]);
@@ -95,9 +98,9 @@ __global__ void Substep3Kernel (float *dens, float *qplus, float *viscosity_arra
   }
 }
 
-__global__ void UpdateVelocitiesKernel (float *vthetaint, float *vradint, float *invRmed, float *Rmed, float *Rsup,
-  float *Rinf, float *invdiffRmed, float *invdiffRsup, float *dens, float *invRinf, float *Trr,
-  float *Trp, float *Tpp, float DeltaT, int nrad, int nsec)
+__global__ void UpdateVelocitiesKernel (float *vthetaint, float *VradInt, float *invRmed, float *Rmed, float *Rsup,
+  float *Rinf, float *invdiffRmed, float *invdiffRsup, float *dens, float *invRinf, float *TAURR, float *TAURP,
+  float *TAUPP, float DeltaT, int nrad, int nsec)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -110,31 +113,30 @@ __global__ void UpdateVelocitiesKernel (float *vthetaint, float *vradint, float 
   /* vtheta first */
   if (i<nrad-1 && j<nsec)
   {
-    vthetaint[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*Trp[(i+1)*nsec+ j]-Rinf[i]*Trp[i*nsec +j])*invdiffRsup[i] + \
-    (Tpp[i*nsec +j]-Tpp[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec) + 0.5*(Trp[i*nsec + j] + Trp[(i+1)*nsec +j]))/ \
+    vthetaint[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*TAURP[(i+1)*nsec+ j]-Rinf[i]*TAURP[i*nsec +j])*invdiffRsup[i] + \
+    (TAUPP[i*nsec +j]-TAUPP[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*CUDART_PI_F/nsec) + 0.5*(TAURP[i*nsec + j] + TAURP[(i+1)*nsec +j]))/ \
     (0.5*(dens[i*nsec +j]+dens[i*nsec + ((j-1)+nsec)%nsec]));
   }
 
   /* now vrad */
   if (i<nrad && j<nsec)
   {
-    vradint[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*Trr[i*nsec +j]- Rmed[i-1]*Trr[(i-1)*nsec + j])*invdiffRmed[i] + \
-    (Trp[i*nsec + (j+1)%nsec] -Trp[i*nsec + j])*1.0/(2.0*CUDART_PI_F/nsec) - 0.5*(Trp[i*nsec +j] + Trp[(i-1)*nsec + j]))/ \
+    VradInt[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*TAURR[i*nsec +j]- Rmed[i-1]*TAURR[(i-1)*nsec + j])*invdiffRmed[i] + \
+    (TAURP[i*nsec + (j+1)%nsec] -TAURP[i*nsec + j])*1.0/(2.0*CUDART_PI_F/nsec) - 0.5*(TAURP[i*nsec +j] + TAURP[(i-1)*nsec + j]))/ \
     (0.5*(dens[i*nsec +j] + dens[(i-1)*nsec + j]));
 
   }
 }
 
-__global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate, float *Rmed, float *cosns,
-  float *sinns, int nsec, int nrad)
+__global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate, float *Rmed, int nsec, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<nrad && j<nsec)
   {
-    CellAbscissa[i*nsec+j] = Rmed[i] * cosns[j];
-    CellOrdinate[i*nsec+j] = Rmed[i] * sinns[j];
+    CellAbscissa[i*nsec+j] = Rmed[i] * cosf((2.0*M_PI*j)/(float)nsec);
+    CellOrdinate[i*nsec+j] = Rmed[i] * sinf((2.0*M_PI*j)/(float)nsec);
   }
 }
 
@@ -151,7 +153,7 @@ __global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *dens, float *
   }
 }
 
-__global__ void ComputePressureFieldKernel (float *SoundSpeed, float *dens, float *press, int Adiabaticc, int nrad,
+__global__ void ComputePressureFieldKernel (float *SoundSpeed, float *dens, float *Pressure, int Adiabaticc, int nrad,
   int nsec, int ADIABATICINDEX, float *energy)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -159,12 +161,12 @@ __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *dens, floa
 
   if (i<nrad && j<nsec)
   {
-    if (~Adiabaticc) press[j+i*nsec] = dens[j+i*nsec]*SoundSpeed[j+i*nsec]*SoundSpeed[j+i*nsec];
-    else press[j+i*nsec] = (ADIABATICINDEX-1.0)*energy[j+i*nsec];
+    if (~Adiabaticc) Pressure[j+i*nsec] = dens[j+i*nsec]*SoundSpeed[j+i*nsec]*SoundSpeed[j+i*nsec];
+    else Pressure[j+i*nsec] = (ADIABATICINDEX-1.0)*energy[j+i*nsec];
   }
 }
 
-__global__ void ComputeTemperatureFieldKernel (float *dens, float *temperature, float *press, float *energy, float MU,
+__global__ void ComputeTemperatureFieldKernel (float *dens, float *Temperature, float *Pressure, float *energy, float MU,
   float R, float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -172,8 +174,8 @@ __global__ void ComputeTemperatureFieldKernel (float *dens, float *temperature, 
 
   if (i<nrad && j<nsec)
   {
-    if (~Adiabaticc) temperature[j+i*nsec] = MU/R*press[j+i*nsec]/dens[j+i*nsec];
-    else temperature[j+i*nsec] = MU/R*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec];
+    if (~Adiabaticc) Temperature[j+i*nsec] = MU/R*Pressure[j+i*nsec]/dens[j+i*nsec];
+    else Temperature[j+i*nsec] = MU/R*(ADIABATICINDEX-1.0)*energy[j+i*nsec]/dens[j+i*nsec];
   }
 }
 
@@ -382,7 +384,7 @@ __global__ void MultiplyPolarGridbyConstantKernel (float *dens, int nrad, int ns
   if (i<nrad && j<nsec) dens[j+i*nsec] *= ScalingFactor;
 }
 
-__global__ void Substep2Kernel (float *dens, float *vradint, float *vthetaint, float *temperatureint, int nrad,
+__global__ void Substep2Kernel (float *dens, float *VradInt, float *vthetaint, float *TemperInt, int nrad,
   int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *densint, int Adiabaticc, float *Rmed,
   float dt, float *vradnew, float *vthetanew, float *energy, float *energyint)
 {
@@ -392,21 +394,21 @@ __global__ void Substep2Kernel (float *dens, float *vradint, float *vthetaint, f
   float dv;
   if (i<nrad && j<nsec)
   {
-    dv = vradint[(i+1)*nsec + j] - vradint[i*nsec + j];
+    dv = VradInt[(i+1)*nsec + j] - VradInt[i*nsec + j];
 
     if (dv < 0.0) densint[i*nsec + j] = CVNR*CVNR*dens[i*nsec + j]*dv*dv;
     else densint[i*nsec + j] = 0.0;
 
     dv = vthetaint[i*nsec + (j+1)%nsec] - vthetaint[i*nsec + j];
-    if (dv < 0.0) temperatureint[i*nsec + j] = CVNR*CVNR*dens[i*nsec + j]*dv*dv;
-    else temperatureint[i*nsec + j] = 0.0;
+    if (dv < 0.0) TemperInt[i*nsec + j] = CVNR*CVNR*dens[i*nsec + j]*dv*dv;
+    else TemperInt[i*nsec + j] = 0.0;
 
   }
   i+=1;
 
   if (i<nrad && j<nsec)
   {
-    vradnew[i*nsec + j] = vradint[i*nsec + j] - dt*2.0/(dens[i*nsec + j] + dens[(i-1)*nsec + j])*(densint[i*nsec + j] - densint[(i-1)*nsec + j]) *\
+    vradnew[i*nsec + j] = VradInt[i*nsec + j] - dt*2.0/(dens[i*nsec + j] + dens[(i-1)*nsec + j])*(densint[i*nsec + j] - densint[(i-1)*nsec + j]) *\
       invdiffRmed[i];
   }
   i-=1;
@@ -422,8 +424,8 @@ __global__ void Substep2Kernel (float *dens, float *vradint, float *vthetaint, f
 
     if (i<nrad && j<nsec)
     {
-      energyint[i*nsec + j] = energy[i*nsec + j] - dt*densint[i*nsec + j]*(vradint[i*nsec + j+1] - vradint[i*nsec + j])*invdiffRsup[i] - \
-      dt*temperatureint[i*nsec + j]*(vthetaint[i*nsec + (j+1)%nsec] - vthetaint[i*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
+      energyint[i*nsec + j] = energy[i*nsec + j] - dt*densint[i*nsec + j]*(VradInt[i*nsec + j+1] - VradInt[i*nsec + j])*invdiffRsup[i] - \
+      dt*TemperInt[i*nsec + j]*(vthetaint[i*nsec + (j+1)%nsec] - vthetaint[i*nsec + j])* 1.0/(2.0*CUDART_PI_F*Rmed[i]/nsec);
     }
   }
 }
@@ -505,6 +507,9 @@ __global__ void NonReflectingBoundaryKernel (float *dens, float *energy, int i_a
       dens[j+i_angle] = dens[i*nsec + j];
       energy[j+i_angle] = energy[i*nsec + j];
     }
+
+    __syncthreads();
+
     vrad_med = -SoundSpeed[i*nsec + j]*(dens[i*nsec + j]-SigmaMed)/SigmaMed;
     vrad[i*nsec + j] = 2.*vrad_med-vrad[(i+1)*nsec + j];
   }
@@ -527,6 +532,9 @@ __global__ void NonReflectingBoundaryKernel (float *dens, float *energy, int i_a
       dens[i*nsec + j] = dens[j-i_angle2 + (i-1)*nsec];
       energy[i*nsec + j] = energy[j-i_angle2 + (i-1)*nsec];
     }
+
+    __syncthreads();
+
     vrad_med = SoundSpeed[i*nsec + j]*(dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
     vrad[i*nsec + j] = 2.*vrad_med - vrad[(i-1)*nsec + j];
   }
@@ -580,7 +588,7 @@ __host__ void Make1Dprofile (float *gridfield)
 
 __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed, float G,
   float ASPECTRATIO, float FLARINGINDEX, float SIGMASLOPE, int CentrifugalBalance, float *vrad, float *vtheta,
-  float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, float OmegaFrame, float *Rinf)
+  float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, float OmegaFrame, float *Rinf, float *vt_cent)
 {
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -607,7 +615,7 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
         (1.+SIGMASLOPE-2.0*FLARINGINDEX));
       }
       vtheta[i*nsec + j] -= OmegaFrame*r;
-      //if (CentrifugalBalance) vtheta[i*nsec + j] = vt_cent[i];
+      if (CentrifugalBalance) vtheta[i*nsec + j] = vt_cent[i];
 
       if (i == nrad) vrad[i*nsec + j] = 0.0;
       else vrad[i*nsec + j] = IMPOSEDDISKDRIFT*SIGMA0/SigmaInf[i]/ri;
@@ -667,33 +675,33 @@ __global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, fl
     }
   }
 
-__global__ void ViscousTermsKernel (float *vradial, float *vazimutal , float *Drr, float *Dpp, float *divergence, float *Drp,
-  float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
-  float *Trr, float *Tpp, float *dens, float *viscosity_array, float onethird, float *Trp, float *invRinf)
+__global__ void ViscousTermsKernel (float *vradial, float *vazimutal , float *DRR, float *DPP, float *DivergenceVelocity,
+  float *DRP, float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad,
+  int nsec, float *TAURR, float *TAUPP, float *dens, float *viscosity_array, float onethird, float *TAURP, float *invRinf)
 {
    int j = threadIdx.x + blockDim.x*blockIdx.x;
    int i = threadIdx.y + blockDim.y*blockIdx.y;
 
    if (i<nrad && j<nsec) /* Drr, Dpp and divV computation */
    {
-     Drr[i*nsec + j] = (vradial[(i+1)*nsec + j] - vradial[i*nsec + j])*invdiffRsup[i];
-     Dpp[i*nsec + j] = (vazimutal[i*nsec + (j+1)%nsec] - vazimutal[i*nsec + j])*invdphi*invRmed[i]+0.5* \
+     DRR[i*nsec + j] = (vradial[(i+1)*nsec + j] - vradial[i*nsec + j])*invdiffRsup[i];
+     DPP[i*nsec + j] = (vazimutal[i*nsec + (j+1)%nsec] - vazimutal[i*nsec + j])*invdphi*invRmed[i]+0.5* \
        (vradial[(i+1)*nsec + j]+vradial[i*nsec + j])*invRmed[i];
-     divergence[i*nsec + j] = (vradial[i*nsec + (j+1)]*Rsup[i]-vradial[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
+     DivergenceVelocity[i*nsec + j] = (vradial[i*nsec + (j+1)]*Rsup[i]-vradial[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
        invRmed[i];
-     divergence[i*nsec + j] += (vazimutal[i*nsec + (j+1)%nsec]-vazimutal[i*nsec + j])*invdphi*invRmed[i];
+     DivergenceVelocity[i*nsec + j] += (vazimutal[i*nsec + (j+1)%nsec]-vazimutal[i*nsec + j])*invdphi*invRmed[i];
 
-     if (i > 0) Drp[i*nsec + j] = 0.5*(Rinf[i]*(vazimutal[i*nsec + j]*invRmed[i]-vazimutal[(i-1)*nsec + j])*invRmed[i-1])* \
+     if (i > 0) DRP[i*nsec + j] = 0.5*(Rinf[i]*(vazimutal[i*nsec + j]*invRmed[i]-vazimutal[(i-1)*nsec + j])*invRmed[i-1])* \
           invdiffRmed[i] + (vradial[i*nsec + j]-vradial[i*nsec + (j-1)%nsec])*invdphi*invRinf[i];
    }
 
    if (i<nrad && j<nsec) /* TAUrr and TAUpp computation */
    {
-     Trr[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(Drr[i*nsec + j]-onethird*divergence[i*nsec + j]);
-     Tpp[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(Dpp[i*nsec + j]-onethird*divergence[i*nsec + j]);
+     TAURR[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(DRR[i*nsec + j]-onethird*DivergenceVelocity[i*nsec + j]);
+     TAUPP[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(DPP[i*nsec + j]-onethird*DivergenceVelocity[i*nsec + j]);
 
-     if (i > 0) Trp[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
-         viscosity_array[i]*Drp[i*nsec + j];
+     if (i > 0) TAURP[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
+         viscosity_array[i]*DRP[i*nsec + j];
    }
  }
 
@@ -705,7 +713,7 @@ __global__ void LRMomentaKernel (float *RadMomP, float *RadMomM, float *ThetaMom
 
    if (i<nrad && j<nsec)
    {
-     RadMomP[i*nsec + j] = dens[i*nsec + j] * vrad[(i+1)*nsec + j];
+     RadMomP[i*nsec + j] = dens[i*nsec + j] * vrad[(i)*nsec + j]; // (i+1)*nsec
      RadMomM[i*nsec + j] = dens[i*nsec + j] * vrad[i*nsec + j];
      /* it is the angular momentum -> ThetaMomP */
      ThetaMomP[i*nsec + j] = dens[i*nsec + j] * (vtheta[i*nsec + (j+1)%nsec]+Rmed[i]*OmegaFrame)*Rmed[i];
@@ -713,42 +721,43 @@ __global__ void LRMomentaKernel (float *RadMomP, float *RadMomM, float *ThetaMom
    }
  }
 
-__global__ void ExtQtyKernel (float *extlabel, float *dens, float *label, int nsec, int nrad)
+__global__ void ExtQtyKernel (float *Extlabel, float *dens, float *label, int nsec, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<nrad && j<nsec)
   {
-    extlabel[i*nsec + j] = dens[i*nsec + j]*label[i*nsec + j];
+    Extlabel[i*nsec + j] = dens[i*nsec + j]*label[i*nsec + j];
   }
 
 }
 
 __global__ void StarRadKernel (float *Qbase, float *vrad, float *QStar, float dt, int nrad, int nsec,
-  float *invdiffRmed, float *Rmed)
+  float *invdiffRmed, float *Rmed, float *dq)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  float dqm, dqp, dq;
+  float dqm, dqp;
 
   if (i<nrad && j<nsec)
   {
-    if (i==0 || i == nrad-1) dq = 0.0;
+    if (i == 0 || i == nrad-1) dq[j*nrad + i] = 0.0;
     else
     {
       dqm = (Qbase[i*nsec + j] - Qbase[(i-1)*nsec + j])*invdiffRmed[i];
       dqp = (Qbase[(i+1)*nsec + j] - Qbase[i*nsec + j])*invdiffRmed[i+1];
 
-      if (dqp * dqm > 0.0) dq = 2.0*dqp*dqm/(dqp+dqm);
-      else dq = 0.0;
+      if (dqp * dqm > 0.0) dq[j*nrad + i] = 2.0*dqp*dqm/(dqp+dqm);
+      else dq[j*nrad + i] = 0.0;
     }
+    __syncthreads();
 
     if (vrad[i*nsec + j] > 0.0) // aca asumen vrad = 0 para i=0?
-      QStar[i*nsec + j] = Qbase[(i-1)*nsec + j] + (Rmed[i]-Rmed[i-1]-vrad[i*nsec + j]*dt)*0.5*dq;
+      QStar[i*nsec + j] = Qbase[(i-1)*nsec + j] + (Rmed[i]-Rmed[i-1]-vrad[i*nsec + j]*dt)*0.5*dq[j*nrad + i-1];
     else
-      QStar[i*nsec + j] = Qbase[i*nsec + j]-(Rmed[i+1]-Rmed[i]+vrad[i*nsec + j]*dt)*0.5*dq;
+      QStar[i*nsec + j] = Qbase[i*nsec + j]-(Rmed[i+1]-Rmed[i]+vrad[i*nsec + j]*dt)*0.5*dq[j*nrad + i];
   }
   if (j<nsec)  QStar[j] = QStar[j+nsec*nrad] = 0.0;
 }
@@ -842,7 +851,6 @@ __global__ void Update_sgvelocityKernel (float *vrad, float *vtheta, float *SG_A
   /* Here we update velocity fields to take into acount self-gravity */
   if (i<nrad && j<nsec)
   {
-    //printf("%f\n",dt );
     /* We compute VRAD - half-centered in azimuth - from centered-in-cell radial sg acceleration. */
     if (i > 0) vrad[i*nsec + j] =  dt*((Rinf[i] - Rmed[i-1]) * SG_Accr[i*nsec + j] + \
     (Rmed[i] - Rinf[i]) * SG_Accr[(i-1)*nsec + j]) *invdiffRmed[i]; // caso !SGZeroMode
@@ -934,4 +942,15 @@ __global__ void EvanescentBoundaryKernel(float *Rmed, float *vrad, float *vtheta
           energy[i*nsec + j] = (energy[i*nsec + j] + lambda*energy0)/(1.0+lambda);
       }
     }
+}
+
+__global__ void DivisePolarGridKernel (float *res, float *num, float *denom, int nrad, int nsec)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
+
+  if (i<nrad && j<nsec) // i <= nrad
+  {
+    res[i*nsec + j] = num[i*nsec + j]/(denom[i*nsec + j] + 1e-20);
+  }
 }

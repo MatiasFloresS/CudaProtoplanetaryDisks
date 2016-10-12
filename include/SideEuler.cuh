@@ -7,3 +7,7 @@ __host__ void EvanescentBoundary (float *vrad, float *vtheta, float step);
 __host__ void Cscudamalloc ();
 __host__ void Meancudamalloc ();
 __host__ void OpenBoundary ();
+__host__ Pair ComputeAccel (Force *force, float *dens, float x, float y, float rsmoothing, float mass);
+__host__ void DivisePolarGrid (float *Num, float *Denom, float *Res);
+__host__ void InitComputeAccel ();
+__host__ void InitComputeAccelDevice ();

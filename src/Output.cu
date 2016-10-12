@@ -5,7 +5,7 @@ extern string OUTPUTDIR;
 extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, \
 Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
 
-extern float RMAX, *temperature, mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
+extern float RMAX, *Temperature, mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
 static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 float LostMass =0.0;
 
@@ -137,7 +137,7 @@ __host__ void SendOutput (int index, float *dens, float *vrad, float *vtheta, fl
       WriteDiskPolar(vtheta, "gasvtheta", index);
     }
     if (Write_Energy == YES) WriteDiskPolar(energy, "gasenergy", index);
-    if (Write_Temperature == YES) WriteDiskPolar(temperature, "gastemperature", index);
+    if (Write_Temperature == YES) WriteDiskPolar(Temperature, "gastemperature", index);
     //if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity,index);
     //if (Write_Qplus == YES) WriteDiskPolar(Qplus, index);
     if (AdvecteLabel == YES) WriteDiskPolar(label, "gaslabel", index);

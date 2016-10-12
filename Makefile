@@ -23,7 +23,7 @@ endif
 
 
 main: build/Main.o build/Viscosity.o build/Kernels.o build/Readfiles.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
-	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o build/TransportEuler.o
+	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o build/TransportEuler.o build/Planet.o
 	@ echo "Linking"
 	@ mkdir -p bin
 	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG)
@@ -80,6 +80,10 @@ build/Force.o: src/Force.cu
 build/TransportEuler.o: src/TransportEuler.cu
 	@ echo "Building TransportEuler"
 	@ nvcc $(CFLAGS) $(INC_DIRS) src/TransportEuler.cu -o build/TransportEuler.o $(LDFLAGS) $(ARCHFLAG)
+
+build/Planet.o: src/Planet.cu
+	@ echo "Building Planet"
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/Planet.cu -o build/Planet.o $(LDFLAGS) $(ARCHFLAG)
 
 clean:
 	@ clear

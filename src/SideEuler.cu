@@ -1,7 +1,7 @@
 #include "Main.cuh"
 
 extern int OpenInner, YES, blocksize2, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD, nsec2pot, nrad2pot, \
-Evanescent, SelfGravity, NO;
+Evanescent, SelfGravity, NO, ExcludeHill, dimfxy;
 
 extern float *SigmaMed, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, \
 FLARINGINDEX, *vrad_d, *dens_d, *energy_d, *SoundSpeed_d, *AspectRatioRmed_d, *Rmed_d, *mean_dens, *mean_energy, \
@@ -9,7 +9,8 @@ FLARINGINDEX, *vrad_d, *dens_d, *energy_d, *SoundSpeed_d, *AspectRatioRmed_d, *R
 *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array, *viscosity_array_d, *vtheta_d, \
 G, SIGMASLOPE, OmegaFrame1, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
 
-float  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, csnrm2_r;
+float  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, csnrm2_r, \
+*CellAbscissa, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d;
 
 extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
@@ -45,8 +46,8 @@ __host__ void NonReflectingBoundary (float *dens, float *energy, float *vrad)
   dangle2 *= (Rmed[i]-Rmed[i-1]);
   i_angle2 = (int)(dangle2/2.0/M_PI*(float)NSEC+.5);
 
-  printf("angle %d\n", i_angle);
-  printf("angle %d\n", i_angle2);
+  // printf("angle %d\n", i_angle);
+  // printf("angle %d\n", i_angle2);
 
   gpuErrchk(cudaMemcpy(vrad, vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
@@ -113,4 +114,46 @@ __host__ void OpenBoundary ()
 {
   OpenBoundaryKernel<<<dimGrid, dimBlock>>> (vrad_d, dens_d, energy_d, NSEC, SigmaMed);
   gpuErrchk(cudaDeviceSynchronize());
+}
+
+__host__ Pair ComputeAccel (Force *force, float *dens, float x, float y, float rsmoothing, float mass)
+{
+  Pair acceleration;
+  ComputeForce (force, dens, x, y, rsmoothing, mass, dimfxy, 0.0, 0.0);
+  if (ExcludeHill)
+  {
+    acceleration.x = force->fx_ex_inner+force->fx_ex_outer;
+    acceleration.y = force->fy_ex_inner+force->fy_ex_outer;
+  }
+  else
+  {
+    acceleration.x = force->fx_inner+force->fx_outer;
+    acceleration.y = force->fx_inner+force->fy_outer;
+  }
+  return acceleration;
+}
+
+__host__ void DivisePolarGrid (float *Num, float *Denom, float *Res)
+{
+  //DivisePolarGridKernel<<<dimGrid2, dimBlock2>>> (res_d, num_d, denom_d, NRAD, NSEC);
+}
+
+__host__ void InitComputeAccel ()
+{
+  CellAbscissa    = (float *)malloc(size_grid*sizeof(float));
+  CellOrdinate    = (float *)malloc(size_grid*sizeof(float));
+
+  InitComputeAccelDevice();
+
+  InitComputeAccelKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Rmed_d, NSEC, NRAD);
+  gpuErrchk(cudaDeviceSynchronize());
+
+}
+
+__host__ void InitComputeAccelDevice()
+{
+  gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 }

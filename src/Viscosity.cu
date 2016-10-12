@@ -4,20 +4,20 @@ extern int NSEC, size_grid, nsec2pot, nrad2pot, blocksize, NRAD;
 
 extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING, *SoundSpeed_d, \
 *SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray, \
-ALPHAVISCOSITY, *vrad_d, *vtheta_d, *Drr_d, *Dpp_d, *divergence_d, *Drp_d, *invdiffRsup_d, *Rinf_d, *Dpp, \
-*invdiffRmed_d, *Trr_d, *Tpp_d, *dens_d, *viscosity_array_d, *Trp_d, *divergence, *Drr, *Drp, *Trr, *Trp, \
-*Tpp, *invRinf_d, *Rsup, *invRmed, *vthetaint_d, *vradint_d, *viscosity_array, *Rsup_d, *invRmed_d, \
-dphi, invdphi, onethird, *vradint, *vthetaint, *Rmed_d, *invdiffRsup_d;
+ALPHAVISCOSITY, *vrad_d, *vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *dens_d, *viscosity_array_d,  \
+*invRinf_d, *Rsup, *invRmed, *vthetaint_d, *VradInt_d, *viscosity_array, *Rsup_d, *invRmed_d, \
+dphi, invdphi, onethird, *VradInt, *vthetaint, *Rmed_d, *invdiffRsup_d;
 
-float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
+float PhysicalTime =0.0, PhysicalTimeInitial= 0.0, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, \
+*DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateVelocitiesWithViscosity(float *vradint, float *vthetaint, float *dens, float DeltaT)
+__host__ void UpdateVelocitiesWithViscosity(float *VradInt, float *vthetaint, float *dens, float DeltaT)
 {
 
-  UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(vthetaint_d, vradint_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
-    invdiffRmed_d, invdiffRsup_d,  dens_d, invRinf_d, Trr_d, Trp_d, Tpp_d, DeltaT, NRAD, NSEC);
+  UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(vthetaint_d, VradInt_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
+    invdiffRmed_d, invdiffRsup_d,  dens_d, invRinf_d, TAURR_d, TAURP_d, TAUPP_d, DeltaT, NRAD, NSEC);
     gpuErrchk(cudaDeviceSynchronize());
 
 }
@@ -74,16 +74,39 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
   if (option == 1)
   {
 
-    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(vrad_d, vtheta_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
-      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, Trr_d, Tpp_d, dens_d, viscosity_array_d,
-      onethird, Trp_d, invRinf_d);
+    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(vrad_d, vtheta_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
+      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, dens_d, viscosity_array_d,
+      onethird, TAURP_d, invRinf_d);
   }
   else
   {
-    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(vradint_d, vthetaint_d, Drr_d, Dpp_d, divergence_d, Drp_d, invdiffRsup_d,
-      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, Trr_d, Tpp_d, dens_d, viscosity_array_d,
-      onethird, Trp_d, invRinf_d);
+    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(VradInt_d, vthetaint_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
+      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, dens_d, viscosity_array_d,
+      onethird, TAURP_d, invRinf_d);
   }
 
   gpuErrchk(cudaDeviceSynchronize());
+}
+
+__host__ void InitViscosity ()
+{
+  DivergenceVelocity  = (float *)malloc(size_grid*sizeof(float));
+  DRR                 = (float *)malloc(size_grid*sizeof(float));
+  DRP                 = (float *)malloc(size_grid*sizeof(float));
+  DPP                 = (float *)malloc(size_grid*sizeof(float));
+  TAURR               = (float *)malloc(size_grid*sizeof(float));
+  TAURP               = (float *)malloc(size_grid*sizeof(float));
+  TAUPP               = (float *)malloc(size_grid*sizeof(float));
+  InitViscosityDevice ();
+}
+
+__host__ void InitViscosityDevice ()
+{
+  gpuErrchk(cudaMalloc((void**)&DivergenceVelocity_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DRR_d,                size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DRP_d,                size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DPP_d,                size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&TAURR_d,              size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&TAURP_d,              size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&TAUPP_d,              size_grid*sizeof(float)));
 }

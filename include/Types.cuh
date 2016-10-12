@@ -27,3 +27,11 @@ struct force {
 };
 
 typedef struct force Force;
+
+
+struct pair {
+  float x;
+  float y;
+};
+
+typedef struct pair Pair;

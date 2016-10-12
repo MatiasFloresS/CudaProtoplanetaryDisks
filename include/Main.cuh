@@ -21,6 +21,8 @@
 #include "TransportEuler.cuh"
 #include "Readfiles.cuh"
 #include "Theo.cuh"
+#include "Planet.cuh"
+#include "Viscosity.cuh"
 
 using namespace std;
 
@@ -30,9 +32,8 @@ __host__ void PrintUsage (char *argv);
 __host__ void UpdateVelocitiesWithViscosity (float *RadialVelocity, float *AzimuthalVelocity, float *Rho, float DeltaT);
 __host__ void MultiplyPolarGridbyConstant (float *dens);
 __host__ void FreeCuda ();
-__host__ void FreeArrays ();
-__host__ void DeviceToHostcudaMemcpy (float *dens, float *energy, float *label, float *temperature, float *vrad, float *vtheta);
-__host__ void ComputeViscousTerms (float *vrad, float *vtheta, float *dens, int option);
+__host__ void FreeArrays (float *dens, float *vrad, float *vtheta, float *energy, float *label);
+__host__ void DeviceToHostcudaMemcpy (float *dens, float *energy, float *label, float *Temperature, float *vrad, float *vtheta);
 __host__ void Viscouscudamalloc ();
 __host__ void CreateArrays ();
 __host__ void Init_planetarysys_withSG (PlanetarySystem *sys);
@@ -44,6 +45,4 @@ __host__ void Fft ();
 __host__ void Fftmul ();
 __host__ void Sg_Acc ();
 __host__ void Update_sgvelocity (float DeltaT);
-__host__ float FViscosity (float r);
 __host__ float CircumPlanetaryMass (float *dens, PlanetarySystem *sys);
-__host__ void UpdateVelocitiesWithViscosity(float *vrad, float *vtheta, float *dens, float DeltaT);
