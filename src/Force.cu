@@ -3,14 +3,14 @@
 extern string OUTPUTDIR;
 
 extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, \
-*forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d, \
-*forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
+*forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, \
+*Surf_d, *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
 
 extern bool RocheSmoothing;
 extern int size_grid, blocksize, NRAD, NSEC, nsec2pot, nrad2pot;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *dens, float *energy, int TimeStep,
+__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float *energy, int TimeStep,
   float PhysicalTime, int dimfxy)
 {
   FILE *out;
@@ -38,7 +38,7 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *dens, float 
     if (RocheSmoothing) smoothing = r*pow(m/3.,1./3.)*ROCHESMOOTHING;
     else smoothing = Compute_smoothing(r);
 
-    ComputeForce (force, dens, x, y, smoothing, m, dimfxy, a, rh);
+    ComputeForce (force, Dens, x, y, smoothing, m, dimfxy, a, rh);
 
     globalforce = force->GlobalForce;
     sprintf (filename2, "%s%d.dat", filename,i);
@@ -73,7 +73,8 @@ __host__ Force *AllocateForce (int dimfxy)
   return force;
 }
 
-__host__ void ComputeForce (Force *force, float *dens, float x, float y, float rsmoothing, float mass, int dimfxy, float a, float rh)
+__host__ void ComputeForce (Force *force, float *Dens, float x, float y, float rsmoothing,
+  float mass, int dimfxy, float a, float rh)
 {
   float *globalforce;
   int k;
@@ -84,8 +85,8 @@ __host__ void ComputeForce (Force *force, float *dens, float x, float y, float r
   gpuErrchk(cudaMemset(forcesyi_d, 0, dimfxy*sizeof(float)));
   gpuErrchk(cudaMemset(forcesyo_d, 0, dimfxy*sizeof(float)));
 
-  ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, dens_d, x, y, rsmoothing, forcesxi_d, forcesyi_d,
-    forcesxo_d, forcesyo_d, NSEC, NRAD, G, a, Rmed_d, dimfxy, rh);
+  ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
+    forcesxi_d, forcesyi_d, forcesxo_d, forcesyo_d, NSEC, NRAD, G, a, Rmed_d, dimfxy, rh);
   gpuErrchk(cudaDeviceSynchronize());
 
   gpuErrchk(cudaMemcpy(forcesxi, forcesxi_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));

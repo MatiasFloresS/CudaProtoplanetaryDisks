@@ -3,7 +3,7 @@
 extern int NRAD;
 
 extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *QplusMed, *SigmaMed, *SigmaInf, \
-ADIABATICINDEX, *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed, R, MU, ASPECTRATIO, FLARINGINDEX, \
+ADIABATICINDEX, *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed, R, MU, ASPECTRATIO, FLARINGINDEX,   \
 COOLINGTIME0;
 
 __host__ void FillSigma ()

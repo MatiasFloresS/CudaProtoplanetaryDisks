@@ -125,16 +125,16 @@ __host__ void WritePlanetFile (int TimeStep, int n)
 
 }
 
-__host__ void SendOutput (int index, float *dens, float *vrad, float *vtheta, float *energy, float *label)
+__host__ void SendOutput (int index, float *Dens, float *Vrad, float *Vtheta, float *energy, float *label)
 {
   //printf("\n*** OUTPUT %d ***\n", index);
   if (IsDisk == YES)
   {
-    if (Write_Density == YES) WriteDiskPolar(dens, "gasdensity", index);
+    if (Write_Density == YES) WriteDiskPolar(Dens, "gasdensity", index);
     if (Write_Velocity == YES)
     {
-      WriteDiskPolar(vrad, "gasvrad", index);
-      WriteDiskPolar(vtheta, "gasvtheta", index);
+      WriteDiskPolar(Vrad, "gasvrad", index);
+      WriteDiskPolar(Vtheta, "gasvtheta", index);
     }
     if (Write_Energy == YES) WriteDiskPolar(energy, "gasenergy", index);
     if (Write_Temperature == YES) WriteDiskPolar(Temperature, "gastemperature", index);

@@ -1,20 +1,20 @@
 __host__ void FillPolar1DArrays ();
-__host__ void InitEuler (float *dens, float *energy, float *vrad, float *vtheta);
-__host__ void InitGasVelocities (float *vrad, float *vtheta);
+__host__ void InitEuler (float *Dens, float *energy, float *Vrad, float *Vtheta);
+__host__ void InitGasVelocities (float *Vrad, float *Vtheta);
 __host__ void Computecudamalloc (float *energy);
 __host__ float ConstructSequence (float *u, float *v, int n);
-__host__ void Init_azimutalvelocity_withSG (float *vtheta);
+__host__ void Init_azimutalvelocity_withSG (float *Vtheta);
 __host__ bool DetectCrash (float *array);
-__host__ void ComputePressureField (float *dens, float *energy);
+__host__ void ComputePressureField (float *Dens, float *energy);
 __host__ void ComputeSoundSpeed ();
 __host__ void ComputeTemperatureField ();
-__host__ void InitVelocities (float *vrad, float* vtheta);
-__host__ void AlgoGas (Force *force, float *dens, float *vrad, float *vtheta, float *energy, float *label,
+__host__ void InitVelocities (float *Vrad, float* Vtheta);
+__host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, float *energy, float *label,
   PlanetarySystem *sys, int iteracion);
-__host__ void Substep1 (float *dens, float *vrad, float *vtheta, float dt, int initialization);
+__host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int initialization);
 __host__ void Substep2 (float dt);
-__host__ void Substep3 (float *dens, float dt);
-__host__ void ActualiseGasVrad (float *vrad, float *vradnew);
-__host__ void ActualiseGasVtheta (float *vtheta, float *vthetanew);
-__host__ void ActualiseGasEnergy (float *energy, float *energynew);
-__host__ void Substep1cudamalloc (float *vrad, float *vtheta);
+__host__ void Substep3 (float *Dens, float dt);
+__host__ void ActualiseGasVrad (float *Vrad, float *VradNew);
+__host__ void ActualiseGasVtheta (float *Vtheta, float *VthetaNew);
+__host__ void ActualiseGasEnergy (float *energy, float *energyNew);
+__host__ void Substep1cudamalloc (float *Vrad, float *Vtheta);

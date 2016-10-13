@@ -4,9 +4,9 @@ extern int NRAD, NSEC, nsec2pot, blocksize, nrad2pot, size_grid;
 extern float *Rmed, *Rmed_d, *label_d;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void Initialization (float *dens, float *vrad, float *vtheta, float *energy, float *label, PlanetarySystem *sys)
+__host__ void Initialization (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label, PlanetarySystem *sys)
 {
-  InitEuler (vrad, vtheta, dens, energy);
+  InitEuler (Vrad, Vtheta, Dens, energy);
   InitLabel (label, sys);
   WriteDim();
 }

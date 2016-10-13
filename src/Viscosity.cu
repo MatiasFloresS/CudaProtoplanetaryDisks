@@ -3,21 +3,21 @@
 extern int NSEC, size_grid, nsec2pot, nrad2pot, blocksize, NRAD;
 
 extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING, *SoundSpeed_d, \
-*SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray, \
-ALPHAVISCOSITY, *vrad_d, *vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *dens_d, *viscosity_array_d,  \
-*invRinf_d, *Rsup, *invRmed, *vthetaint_d, *VradInt_d, *viscosity_array, *Rsup_d, *invRmed_d, \
-dphi, invdphi, onethird, *VradInt, *vthetaint, *Rmed_d, *invdiffRsup_d;
+*SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray,     \
+ALPHAVISCOSITY, *Vrad_d, *Vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *Dens_d, *viscosity_array_d,    \
+*invRinf_d, *Rsup, *invRmed, *VthetaInt_d, *VradInt_d, *viscosity_array, *Rsup_d, *invRmed_d, dphi, invdphi, \
+onethird, *VradInt, *VthetaInt, *Rmed_d, *invdiffRsup_d;
 
-float PhysicalTime =0.0, PhysicalTimeInitial= 0.0, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, \
-*DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
+float PhysicalTime =0.0, PhysicalTimeInitial= 0.0, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP,    \
+*TAUPP, *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateVelocitiesWithViscosity(float *VradInt, float *vthetaint, float *dens, float DeltaT)
+__host__ void UpdateVelocitiesWithViscosity(float *VradInt, float *VthetaInt, float *Dens, float DeltaT)
 {
 
-  UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(vthetaint_d, VradInt_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
-    invdiffRmed_d, invdiffRsup_d,  dens_d, invRinf_d, TAURR_d, TAURP_d, TAUPP_d, DeltaT, NRAD, NSEC);
+  UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(VthetaInt_d, VradInt_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
+    invdiffRmed_d, invdiffRsup_d,  Dens_d, invRinf_d, TAURR_d, TAURP_d, TAUPP_d, DeltaT, NRAD, NSEC);
     gpuErrchk(cudaDeviceSynchronize());
 
 }
@@ -59,7 +59,7 @@ __host__ float FViscosity(float r)
   return viscosity;
 }
 
-__host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens, int option)
+__host__ void ComputeViscousTerms (float *Vrad, float *Vtheta, float *Dens, int option)
 {
 
   if (ViscosityAlpha)
@@ -74,14 +74,14 @@ __host__ void ComputeViscousTerms (float *vradial, float *vazimutal, float *dens
   if (option == 1)
   {
 
-    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(vrad_d, vtheta_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
-      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, dens_d, viscosity_array_d,
+    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vrad_d, Vtheta_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
+      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d, viscosity_array_d,
       onethird, TAURP_d, invRinf_d);
   }
   else
   {
-    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(VradInt_d, vthetaint_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
-      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, dens_d, viscosity_array_d,
+    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(VradInt_d, VthetaInt_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
+      invdphi, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d, viscosity_array_d,
       onethird, TAURP_d, invRinf_d);
   }
 

@@ -3,14 +3,14 @@
 extern int NRAD, NSEC;
 extern float *SigmaMed, *EnergyMed;
 
-__host__ void InitGasDensity (float *dens)
+__host__ void InitGasDensity (float *Dens)
 {
   FillSigma ();
   for (int i = 0; i < NRAD; i++)
   {
     for (int j = 0; j < NSEC; j++)
     {
-      dens[j+i*NSEC] = SigmaMed[i];
+      Dens[j+i*NSEC] = SigmaMed[i];
     }
   }
 }

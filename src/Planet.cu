@@ -3,7 +3,7 @@
 extern int NRAD, NSEC;
 extern float *Rinf, *Rsup;
 
-__host__ void AccreteOntoPlanets (float *dens, float *vrad, float *vtheta, float dt, PlanetarySystem *sys)
+__host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
 {
 
   int i_min, i_max, j_min, j_max, angle;
