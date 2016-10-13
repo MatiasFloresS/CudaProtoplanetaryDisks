@@ -113,4 +113,8 @@ __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta
 __global__ void DivisePolarGridKernel (float *res, float *num, float *denom, int nrad, int nsec);
 
 __global__ void  VanLeerRadialKernel (float *Rinf, float *Rsup, float *QRStar, float *RhoStar, float *Vrad,
-  float *LostByDisk, int nsec, int nrad);
+  float *LostByDisk, int nsec, int nrad, float dt, int OpenInner);
+
+__global__ void ComputeAverageThetaVelocitiesKernel(float *Vtheta, float *VMed, int nsec, int nrad);
+
+__global__ void ComputeResidualsKernel (float *VthetaRes, float *VMed, int nsec, int nrad);

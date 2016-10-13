@@ -10,7 +10,7 @@ extern float *SigmaInf_d, *AspectRatioRmed_d, *Vrad_d,  OMEGAFRAME, OmegaFrame1,
 *DivergenceVelocity_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d, *Radii2, *vt_cent_d, *Rinf, *Rmed, *Rsup,  \
 *Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii, *TemperInt, *TemperInt_d, *RhoStar,    \
 *RhoStar_d, *VradInt, *VradInt_d, *powRmed, *Potential, *VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, \
-*energyNew;
+*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d;
 
 float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forcesyo, *DensInt_d, *fieldsrc,      \
 *vt_int, *GLOBAL_bufarray, *Surf_d, *Potential_d, *VthetaInt_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *Rsup_d,\
@@ -31,7 +31,7 @@ nrad2potSG;
 
 bool verbose = false, Restart = false, TimeToWrite;
 
-dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3;
+dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4;
 cufftHandle planf, planb;
 
 cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *Gr_d, *Gphi_d, *SGP_Kt_d,       \
@@ -161,6 +161,10 @@ __host__ int main (int argc, char *argv[])
 
   dim3 dimG3 (nsec2pot/blocksize, nrad2potSG/blocksize);
   dimGrid3 = dimG3;
+
+  dim3 dimG4 (nrad2pot/blocksize2, 1);
+  dimGrid4 = dimG4;
+
   /*  ---------------------------  */
 
   dphi = 2.0*M_PI/(float)NSEC;
@@ -398,6 +402,10 @@ __host__ void FreeCuda ()
   cudaFree(TAURR_d);
   cudaFree(TAURP_d);
   cudaFree(TAUPP_d);
+
+  cudaFree(LostByDisk_d);
+  cudaFree(VthetaRes_d);
+  cudaFree(VMed_d);
 }
 
 __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label)

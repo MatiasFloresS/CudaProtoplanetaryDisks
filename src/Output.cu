@@ -5,9 +5,8 @@ extern string OUTPUTDIR;
 extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, \
 Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
 
-extern float RMAX, *Temperature, mdcp, exces_mdcp, OmegaFrame1, PhysicalTime;
+extern float RMAX, *Temperature, mdcp, exces_mdcp, OmegaFrame1, PhysicalTime, LostMass;
 static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
-float LostMass =0.0;
 
 __host__ void WriteDim ()
 {

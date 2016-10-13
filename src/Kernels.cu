@@ -2,7 +2,7 @@
 
 extern int blocksize2, size_grid, nrad2pot, nsec2pot, NRAD, NSEC;
 extern float *GLOBAL_bufarray, *gridfield_d, *GLOBAL_bufarray_d;
-extern dim3 dimGrid, dimBlock;
+extern dim3 dimGrid, dimBlock, dimGrid4;
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potential,
    float *Rinf, float *invRinf, float *Vrad, float *VthetaInt, float *Vtheta, float *Rmed, float dt,
@@ -563,16 +563,16 @@ __global__ void MinusMeanKernel (float *Dens, float *energy, float SigmaMed, flo
 
 __global__ void Make1DprofileKernel (float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad)
 {
-  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
 
-  if (j < nrad)
+  if (i < nrad)
   {
     float sum = 0.0;
 
-    for (int t = 0; t < nsec; t++)
-      sum += gridfield[j*nsec + t];
+    for (int j = 0; j < nsec; j++)
+      sum += gridfield[i*nsec + j];
 
-    GLOBAL_bufarray[j] = sum/nsec; // every thread updates one EvanescentBoundary
+    GLOBAL_bufarray[i] = sum/nsec; // every thread updates one EvanescentBoundary
   }
 }
 
@@ -580,7 +580,7 @@ __host__ void Make1Dprofile (float *gridfield)
 {
 
   gpuErrchk(cudaMemcpy(gridfield_d, gridfield, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  Make1DprofileKernel<<<dimGrid, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
+  Make1DprofileKernel<<<dimGrid4, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
   gpuErrchk(cudaMemcpy(GLOBAL_bufarray, GLOBAL_bufarray_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
 
@@ -972,4 +972,41 @@ __global__ void VanLeerRadialKernel (float *Rinf, float *Rsup, float *QRStar, fl
     if (i==0 && OpenInner)
       LostByDisk[j] = varq;
   }
+}
+
+__global__ void ComputeAverageThetaVelocitiesKernel(float *Vtheta, float *VMed, int nsec, int nrad)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+
+  float moy = 0.0;
+  if (i<nrad)
+  {
+    for (int j = 0; j < nsec; j++) {
+      moy += Vtheta[i*nsec + j];
+    }
+
+    VMed[i] = moy/(float)nsec;
+  }
+}
+
+__global__ void ComputeResidualsKernel (float *VthetaRes, float *VMed, int nsec, int nrad)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j = threadIdx.y + blockDim.y*blockIdx.y;
+
+  if (i<nrad && j<nsec)
+  {
+    VthetaRes[i*nsec + j] = -VMed[i];
+  }
+}
+
+__global__ void ComputeConstantResidualKernel ()
+{
+  // int i = threadIdx.x + blockDim.x*blockIdx.x;
+  // int j = threadIdx.y + blockDim.y*blockIdx.y;
+  //
+  // float maxfrac;
+  //
+  // if (FastTransport) maxfrac = 1.0;
+  // else maxfrac = 0.0;
 }
