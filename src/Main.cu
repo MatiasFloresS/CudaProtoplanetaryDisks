@@ -8,14 +8,14 @@ extern float *SigmaInf_d, *AspectRatioRmed_d, *Vrad_d,  OMEGAFRAME, OmegaFrame1,
 *ThetaMomP, *ThetaMomM, *Work, *QRStar, *Extlabel, *dq, *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d,     \
 *Work_d, *QRStar_d, *Extlabel_d, *dq_d, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *DRP_d,  \
 *DivergenceVelocity_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d, *Radii2, *vt_cent_d, *Rinf, *Rmed, *Rsup,  \
-*Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii, *TemperInt, *TemperInt_d, *RhoStar,    \
-*RhoStar_d, *VradInt, *VradInt_d, *powRmed, *Potential, *VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, \
-*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d;
+*Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii, *TemperInt, *TemperInt_d, *DensStar,    \
+*DensStar_d, *VradInt, *VradInt_d, *powRmed, *Potential, *VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, \
+*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d, *Nshift_d, *NoSplitAdvection_d, *VthetaRes;
 
 float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forcesyo, *DensInt_d, *fieldsrc,      \
 *vt_int, *GLOBAL_bufarray, *Surf_d, *Potential_d, *VthetaInt_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *Rsup_d,\
 *VthetaNew_d, *VradNew_d, *energyInt_d, *invdiffRsup_d, *CoolingTimeMed, *QplusMed , *viscosity_array, *cs1,    \
-*Qplus_d, *energyNew_d, *EnergyMed_d, *SigmaMed_d, *CoolingTimeMed_d, *QplusMed_d, *Qplus, *DensStar, *QStar,   \
+*Qplus_d, *energyNew_d, *EnergyMed_d, *SigmaMed_d, *CoolingTimeMed_d, *QplusMed_d, *Qplus, *QStar,   \
 *Qbase, *gridfield_d, *GLOBAL_bufarray_d, *invRmed_d, *label_d, *QStar_d, *Qbase_d, *cs0, *csnrm1, *csnrm2,     \
 *mean_dens, *mean_dens2, *mean_energy, *mean_energy2, *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d,       \
 *mean_dens_d2, *mean_energy_d, *mean_energy_d2, *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d, *SGP_Kr,    \
@@ -39,6 +39,7 @@ cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *
 
 __host__ int main (int argc, char *argv[])
 {
+  cudaSetDevice(1);
   bool disable = false, TimeInfo = false, Profiling = false, Stockholm = false, SGUpdate = NO;
   char ParameterFile[256];
 
@@ -321,7 +322,7 @@ __host__ void FreeCuda ()
   cudaFree(Pressure_d);
   cudaFree(Temperature_d);
   cudaFree(TemperInt_d);
-  cudaFree(RhoStar_d);
+  cudaFree(DensStar_d);
   cudaFree(VradInt_d);
   cudaFree(VthetaInt_d);
   cudaFree(AspectRatioRmed_d);
@@ -406,6 +407,8 @@ __host__ void FreeCuda ()
   cudaFree(LostByDisk_d);
   cudaFree(VthetaRes_d);
   cudaFree(VMed_d);
+  cudaFree(Nshift_d);
+  cudaFree(NoSplitAdvection_d);
 }
 
 __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label)
@@ -449,7 +452,7 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy
   free(Temperature);
   free(Pressure);
   free(SoundSpeed);
-  free(RhoStar);
+  free(DensStar);
   free(VradInt);
   free(AspectRatioRmed);
   free(VthetaInt);
@@ -460,7 +463,7 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy
   free(energyNew);
   free(Potential);
 
-
+  free(VthetaRes);
 
   free(SG_Accr);
   free(SG_Acct);
@@ -478,7 +481,6 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy
   free(Qplus);
   free(QStar);
   free(Qbase);
-  free(DensStar);
 
   /* free ReduceCS and ReduceMean*/
   free(cs0);

@@ -1,16 +1,19 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC, size_grid, nsec2pot, blocksize, nrad2pot, AdvecteLabel, YES, OpenInner,         \
-Adiabaticc, FastTransport;
+Adiabaticc, FastTransport, NO;
 
-extern float OmegaFrame1, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *label_d, *densStar, *invdiffRmed_d,   \
-*QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *RhoStar, *RhoStar_d, *Rinf_d, *Rsup_d;
+extern float OmegaFrame1, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *label_d, *DensStar, *invdiffRmed_d,   \
+*QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d,      \
+*invRmed_d, *Vtheta_d;
 
 extern dim3 dimGrid2, dimBlock2, dimBlock, dimGrid4;
 
 float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *Extlabel, *RadMomP_d, *RadMomM_d,    \
 *ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *Extlabel_d, *dq, *dq_d, *LostByDisk_d, LostMass = 0.0, \
-*VMed_d, *VthetaRes_d;
+*VMed_d, *VthetaRes_d, *Nshift_d, *NoSplitAdvection_d, *VthetaRes;
+
+static bool UniformTransport;
 
 __host__ void Transport (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label, float dt)
 {
@@ -41,7 +44,7 @@ __host__ void ComputeExtQty()
 __host__ void OneWindRad (float *Dens, float *Vrad, float *energy, float dt)
 {
   gpuErrchk(cudaMemcpy(Qbase_d, Dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice)); // dens_d -> Qbase_d
-  ComputeStarRad(Dens, Vrad, RhoStar, dt);
+  ComputeStarRad(Dens, Vrad, DensStar, dt);
 
   ActualiseGasDens (DensInt, Dens);
   VanLeerRadial (Vrad, RadMomP, dt, 0);
@@ -61,20 +64,30 @@ __host__ void OneWindTheta (float *Dens, float *Vtheta, float *energy, float dt)
   ComputeAverageThetaVelocities (Vtheta, dt);
   ComputeResiduals (Vtheta, dt);
   ComputeConstantResidual (Vtheta, dt); /* Constant residual is in Vtheta from now on */
+  UniformTransport = NO;
+  QuantitiesAdvection (Dens, VthetaRes, energy, dt);
+  UniformTransport = YES;
+  QuantitiesAdvection (Dens, Vtheta, energy, dt);
 
 }
 
 __host__ void ComputeConstantResidual (float *Vtheta, float dt)
 {
-  //ComputeConstantResidualKernel<<<>>>()
+  ComputeConstantResidualKernel<<<dimGrid2, dimBlock2>>>(VMed_d, invRmed_d, Nshift_d, NoSplitAdvection_d,
+    NSEC, NRAD, dt, YES, NO, Vtheta_d, VthetaRes_d, Rmed_d, FastTransport);
   gpuErrchk(cudaDeviceSynchronize());
 
 }
+
+
+
 __host__ void ComputeAverageThetaVelocities (float *Vtheta, float dt)
 {
   ComputeAverageThetaVelocitiesKernel<<<dimGrid4, dimBlock>>>(Vtheta_d, VMed_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
+
 
 __host__ void ComputeResiduals (float *Vtheta, float dt)
 {
@@ -83,17 +96,22 @@ __host__ void ComputeResiduals (float *Vtheta, float dt)
 }
 
 
+
 __host__ void ActualiseGasDens(float *DensInt, float *Dens)
 {
   gpuErrchk(cudaMemcpy(DensInt_d, Qbase_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
 }
 
+
+
 __host__ void ComputeStarRad(float *Qbase, float *Vrad, float *QStar, float dt)
 {
   StarRadKernel<<<dimGrid2, dimBlock2>>> (Qbase_d, Vrad_d, QStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d, dq_d);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
+
 
 __host__ float VanLeerRadial (float *Vrad, float *Qbase, float dt, int ReturnLost)
 {
@@ -102,7 +120,7 @@ __host__ float VanLeerRadial (float *Vrad, float *Qbase, float dt, int ReturnLos
   gpuErrchk(cudaMemcpy(Qbase_d, Work_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice)); // Work_d -> Qbase_d
   ComputeStarRad (Work, Vrad, QRStar, dt);
 
-  VanLeerRadialKernel<<<dimGrid2, dimBlock2>>>(Rinf_d, Rsup_d, QRStar_d, RhoStar_d, Vrad_d,
+  VanLeerRadialKernel<<<dimGrid2, dimBlock2>>>(Rinf_d, Rsup_d, QRStar_d, DensStar_d, Vrad_d,
     LostByDisk_d, NSEC, NRAD, dt, OpenInner);
   gpuErrchk(cudaDeviceSynchronize());
 
@@ -110,6 +128,22 @@ __host__ float VanLeerRadial (float *Vrad, float *Qbase, float dt, int ReturnLos
 
   return Lost;
 }
+
+
+
+__host__ void QuantitiesAdvection (float *Dens, float *Vradial, float *energy, float dt)
+{
+  ComputeStarTheta (Dens, Vradial, DensStar, dt);
+}
+
+
+
+__host__ void ComputeStarTheta (float *Qbase, float *Vtheta, float *QStar, float dt)
+{
+    StarThetaKernel<<<dimGrid2, dimBlock2>>> (Qbase_d, Rmed_d, Vtheta_d, QStar_d, NRAD, NSEC, dq_d, dt);
+}
+
+
 
 __host__ void InitTransport ()
 {
@@ -120,8 +154,7 @@ __host__ void InitTransport ()
   Work            = (float *)malloc(size_grid*sizeof(float));
   QRStar          = (float *)malloc(size_grid*sizeof(float));
   Extlabel        = (float *)malloc(size_grid*sizeof(float));
-  //VthetaRes
-  //Elongations
+  VthetaRes       = (float *)malloc(size_grid*sizeof(float));
   //tempshift
   dq              = (float *)malloc(size_grid*sizeof(float));
   InitTransportDevice();
@@ -139,6 +172,8 @@ __host__ void InitTransportDevice()
   gpuErrchk(cudaMalloc((void**)&Extlabel_d,       size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&dq_d,             size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&LostByDisk_d,     size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&VthetaRes_d,     size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&VMed_d,     NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&VthetaRes_d,      size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&VMed_d,             NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Nshift_d,           NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&NoSplitAdvection_d, NRAD*sizeof(float)));
 }

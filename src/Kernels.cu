@@ -19,7 +19,7 @@ __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, fl
   {
     gradp = 2.0*(Pressure[i*nsec + j] - Pressure[(i-1)*nsec + j])/(Dens[i*nsec + j] + Dens[(i-1)*nsec + j])*invdiffRmed[i];
     gradphi = (Potential[i*nsec + j]-Potential[(i-1)*nsec + j])*invdiffRmed[i];
-    vt2 = Pressure[i*nsec + j] + Pressure[(i-1)*nsec + j] + Pressure[i*nsec + (j+1)%nsec] + Pressure[(i-1)*nsec + (j+1)%nsec];
+    vt2 = Vtheta[i*nsec + j] + Vtheta[(i-1)*nsec + j] + Vtheta[i*nsec + (j+1)%nsec] + Vtheta[(i-1)*nsec + (j+1)%nsec];
     vt2 = vt2/4.0+Rinf[i]*OmegaFrame;
     VradInt[i*nsec + j] = Vrad[i*nsec + j] + dt*(-gradp - gradphi + vt2*vt2*invRinf[i]);
   }
@@ -956,7 +956,7 @@ __global__ void DivisePolarGridKernel (float *res, float *num, float *denom, int
   }
 }
 
-__global__ void VanLeerRadialKernel (float *Rinf, float *Rsup, float *QRStar, float *RhoStar, float *Vrad,
+__global__ void VanLeerRadialKernel (float *Rinf, float *Rsup, float *QRStar, float *DensStar, float *Vrad,
   float *LostByDisk, int nsec, int nrad, float dt, int OpenInner)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -967,8 +967,8 @@ __global__ void VanLeerRadialKernel (float *Rinf, float *Rsup, float *QRStar, fl
   if (i<nrad && j<nsec)
   {
     dtheta = 2.0*M_PI/float(nsec);
-    varq = dt*dtheta*Rinf[i]*QRStar[i*nsec + j]* RhoStar[i*nsec + j]*Vrad[i*nsec + j];
-    varq -= dt*dtheta*Rsup[i]*QRStar[(i+1)*nsec + j]* RhoStar[(i+1)*nsec + j]*Vrad[(i+1)*nsec + j];
+    varq = dt*dtheta*Rinf[i]*QRStar[i*nsec + j]* DensStar[i*nsec + j]*Vrad[i*nsec + j];
+    varq -= dt*dtheta*Rsup[i]*QRStar[(i+1)*nsec + j]* DensStar[(i+1)*nsec + j]*Vrad[(i+1)*nsec + j];
     if (i==0 && OpenInner)
       LostByDisk[j] = varq;
   }
@@ -1000,13 +1000,71 @@ __global__ void ComputeResidualsKernel (float *VthetaRes, float *VMed, int nsec,
   }
 }
 
-__global__ void ComputeConstantResidualKernel ()
+__global__ void ComputeConstantResidualKernel (float *VMed, float *invRmed, float *Nshift, float *NoSplitAdvection,
+  int nsec, int nrad, float dt, int YES, int NO, float *Vtheta, float *VthetaRes, float *Rmed, int FastTransport)
 {
-  // int i = threadIdx.x + blockDim.x*blockIdx.x;
-  // int j = threadIdx.y + blockDim.y*blockIdx.y;
-  //
-  // float maxfrac;
-  //
-  // if (FastTransport) maxfrac = 1.0;
-  // else maxfrac = 0.0;
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j = threadIdx.y + blockDim.y*blockIdx.y;
+
+  float maxfrac, Ntilde, Nround, nitemp, invdt;
+
+  if (i<nrad && j<nsec)
+  {
+    if (FastTransport) maxfrac = 1.0;
+    else maxfrac = 0.0;
+
+    invdt = 1.0/dt;
+    Ntilde = VMed[i]*invRmed[i]*dt*(float)nsec/2.0/CUDART_PI_F;
+    Nround = floor(Ntilde+0.5);
+    nitemp = (float)Nround;
+    Nshift[i] = (float)nitemp;
+
+    Vtheta[i*nsec + j] = (Ntilde-Nround)*Rmed[i]*invdt*2.0*CUDART_PI_F/(float)nsec;
+
+    if (maxfrac < 0.5)
+    {
+      NoSplitAdvection[i] = YES;
+      VthetaRes[i*nsec + j] += Vtheta[i*nsec + j];
+      Vtheta[i*nsec + j] = 0.0;
+    }
+    else
+    {
+      NoSplitAdvection[i] = NO;
+    }
+
+  }
+}
+
+__global__ void StarThetaKernel (float *Qbase, float *Rmed, float *Vtheta, float *QStar, int nrad, int nsec,
+  float *dq, float dt)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j = threadIdx.y + blockDim.y*blockIdx.y;
+
+  float dxtheta, ksi, invdxtheta, dqp, dqm;
+  if (i<nrad && j<nsec)
+  {
+    if (i<nrad)
+    {
+      dxtheta = 2.0*CUDART_PI_F/(float)nsec*Rmed[i];
+      invdxtheta = 1.0/dxtheta;
+    }
+    dqm = (Qbase[i*nsec + j] - Qbase[i*nsec + ((j-1)+nsec)%nsec]);
+    dqp = (Qbase[i*nsec + (j+1)%nsec] - Qbase[i*nsec + j]);
+
+    if (dqp * dqm > 0.0)
+      dq[i*nsec + j] = dqp*dqm/(dqp+dqm)*invdxtheta;
+    else
+      dq[i*nsec + j] = 0.0;
+
+    __syncthreads();
+
+    ksi = Vtheta[i*nsec + j]*dt;
+
+    if (ksi > 0.0)
+      QStar[i*nsec + j] = Qbase[i*nsec + ((j-1)+nsec)%nsec]+(dxtheta-ksi)*dq[i*nsec + ((j-1)+nsec)%nsec];
+    else
+      QStar[i*nsec + j] = Qbase[i*nsec + j]-(dxtheta+ksi)*dq[i*nsec + j];
+   }
+
 }

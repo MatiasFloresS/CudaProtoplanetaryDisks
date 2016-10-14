@@ -15,7 +15,7 @@ extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGIND
 
 float *Pressure, *AspectRatioRmed, *SoundSpeed, *Temperature, *Vtheta_d, *vt_cent, *Rinf_d, *SigmaInf_d, *Vrad_d, \
 *SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *Pressure_d, *Temperature_d, *viscosity_array_d, *Kr_aux, *Kt_aux,  \
-exces_mdcp = 0.0, mdcp1, MassTaper, *vt_cent_d, *RhoStar_d, *RhoStar, *invRmed, *invRinf, *invSurf, *invdiffRmed, \
+exces_mdcp = 0.0, mdcp1, MassTaper, *vt_cent_d, *DensStar_d, *DensStar, *invRmed, *invRinf, *invSurf, *invdiffRmed, \
 *invdiffRsup, *Radii, *Rinf, *Rmed, *Rsup, *Surf, *TemperInt_d, *TemperInt, *VradInt, *VradInt_d, *powRmed,       \
 *VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, *Potential, *energyNew;
 
@@ -154,7 +154,7 @@ __host__ void InitEuler (float *Vrad, float *Vtheta, float *Dens, float *energy)
   SoundSpeed      = (float *)malloc(size_grid*sizeof(float));
   Temperature     = (float *)malloc(size_grid*sizeof(float));
   TemperInt       = (float *)malloc(size_grid*sizeof(float));
-  RhoStar         = (float *)malloc(size_grid*sizeof(float));
+  DensStar         = (float *)malloc(size_grid*sizeof(float));
   VradInt         = (float *)malloc(size_grid*sizeof(float));
   AspectRatioRmed = (float *)malloc(NRAD*sizeof(float));
   Potential       = (float *)malloc(size_grid*sizeof(float));
@@ -419,7 +419,7 @@ __host__ void Computecudamalloc (float *energy)
   gpuErrchk(cudaMalloc((void**)&Temperature_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Pressure_d,    size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&SoundSpeed_d,  size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&RhoStar_d,     size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DensStar_d,     size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&VradInt_d,     size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&AspectRatioRmed_d, NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&DensInt_d,        size_grid*sizeof(float)));

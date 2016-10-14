@@ -3,7 +3,7 @@ __host__ void OneWindRad (float *Dens, float *Vrad, float *energy, float dt);
 __host__ void ComputeLRMomenta ();
 __host__ void ComputeExtQty ();
 __host__ void ActualiseGasDens (float *DensInt, float *Dens);
-__host__ void ComputeStarRad(float *Dens, float *Vrad, float *RhoStar, float dt);
+__host__ void ComputeStarRad(float *Dens, float *Vrad, float *DensStar, float dt);
 __host__ float VanLeerRadial (float *Vrad, float *Qbase, float dt, int ReturnLost);
 __host__ void InitTransportDevice ();
 __host__ void InitTransport ();
@@ -11,3 +11,5 @@ __host__ void OneWindTheta (float *Dens, float *Vtheta, float *energy, float dt)
 __host__ void ComputeAverageThetaVelocities (float *Vtheta, float dt);
 __host__ void ComputeResiduals (float *Vtheta, float dt);
 __host__ void ComputeConstantResidual (float *Vtheta, float dt);
+__host__ void QuantitiesAdvection (float *Dens, float *Vradial, float *energy, float dt);
+__host__ void ComputeStarTheta (float *Qbase, float *Vtheta, float *QStar, float dt);
