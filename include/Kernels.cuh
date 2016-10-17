@@ -76,7 +76,7 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
 
 __host__ void Make1Dprofile (float *gridfield);
 
-__global__ void ViscousTermsKernel (float *Vrad, float *Vtheta , float *DRR, float *DPP, float *DivergenceVelocity, float *DRP,
+__global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity, float *DRP,
   float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
   float *TAURR, float *TAUPP, float *Dens, float *viscosity_array, float onethird, float *TAURP, float *invRinf);
 
@@ -107,7 +107,7 @@ __global__ void CrashKernel (float *array, int NRAD, int NSEC, bool Crash);
 
 __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *energy, float *Dens,
   float *AspectRatioRmed, float *viscosity_array, float DRMIN, float DRMAX, int nrad, int nsec, float Tin,
-  float Tout, float step, float G, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray, float OmegaFrame1,
+  float Tout, float step, float G, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray, float OmegaFrame,
   float *SigmaMed, float *EnergyMed, int Adiabaticc, int SelfGravity);
 
 __global__ void DivisePolarGridKernel (float *res, float *num, float *denom, int nrad, int nsec);
@@ -119,8 +119,18 @@ __global__ void ComputeAverageThetaVelocitiesKernel(float *Vtheta, float *VMed, 
 
 __global__ void ComputeResidualsKernel (float *VthetaRes, float *VMed, int nsec, int nrad);
 
-__global__ void ComputeConstantResidualKernel (float *VMed, float *invRmed, float *Nshift, float *NoSplitAdvection,
+__global__ void ComputeConstantResidualKernel (float *VMed, float *invRmed, int *Nshift, int *NoSplitAdvection,
   int nsec, int nrad, float dt, int YES, int NO, float *Vtheta, float *VthetaRes, float *Rmed, int FastTransport);
 
 __global__ void StarThetaKernel (float *Qbase, float *Rmed, float *Vtheta, float *QStar, int nrad, int nsec,
   float *dq, float dt);
+
+__global__ void VanLeerThetaKernel (float *Rsup, float *Rinf, float *Surf, float dt, int nrad, int nsec,
+  int UniformTransport, int *NoSplitAdvection, float *QRStar, float *DensStar, float *Vtheta, float *Qbase, int NO);
+
+__global__ void AdvectSHIFTKernel(float *array, float *TempShift, int nsec, int nrad, int *Nshift);
+
+__global__ void ComputeVelocitiesKernel(float *Vrad, float *Vtheta, float *Dens, float *Rmed, float *ThetaMomP,
+  float *ThetaMomM, float *RadMomP, float *RadMomM, int nrad, int nsec, float OmegaFrame);
+
+__global__ void ComputeSpeQtyKernel (float *label, float *Dens, float *Extlabel, int nrad, int nsec);

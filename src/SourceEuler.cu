@@ -308,7 +308,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
       /* Indirect term star's potential computed here */
       DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
       /* Gravitational potential from star and planet(s) is computed and stored here */
-      // FillForcesArrays (sys, dens, energy);
+      FillForcesArrays (sys, Dens, energy);
       /* Planet's velocities are update here from gravitational interaction with disk */
       // AdvanceSystemFromDisk (force, dens, energy, sys, dt);
 
@@ -331,8 +331,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     /* Now we update gas */
     if (IsDisk == YES)
     {
-      //ApplyBoundaryCondition (vrad, vtheta, dens, energy, dt);
-
+      ApplyBoundaryCondition (Dens, energy, Vrad, Vtheta, dt);
       gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       gpuErrchk(cudaMemcpy(energy, energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       CrashedDens = DetectCrash (Dens);
@@ -357,7 +356,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
         ActualiseGasEnergy (energy, energyNew);
       }
       Transport (Dens, Vrad, Vtheta, energy, label, dt);
-      //ApplyBoundaryCondition(Dens, energy, Vrad, Vtheta, dt);
+      ApplyBoundaryCondition(Dens, energy, Vrad, Vtheta, dt);
       ComputeTemperatureField ();
       mdcp1 = CircumPlanetaryMass (Dens, sys);
       exces_mdcp = mdcp - mdcp1;

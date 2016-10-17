@@ -11,5 +11,9 @@ __host__ void OneWindTheta (float *Dens, float *Vtheta, float *energy, float dt)
 __host__ void ComputeAverageThetaVelocities (float *Vtheta, float dt);
 __host__ void ComputeResiduals (float *Vtheta, float dt);
 __host__ void ComputeConstantResidual (float *Vtheta, float dt);
-__host__ void QuantitiesAdvection (float *Dens, float *Vradial, float *energy, float dt);
+__host__ void QuantitiesAdvection (float *Dens, float *Vazimutal, float *energy, float dt);
 __host__ void ComputeStarTheta (float *Qbase, float *Vtheta, float *QStar, float dt);
+__host__ void VanLeerTheta (float *Vrad, float *Qbase, float dt);
+__host__ void AdvectSHIFT (float *array);
+__host__ void ComputeVelocities(float *Dens, float *label, float *Extlabel);
+__host__ void ComputeSpeQty (float *Dens, float *labe, float *Extlabel);

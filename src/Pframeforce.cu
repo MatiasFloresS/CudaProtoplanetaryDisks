@@ -1,7 +1,9 @@
 #include "Main.cuh"
 
-extern int NRAD, NSEC;
+extern int NRAD, NSEC, NO, Indirect_Term;
 extern float *SigmaMed, *EnergyMed;
+static Pair IndirectTerm;
+extern Pair DiskOnPrimaryAcceleration;
 
 __host__ void InitGasDensity (float *Dens)
 {
@@ -24,5 +26,22 @@ __host__ void InitGasEnergy (float *energy)
     {
       energy[j+i*NSEC] = EnergyMed[i];
     }
+  }
+}
+
+__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *energy)
+{
+  ComputeIndirectTerm ();
+}
+
+
+__host__ void ComputeIndirectTerm ()
+{
+  IndirectTerm.x = -DiskOnPrimaryAcceleration.x;
+  IndirectTerm.x = -DiskOnPrimaryAcceleration.y;
+  if (Indirect_Term == NO)
+  {
+    IndirectTerm.x = 0.0;
+    IndirectTerm.y = 0.0;
   }
 }

@@ -10,7 +10,7 @@ extern float *SigmaInf_d, *AspectRatioRmed_d, *Vrad_d,  OMEGAFRAME, OmegaFrame1,
 *DivergenceVelocity_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d, *Radii2, *vt_cent_d, *Rinf, *Rmed, *Rsup,  \
 *Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii, *TemperInt, *TemperInt_d, *DensStar,    \
 *DensStar_d, *VradInt, *VradInt_d, *powRmed, *Potential, *VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, \
-*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d, *Nshift_d, *NoSplitAdvection_d, *VthetaRes;
+*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d, *VthetaRes, *TempShift, *TempShift_d;
 
 float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forcesyo, *DensInt_d, *fieldsrc,      \
 *vt_int, *GLOBAL_bufarray, *Surf_d, *Potential_d, *VthetaInt_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *Rsup_d,\
@@ -24,7 +24,7 @@ float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forces
 
 float mdcp, ScalingFactor = 1.0, SGP_tstep, SGP_eps, SGP_rstep, dphi, invdphi, onethird;
 
-extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, Cooling;
+extern int NRAD, NSEC, SelfGravity, Corotating, FREQUENCY, Adiabaticc, Cooling, *NoSplitAdvection_d, *Nshift_d;
 static int StillWriteOneOutput, InnerOutputCounter=0;
 int nrad2pot, nsec2pot, blocksize = 32, size_grid, dimfxy=11, TimeStep = 0, NbRestart = 0, blocksize2 = 256,    \
 nrad2potSG;
@@ -275,11 +275,8 @@ __host__ int main (int argc, char *argv[])
   FreePlanetary (sys);
   FreeForce (force);
 
-
  FreeCuda();
  FreeArrays(Dens, Vrad, Vtheta, energy, label);
-
- printf("termino\n" );
 
   if (SelfGravity) // && !SGZeroMode
   {
@@ -409,6 +406,7 @@ __host__ void FreeCuda ()
   cudaFree(VMed_d);
   cudaFree(Nshift_d);
   cudaFree(NoSplitAdvection_d);
+  cudaFree(TempShift_d);
 }
 
 __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label)
@@ -464,6 +462,7 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy
   free(Potential);
 
   free(VthetaRes);
+  free(TempShift);
 
   free(SG_Accr);
   free(SG_Acct);

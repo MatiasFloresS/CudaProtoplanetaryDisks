@@ -18,3 +18,4 @@ __host__ void ActualiseGasVrad (float *Vrad, float *VradNew);
 __host__ void ActualiseGasVtheta (float *Vtheta, float *VthetaNew);
 __host__ void ActualiseGasEnergy (float *energy, float *energyNew);
 __host__ void Substep1cudamalloc (float *Vrad, float *Vtheta);
+__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *energy);
