@@ -1,7 +1,10 @@
 #include "Main.cuh"
 
+#define CFLSECURITY 0.5 /* Maximum fraction of zone size */
+              /* swept in one timestep */
+
 extern int blocksize, nsec2pot, nrad2pot, NRAD, NSEC, YES, LogGrid, size_grid, SelfGravity, ViscosityAlpha,       \
-Adiabaticc, Cooling, Corotating, MARK, NO, IsDisk;
+Adiabaticc, Cooling, Corotating, MARK, NO, IsDisk, GET, Evanescent, FastTransport;
 
 extern bool CentrifugalBalance, ZMPlus = false, SloppyCFL;
 extern string OUTPUTDIR;
@@ -11,18 +14,20 @@ extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGIND
 *Dens_d, *Rmed_d, *SG_Accr, *SG_Accr_d, *SG_Acct_d, *GLOBAL_bufarray_d, *array_d, *array, mdcp, PhysicalTime,     \
 *Qplus, *Qplus_d, *energyInt_d, *energyNew_d, *VradNew_d, *invdiffRsup_d, *Potential_d, *invRinf_d, *VthetaInt_d, \
 *powRmed_d, *invdiffRmed_d, *VthetaNew_d, *SigmaMed_d, *SigmaMed, *QplusMed_d, *QplusMed, *CoolingTimeMed_d,      \
-*EnergyMed_d, *EnergyMed, *DensInt_d, CVNR, DT, MASSTAPER, *DivergenceVelocity_d, *TAURR_d, *TAURP_d, *TAUPP_d;
+*EnergyMed_d, *EnergyMed, *DensInt_d, CVNR, DT, MASSTAPER, *DivergenceVelocity_d, *TAURR_d, *TAURP_d, *TAUPP_d,   \
+*Rsup_d, *Vmoy_d, *invRmed_d;
 
-float *Pressure, *AspectRatioRmed, *SoundSpeed, *Temperature, *Vtheta_d, *vt_cent, *Rinf_d, *SigmaInf_d, *Vrad_d, \
-*SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *Pressure_d, *Temperature_d, *viscosity_array_d, *Kr_aux, *Kt_aux,  \
+float *Pressure, *AspectRatioRmed, *SoundSpeed, *Temperature, *Vtheta_d, *vt_cent, *Rinf_d, *SigmaInf_d, *Vrad_d,   \
+*SoundSpeed_d, *energy_d, *AspectRatioRmed_d, *Pressure_d, *Temperature_d, *viscosity_array_d, *Kr_aux, *Kt_aux,    \
 exces_mdcp = 0.0, mdcp1, MassTaper, *vt_cent_d, *DensStar_d, *DensStar, *invRmed, *invRinf, *invSurf, *invdiffRmed, \
-*invdiffRsup, *Radii, *Rinf, *Rmed, *Rsup, *Surf, *TemperInt_d, *TemperInt, *VradInt, *VradInt_d, *powRmed,       \
-*VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, *Potential, *energyNew;
+*invdiffRsup, *Radii, *Rinf, *Rmed, *Rsup, *Surf, *TemperInt_d, *TemperInt, *VradInt, *VradInt_d, *powRmed,         \
+*VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, *Potential, *energyNew, *DT1D_d, *DT2D_d, *newDT_d,         \
+*Vresidual_d;
 
 
 bool CrashedDens, CrashedEnergy;
 
-extern dim3 dimGrid2, dimBlock2;
+extern dim3 dimGrid2, dimBlock2, dimGrid, dimBlock;
 
 int init = 0;
 double *Radii2;
@@ -254,8 +259,8 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
   PlanetarySystem *sys, int initialization)
 {
 
-  float dt = 0.0;
-  int GasTimeStepsCFL = 1;
+  float dt = 0.0, OmegaNew, domega, dtemp =0.0;
+  int GasTimeStepsCFL = 1, gastimestepcfl;
   CrashedDens = false;
   CrashedEnergy = false;
   if (Adiabaticc)
@@ -275,11 +280,11 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     // communicateBoundaries -> es para mpi ?
     if (SloppyCFL == YES)
     {
-      //gastimestepcfl = ConditionCFL(vrad, vtheta, DT-dtemp);      case ./bin/fargoGPU -c
+      gastimestepcfl = ConditionCFL(Vrad, Vtheta, DT-dtemp);     // case ./bin/fargoGPU -c
     }
 
   }
-  float dtemp = 0.;
+
   dt = DT / GasTimeStepsCFL; // es 1
 
   while (dtemp < 0.99999*DT)
@@ -292,8 +297,8 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
       // communicateBoundaries -> mismo que arriba
       if (SloppyCFL == NO)
       {
-        // gastimestepcfl = 1;
-        //gastimestepcfl = ConditionCFL(vrad,vtheta,DT-dtemp);
+        gastimestepcfl = 1;
+        gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
         dt = (DT-dtemp)/(float)GasTimeStepsCFL;
       }
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys);
@@ -310,23 +315,23 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
       /* Gravitational potential from star and planet(s) is computed and stored here */
       FillForcesArrays (sys, Dens, energy);
       /* Planet's velocities are update here from gravitational interaction with disk */
-      // AdvanceSystemFromDisk (force, dens, energy, sys, dt);
+      AdvanceSystemFromDisk (force, Dens, energy, sys, dt);
 
     }
 
     /* Planet's positions and velocities are update from gravitational interaction with star
        and other planets */
-    // AdvanceSystemRK5 (sys,dt);
+    AdvanceSystemRK5 (sys,dt);
 
     /* Below we correct vtheta, planet's position and velocities if we work in a frame non-centered on the star */
     if (Corotating == YES)
     {
-      // OmegaNew = GetPsysInfo(sys, GET) / dt;
-      // domega = OmegaNew - OmegaFrame1;
-      // if (IsDisk == YES) CorrectVtheta (vtheta, domega);
-      // OmegaFrame1 = OmegaNew;
+      OmegaNew = GetPsysInfo(sys, GET) / dt;
+      domega = OmegaNew - OmegaFrame1;
+      if (IsDisk == YES) CorrectVtheta (Vtheta, domega);
+      OmegaFrame1 = OmegaNew;
     }
-    // RotatePsys (sys, OmegaFrame1*dt);
+    RotatePsys (sys, OmegaFrame1*dt);
 
     /* Now we update gas */
     if (IsDisk == YES)
@@ -385,7 +390,7 @@ __host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int i
   ComputeViscousTerms (VradInt, VthetaInt, Dens, 0);
   UpdateVelocitiesWithViscosity(VradInt, VthetaInt, Dens, dt);
 
-  //if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
+  if (!Evanescent) ApplySubKeplerianBoundary(VthetaInt);
 
 }
 
@@ -553,4 +558,15 @@ __host__ void Substep1cudamalloc (float *Vrad, float *Vtheta)
   gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed,             NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(QplusMed_d, QplusMed,             NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(CoolingTimeMed_d, CoolingTimeMed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
+}
+
+__host__ int ConditionCFL (float *Vrad, float *Vtheta , float DeltaT)
+{
+  ConditionCFLKernel1D<<<dimGrid, dimBlock>>>(Rsup_d, Rinf_d, Rmed_d, NRAD, NSEC, Vtheta_d, Vmoy_d);
+  gpuErrchk(cudaDeviceSynchronize());
+
+  ConditionCFLKernel2D<<<dimGrid2, dimBlock2>>>(Rsup_d, Rinf_d, Rmed_d, NSEC, NRAD,
+    Vresidual_d, Vtheta_d, Vmoy_d, FastTransport, SoundSpeed_d, Vrad_d, DeltaT, DT2D_d,
+    CVNR, invRmed_d, DT2D_d, CFLSECURITY, newDT_d);
+  gpuErrchk(cudaDeviceSynchronize());
 }

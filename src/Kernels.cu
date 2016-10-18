@@ -1096,14 +1096,15 @@ __global__ void AdvectSHIFTKernel (float *array, float *TempShift, int nsec, int
   int i = threadIdx.x + blockDim.x*blockIdx.x;
   int j = threadIdx.y + blockDim.y*blockIdx.y;
 
-  int ji;
+  int ji, modji;
+
   if (i<nrad && j<nsec)
   {
     ji = j-Nshift[i];
-    while (ji< 0) ji += nsec;
-    while (ji >= nsec) ji -= nsec;
+    modji = ji%nsec;
+    if (ji < 0) ji += nsec;
 
-    TempShift[i*nsec + j] = array[i*nsec + ji];
+    TempShift[i*nsec + j] = array[i*nsec + modji];
 
     __syncthreads();
 
@@ -1142,4 +1143,145 @@ __global__ void ComputeSpeQtyKernel (float *label, float *Dens, float *Extlabel,
     /* Compressive flow if line commentarized
     label[i*nsec + j] = Extlabel[i*nsec + j] */
   }
+}
+
+__global__ void FillForcesArraysKernel (float *Rmed, int nsec, int nrad, float xplanet, float yplanet, float smooth,
+  float G, float mplanet, int Indirect_Term, float InvPlanetDistance3, float *Potential, Pair IndirectTerm)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j = threadIdx.y + blockDim.y*blockIdx.y;
+
+  float InvDistance, angle, x, y, distance, distancesmooth, pot;
+
+  if (i<nrad && j<nsec)
+  {
+    InvDistance = 1.0/Rmed[i];
+    angle = (float)j/(float)nsec*2.0*CUDART_PI_F;
+    x = Rmed[i]*cosf(angle);
+    y = Rmed[i]*sinf(angle);
+    distance = (x-xplanet)*(x-xplanet)+(y-yplanet)*(y-yplanet);
+    distancesmooth = sqrtf(distance+smooth);
+    pot = -G*mplanet/distancesmooth; /* Direct term from planet */
+    if (Indirect_Term)
+      pot += G*mplanet*InvPlanetDistance3*(x*xplanet+y*yplanet); /* Indirect term from planet */
+    Potential[i*nsec + j] += pot;
+
+    /* -- Gravitational potential from star on gas -- */
+
+    pot = -G*1.0*InvDistance; /* Direct term from star */
+    pot -= IndirectTerm.x*x + IndirectTerm.y*y; /* Indirect term from star */
+    Potential[i*nsec + j] += pot;
+  }
+}
+
+__global__ void CorrectVthetaKernel (float *Vtheta, float domega, float *Rmed, int nrad, int nsec)
+{
+    int i = threadIdx.x + blockDim.x*blockIdx.x;
+    int j = threadIdx.y + blockDim.y*blockIdx.y;
+
+    if (i<nrad && j<nsec)
+    {
+      Vtheta[i*nsec + j] -= domega*Rmed[i];
+    }
+}
+
+__global__ void ConditionCFLKernel1D (float *Rsup, float *Rinf, float *Rmed, int nrad, int nsec,
+  float *Vtheta, float *Vmoy)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j;
+  float dxrad, dxtheta;
+
+  if (i<nrad)
+  {
+    dxrad = Rsup[i]-Rinf[i];
+    dxtheta = Rmed[i]*2.0*CUDART_PI_F/(float)nsec;
+    Vmoy[i] = 0.0;
+
+    for (j = 0; j < nsec; j++)
+      Vmoy[i] += Vtheta[i*nsec + j];
+
+    Vmoy[i] /= (float)nsec;
+  }
+}
+
+__global__ void ConditionCFLKernel2D (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
+  float *Vresidual, float *Vtheta, float *Vmoy, int FastTransport, float *SoundSpeed, float *Vrad,
+  float DeltaT, float *DT1D, float CVNR, float *invRmed, float *DT2D, float CFLSECURITY, float *newDT)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j = threadIdx.y + blockDim.y*blockIdx.y;
+  float dxrad, dxtheta, invdt1, invdt2, invdt3, invdt4, dvr, dvt, dt;
+  float newdt = 1e30;
+
+  if (i<nrad && j<nsec)
+  {
+    dxrad = Rsup[i]-Rinf[i];
+    dxtheta = Rmed[i]*2.0*CUDART_PI_F/(float)nsec;
+    if (FastTransport) Vresidual[j] = Vtheta[i*nsec + j]-Vmoy[i]; /* Fargo algorithm */
+    else Vresidual[j] = Vtheta[i*nsec + j];                       /* Standard algorithm */
+    __syncthreads();
+    //Vresidual[nsec] = Vresidual[0];
+
+    invdt1 = SoundSpeed[i*nsec + j]/(min2(dxrad,dxtheta));
+    invdt2 = fabs(Vrad[i*nsec + j])/dxrad;
+    invdt3 = fabs(Vresidual[j])/dxtheta;
+    dvr = Vrad[(i+1)*nsec + j]-Vrad[i*nsec + j];
+    dvt = Vtheta[i*nsec + (j+1)%nsec]-Vtheta[i*nsec + j];
+    if (dvr >= 0.0) dvr = 1e-10;
+    else dvr = -dvr;
+    if (dvr >= 0.0) dvt = 1e-10;
+    else dvt = -dvt;
+    invdt4 = max2(dvr/dxrad, dvt/dxtheta);
+    invdt4*= 4.0*CVNR*CVNR;
+    dt = CFLSECURITY/sqrtf(invdt1*invdt1+invdt2*invdt2+invdt3*invdt3+invdt4*invdt4);
+
+    DT2D[i*nsec + j] = dt; // array nrad*nsec size dt
+    __syncthreads();
+
+    if (i<nrad)
+    {
+      for (int k = 0; k < nsec; k++)
+      {
+        if (DT2D[i*nsec + k] < newdt) newdt = DT2D[i*nsec + k]; // for each dt in nrad
+      }
+      newDT[i] = newdt; // array nrad size dt
+      __syncthreads();
+
+      if(i==0)
+      {
+        for (int k = 1; k < nrad; k++)
+        {
+          newdt = newDT[0];
+          if (newDT[k] < newdt) newdt = newDT[k]; // min dt
+        }
+      }
+
+      dt = 2.0*CUDART_PI_F*CFLSECURITY/(float)nsec/fabs(Vmoy[i]*invRmed[i]-Vmoy[i+1]*invRmed[i+1]);
+      DT1D[i] = dt; // array nrad size dt
+
+      __syncthreads();
+
+      if (i == 0)
+      {
+        for (int k = 0; k < nrad; k++) {
+          if (DT1D[k] < newdt) newdt = DT1D[k];
+        }
+        if (DeltaT < newdt) newdt = DeltaT;
+      }
+    }
+  }
+}
+
+
+__device__ float max2(float a, float b)
+{
+  if (a > b) return a;
+  return b;
+}
+
+__device__ float min2(float a, float b)
+{
+  if (a < b) return a;
+  return b;
 }

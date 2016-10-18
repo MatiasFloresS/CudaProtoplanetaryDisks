@@ -4,8 +4,8 @@ extern int NRAD, NSEC, size_grid, nsec2pot, blocksize, nrad2pot, AdvecteLabel, Y
 Adiabaticc, FastTransport, NO;
 
 extern float OmegaFrame1, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *label_d, *DensStar, *invdiffRmed_d,   \
-*QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d,      \
-*invRmed_d, *Vtheta_d, *Surf_d, *array_d;
+*QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d,   \
+*Vtheta_d, *Surf_d, *array_d;
 
 extern dim3 dimGrid2, dimBlock2, dimBlock, dimGrid4;
 

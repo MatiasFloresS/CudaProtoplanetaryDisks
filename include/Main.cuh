@@ -23,6 +23,7 @@
 #include "Theo.cuh"
 #include "Planet.cuh"
 #include "Viscosity.cuh"
+#include "RungeKutta.cuh"
 
 using namespace std;
 

@@ -1,16 +1,17 @@
 #include "Main.cuh"
 #include "Fondam.cuh"
 
-extern float *SigmaInf_d, *AspectRatioRmed_d, *Vrad_d,  OMEGAFRAME, OmegaFrame1, *Pressure, *CellAbscissa,      \
-*CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime, CVNR, *CellAbscissa_d, *CellOrdinate_d,           \
-*Temperature_d, *energy_d, *Temperature, *Vtheta_d, *Pressure_d, *Rinf_d, *SoundSpeed_d, *viscosity_array_d,    \
-*QStar_d, *vt_cent, THICKNESSSMOOTHING, G, *SoundSpeed, *AspectRatioRmed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM, \
-*ThetaMomP, *ThetaMomM, *Work, *QRStar, *Extlabel, *dq, *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d,     \
-*Work_d, *QRStar_d, *Extlabel_d, *dq_d, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *DRP_d,  \
-*DivergenceVelocity_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d, *Radii2, *vt_cent_d, *Rinf, *Rmed, *Rsup,  \
+extern float *SigmaInf_d, *AspectRatioRmed_d, *Vrad_d,  OMEGAFRAME, OmegaFrame1, *Pressure, *CellAbscissa,       \
+*CellOrdinate, HillRadius, PhysicalTimeInitial, PhysicalTime, CVNR, *CellAbscissa_d, *CellOrdinate_d,            \
+*Temperature_d, *energy_d, *Temperature, *Vtheta_d, *Pressure_d, *Rinf_d, *SoundSpeed_d, *viscosity_array_d,     \
+*QStar_d, *vt_cent, THICKNESSSMOOTHING, G, *SoundSpeed, *AspectRatioRmed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM,  \
+*ThetaMomP, *ThetaMomM, *Work, *QRStar, *Extlabel, *dq, *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d,      \
+*Work_d, *QRStar_d, *Extlabel_d, *dq_d, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *DRP_d,   \
+*DivergenceVelocity_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d, *Radii2, *vt_cent_d, *Rinf, *Rmed, *Rsup,   \
 *Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *Radii, *TemperInt, *TemperInt_d, *DensStar,    \
 *DensStar_d, *VradInt, *VradInt_d, *powRmed, *Potential, *VthetaInt, *DensInt, *VradNew, *VthetaNew, *energyInt, \
-*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d, *VthetaRes, *TempShift, *TempShift_d;
+*energyNew, *LostByDisk_d, *VthetaRes_d, *VMed_d, *VthetaRes, *TempShift, *TempShift_d, *Vmoy_d, *newDT_d,       \
+*DT1D_d, *DT2D_d, *Vresidual_d;
 
 float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forcesyo, *DensInt_d, *fieldsrc,      \
 *vt_int, *GLOBAL_bufarray, *Surf_d, *Potential_d, *VthetaInt_d, *invdiffRmed_d, *invRinf_d, *powRmed_d, *Rsup_d,\
@@ -20,7 +21,7 @@ float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forces
 *mean_dens, *mean_dens2, *mean_energy, *mean_energy2, *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d,       \
 *mean_dens_d2, *mean_energy_d, *mean_energy_d2, *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d, *SGP_Kr,    \
 *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Rmed_d, *Dens_d, *Kr_aux_d, *Kt_aux_d, *SG_Accr, *SG_Acct, *SG_Acct_d,    \
-*SG_Accr_d, *array, *array_d, *mdcp0, *mdcp0_d;
+*SG_Accr_d, *array, *array_d, *mdcp0, *mdcp0_d, *q0, *PlanetMasses, *q1;
 
 float mdcp, ScalingFactor = 1.0, SGP_tstep, SGP_eps, SGP_rstep, dphi, invdphi, onethird;
 
@@ -407,6 +408,11 @@ __host__ void FreeCuda ()
   cudaFree(Nshift_d);
   cudaFree(NoSplitAdvection_d);
   cudaFree(TempShift_d);
+  cudaFree(Vmoy_d);
+  cudaFree(DT1D_d);
+  cudaFree(DT2D_d);
+  cudaFree(newDT_d);
+  cudaFree(Vresidual_d);
 }
 
 __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label)
@@ -463,6 +469,9 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy
 
   free(VthetaRes);
   free(TempShift);
+  free(q0);
+  free(q1);
+  free(PlanetMasses);
 
   free(SG_Accr);
   free(SG_Acct);
@@ -584,6 +593,9 @@ __host__ void CreateArrays ()
   Qbase           = (float *)malloc(size_grid*sizeof(float));
   array           = (float *)malloc(size_grid*sizeof(float));
   mdcp0           = (float *)malloc(size_grid*sizeof(float));
+  q0              = (float *)malloc(400*sizeof(float));
+  q1              = (float *)malloc(400*sizeof(float));
+  PlanetMasses    = (float *)malloc(100*sizeof(float));
 
 }
 
@@ -638,11 +650,18 @@ __host__ void Cudamalloc (float *label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMalloc((void**)&Dens_d,           size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&label_d,          size_grid*sizeof(float)));
 
+  gpuErrchk(cudaMalloc((void**)&Vresidual_d,      NSEC*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&newDT_d,          NRAD*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DT1D_d,           NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&gridfield_d,      size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Qbase_d,          size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&QStar_d,          size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&array_d,          size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&mdcp0_d,          size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Vmoy_d,           size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DT2D_d,           size_grid*sizeof(float)));
+
+
 
 
   /* cudaMalloc SelfGravity */

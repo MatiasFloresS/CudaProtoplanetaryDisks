@@ -235,3 +235,23 @@ __host__ void FreePlanetary (PlanetarySystem *sys)
   free (sys->FeelDisk);
   free (sys);
 }
+
+__host__ void RotatePsys (PlanetarySystem *sys, float angle)
+{
+  int nb;
+  float sint, cost, xt, yt;
+  nb = sys->nb;
+  sint = sin(angle);
+  cost = sin(angle);
+  for (int i = 0; i < nb; i++)
+  {
+    xt = sys->x[i];
+    yt = sys->y[i];
+    sys->x[i] = xt*cost+yt*sint;
+    sys->y[i] = -xt*sint+yt*cost;
+    xt = sys->vx[i];
+    yt = sys->vy[i];
+    sys->vx[i] = xt*cost+yt*sint;
+    sys->vy[i] = -xt*sint+yt*cost;
+  }
+}

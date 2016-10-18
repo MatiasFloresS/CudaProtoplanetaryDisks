@@ -10,7 +10,7 @@ extern float *SigmaMed, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed,
 OmegaFrame1, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
 
 float  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, *CellAbscissa,        \
-csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d;
+csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
 
 extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
@@ -149,4 +149,18 @@ __host__ void InitComputeAccelDevice()
   gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(float)));
   gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice));
+}
+
+__host__ void CorrectVtheta (float *Vtheta, float domega)
+{
+  CorrectVthetaKernel<<<dimGrid2, dimBlock2>>>(Vtheta_d, domega, Rmed_d, NRAD, NSEC);
+  gpuErrchk(cudaDeviceSynchronize());
+}
+
+__host__ void ApplySubKeplerianBoundary(float *VthetaInt)
+{
+  if (!SelfGravity)
+  {
+    //VKepIn = sqrt(G*1.0/Rmed[])
+  }
 }

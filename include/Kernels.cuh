@@ -134,3 +134,19 @@ __global__ void ComputeVelocitiesKernel(float *Vrad, float *Vtheta, float *Dens,
   float *ThetaMomM, float *RadMomP, float *RadMomM, int nrad, int nsec, float OmegaFrame);
 
 __global__ void ComputeSpeQtyKernel (float *label, float *Dens, float *Extlabel, int nrad, int nsec);
+
+__global__ void FillForcesArraysKernel (float *Rmed, int nsec, int nrad, float xplanet, float yplanet, float smooth,
+  float G, float mplanet, int Indirect_Term, float InvPlanetDistance3, float *Potential, pair IndirectTerm);
+
+__global__ void CorrectVthetaKernel (float *Vtheta, float domega, float *Rmed, int nrad, int nsec);
+
+__global__ void ConditionCFLKernel1D (float *Rsup, float *Rinf, float *Rmed, int nrad, int nsec,
+  float *Vtheta, float *Vmoy);
+
+__device__ float max2(float a, float b);
+
+__device__ float min2(float a, float b);
+
+__global__ void ConditionCFLKernel2D (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
+  float *Vresidual, float *Vtheta, float *Vmoy, int FastTransport, float *SoundSpeed, float *Vrad,
+  float DeltaT, float *DT1D, float CVNR, float *invRmed, float *DT2D, float CFLSECURITY, float *newDT);
