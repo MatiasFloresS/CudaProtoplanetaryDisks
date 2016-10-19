@@ -1,8 +1,8 @@
-__host__ void ApplyBoundaryCondition (float *Dens, float *energy, float *Vrad, float *Vtheta, float step);
-__host__ void NonReflectingBoundary (float *Dens, float *energy, float *Vrad);
-__host__ void ReduceMean (float *Dens, float *energy);
+__host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, float *Vtheta, float step);
+__host__ void NonReflectingBoundary (float *Dens, float *Energy, float *Vrad);
+__host__ void ReduceMean (float *Dens, float *Energy);
 __host__ void ReduceCs ();
-__host__ void MinusMean (float *Dens, float *energy);
+__host__ void MinusMean (float *Dens, float *Energy);
 __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float step);
 __host__ void Cscudamalloc ();
 __host__ void Meancudamalloc ();

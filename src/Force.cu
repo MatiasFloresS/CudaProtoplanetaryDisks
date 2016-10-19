@@ -7,10 +7,10 @@ extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *C
 *Surf_d, *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
 
 extern bool RocheSmoothing;
-extern int size_grid, blocksize, NRAD, NSEC, nsec2pot, nrad2pot;
+extern int size_grid, NRAD, NSEC;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float *energy, int TimeStep,
+__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float *Energy, int TimeStep,
   float PhysicalTime, int dimfxy)
 {
   FILE *out;

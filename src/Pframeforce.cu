@@ -21,19 +21,19 @@ __host__ void InitGasDensity (float *Dens)
   }
 }
 
-__host__ void InitGasEnergy (float *energy)
+__host__ void InitGasEnergy (float *Energy)
 {
   FillEnergy ();
   for (int i = 0; i < NRAD; i++)
   {
     for (int j = 0; j < NSEC; j++)
     {
-      energy[j+i*NSEC] = EnergyMed[i];
+      Energy[j+i*NSEC] = EnergyMed[i];
     }
   }
 }
 
-__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *energy)
+__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy)
 {
   int NbPlanets;
   float xplanet, yplanet, mplanet, PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
@@ -74,7 +74,7 @@ __host__ void ComputeIndirectTerm ()
   }
 }
 
-__host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *energy, PlanetarySystem *sys, float dt)
+__host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, PlanetarySystem *sys, float dt)
 {
   int NbPlanets;
   float m, x, y, r, smoothing;

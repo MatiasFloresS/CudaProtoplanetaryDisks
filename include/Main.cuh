@@ -19,7 +19,7 @@
 #include "Output.cuh"
 #include "SideEuler.cuh"
 #include "TransportEuler.cuh"
-#include "Readfiles.cuh"
+#include "Interpret.cuh"
 #include "Theo.cuh"
 #include "Planet.cuh"
 #include "Viscosity.cuh"
@@ -27,9 +27,6 @@
 
 using namespace std;
 
-__host__ void ReadVariables (char *ParameterFile);
-__host__ void TellEverything ();
-__host__ void PrintUsage (char *argv);
 __host__ void UpdateVelocitiesWithViscosity (float *VradInt, float *VthetaInt, float *dens, float DeltaT);
 __host__ void MultiplyPolarGridbyConstant (float *Dens);
 __host__ void FreeCuda ();

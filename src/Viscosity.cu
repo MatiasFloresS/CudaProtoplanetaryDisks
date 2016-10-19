@@ -1,6 +1,6 @@
 #include "Main.cuh"
 
-extern int NSEC, size_grid, nsec2pot, nrad2pot, blocksize, NRAD;
+extern int NSEC, size_grid, NRAD;
 
 extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING, *SoundSpeed_d, \
 *SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray,     \

@@ -15,11 +15,11 @@ __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, fl
 
 __global__ void Substep2Kernel (float *Dens, float *VradInt, float *VthetaInt, float *TemperInt,
   int nrad, int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *DensInt, int Adiabaticc,
-  float *Rmed, float dt,  float *VradNew, float *VthetaNew, float *energy, float *energyInt);
+  float *Rmed, float dt,  float *VradNew, float *VthetaNew, float *Energy, float *EnergyInt);
 
 __global__ void Substep3Kernel (float *Dens, float *Qplus, float *viscosity_array, float *TAURR, float *TAURP,float *TAUPP,
-  float *DivergenceVelocity, int nrad, int nsec, float *Rmed, int Cooling, float *energyNew, float dt, float *EnergyMed,
-  float *SigmaMed, float *CoolingTimeMed, float *energy, float ADIABATICINDEX, float *QplusMed);
+  float *DivergenceVelocity, int nrad, int nsec, float *Rmed, int Cooling, float *EnergyNew, float dt, float *EnergyMed,
+  float *SigmaMed, float *CoolingTimeMed, float *Energy, float ADIABATICINDEX, float *QplusMed);
 
 __global__ void UpdateVelocitiesKernel (float *VthetaInt, float *VradInt, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *Dens, float *invRinf, float *TAURR,
@@ -27,16 +27,16 @@ __global__ void UpdateVelocitiesKernel (float *VthetaInt, float *VradInt, float 
 
 __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate, float *Rmed, int nsec, int nrad);
 
-__global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *Dens, float *Rmed, float *energy, int nsec, int nrad,
+__global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *Dens, float *Rmed, float *Energy, int nsec, int nrad,
   int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed);
 
 __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *Dens, float *Pressure, int Adiabaticc, int nrad, int nsec,
-  int ADIABATICINDEX, float *energy);
+  int ADIABATICINDEX, float *Energy);
 
-__global__ void ComputeTemperatureFieldKernel (float *Dens, float *Temperature, float *Pressure, float *energy, float MU, float R,
+__global__ void ComputeTemperatureFieldKernel (float *Dens, float *Temperature, float *Pressure, float *Energy, float MU, float R,
   float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
 
-__global__ void InitLabelKernel (float *label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec);
+__global__ void InitLabelKernel (float *Label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec);
 
 __global__ void CircumPlanetaryMassKernel (float *Dens, float *Surf, float *CellAbscissa, float *CellOrdinate, float xpl, float ypl, int nrad,
   int nsec, float HillRadius, float *mdcp0);
@@ -55,17 +55,17 @@ __global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, fl
   float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float G, float a, float *Rmed,
   int dimfxy, float rh);
 
-__global__ void OpenBoundaryKernel (float *Vrad, float *Dens, float *energy, int nsec, float *SigmaMed);
+__global__ void OpenBoundaryKernel (float *Vrad, float *Dens, float *Energy, int nsec, float *SigmaMed);
 
 __global__ void ReduceCsKernel (float *SoundSpeed, float *cs0, float *cs1, float *csnrm1, float *csnrm2, int nsec, int nrad);
 
-__global__ void ReduceMeanKernel (float *Dens, float *energy, int nsec, float *mean_dens, float *mean_energy, float *mean_dens2,
+__global__ void ReduceMeanKernel (float *Dens, float *Energy, int nsec, float *mean_dens, float *mean_energy, float *mean_dens2,
   float *mean_energy2, int nrad);
 
 __global__ void NonReflectingBoundaryKernel (float *Dens, float *energy, int i_angle, int nsec, float *Vrad, float *SoundSpeed,
   float SigmaMed, int nrad, float SigmaMed2, int i_angle2);
 
-__global__ void MinusMeanKernel (float *Dens, float *energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
+__global__ void MinusMeanKernel (float *Dens, float *Energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
   float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
 
 __global__ void Make1DprofileKernel (float *device_out2, float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad);
@@ -83,7 +83,7 @@ __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DR
 __global__ void LRMomentaKernel (float *RadMomP, float *RadMomM, float *ThetaMomP, float *ThetaMomM, float *Dens,
   float *Vrad, float *Vtheta, int nrad, int nsec, float *Rmed, float OmegaFrame);
 
-__global__ void ExtQtyKernel (float *Extlabel, float *Dens, float *label, int nsec, int nrad);
+__global__ void ExtQtyKernel (float *ExtLabel, float *Dens, float *Label, int nsec, int nrad);
 
 __global__ void StarRadKernel (float *Qbase, float *Vrad, float *QStar, float dt, int nrad, int nsec,
   float *invdiffRmed, float *Rmed, float *dq);
@@ -105,7 +105,7 @@ __global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float
 
 __global__ void CrashKernel (float *array, int NRAD, int NSEC, bool Crash);
 
-__global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *energy, float *Dens,
+__global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *Energy, float *Dens,
   float *AspectRatioRmed, float *viscosity_array, float DRMIN, float DRMAX, int nrad, int nsec, float Tin,
   float Tout, float step, float G, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray, float OmegaFrame,
   float *SigmaMed, float *EnergyMed, int Adiabaticc, int SelfGravity);
@@ -133,7 +133,7 @@ __global__ void AdvectSHIFTKernel(float *array, float *TempShift, int nsec, int 
 __global__ void ComputeVelocitiesKernel(float *Vrad, float *Vtheta, float *Dens, float *Rmed, float *ThetaMomP,
   float *ThetaMomM, float *RadMomP, float *RadMomM, int nrad, int nsec, float OmegaFrame);
 
-__global__ void ComputeSpeQtyKernel (float *label, float *Dens, float *Extlabel, int nrad, int nsec);
+__global__ void ComputeSpeQtyKernel (float *Label, float *Dens, float *ExtLabel, int nrad, int nsec);
 
 __global__ void FillForcesArraysKernel (float *Rmed, int nsec, int nrad, float xplanet, float yplanet, float smooth,
   float G, float mplanet, int Indirect_Term, float InvPlanetDistance3, float *Potential, pair IndirectTerm);

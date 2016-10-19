@@ -1,23 +1,23 @@
 #include "Main.cuh"
 
-extern int NRAD, NSEC, size_grid, nsec2pot, blocksize, nrad2pot, AdvecteLabel, YES, OpenInner,         \
+extern int NRAD, NSEC, size_grid, AdvecteLabel, YES, OpenInner,         \
 Adiabaticc, FastTransport, NO;
 
-extern float OmegaFrame1, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *label_d, *DensStar, *invdiffRmed_d,   \
+extern float OmegaFrame1, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *DensStar, *invdiffRmed_d,   \
 *QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d,   \
 *Vtheta_d, *Surf_d, *array_d;
 
 extern dim3 dimGrid2, dimBlock2, dimBlock, dimGrid4;
 
-float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *Extlabel, *RadMomP_d, *RadMomM_d,    \
-*ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *Extlabel_d, *dq, *dq_d, *LostByDisk_d, LostMass = 0.0, \
+float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *RadMomP_d, *RadMomM_d,    \
+*ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *ExtLabel_d, *dq, *dq_d, *LostByDisk_d, LostMass = 0.0, \
 *VMed_d, *VthetaRes_d, *VthetaRes, *TempShift, *TempShift_d;
 
 static bool UniformTransport;
 
 int *NoSplitAdvection_d, *Nshift_d;
 
-__host__ void Transport (float *Dens, float *Vrad, float *Vtheta, float *energy, float *label, float dt)
+__host__ void Transport (float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label, float dt)
 {
 
   ComputeLRMomenta();
@@ -25,23 +25,23 @@ __host__ void Transport (float *Dens, float *Vrad, float *Vtheta, float *energy,
   if (AdvecteLabel == YES) ComputeExtQty();
 
   /* No-Alternate Directionnal Splitting */
-  OneWindRad (Dens, Vrad, energy, dt);
-  OneWindTheta (Dens, Vtheta, energy, dt);
+  OneWindRad (Dens, Vrad, Energy, dt);
+  OneWindTheta (Dens, Vtheta, Energy, dt);
   ComputeVelocities (Dens, Vrad, Vtheta);
-  if (AdvecteLabel) ComputeSpeQty (Dens, label, Extlabel);
+  if (AdvecteLabel) ComputeSpeQty (Dens, Label, ExtLabel);
 }
 
 
 
-__host__ void ComputeSpeQty (float *Dens, float *labe, float *Extlabel)
+__host__ void ComputeSpeQty (float *Dens, float *labe, float *ExtLabel)
 {
-  ComputeSpeQtyKernel<<<dimGrid2, dimBlock2>>>(label_d, Dens_d, Extlabel_d, NRAD, NSEC);
+  ComputeSpeQtyKernel<<<dimGrid2, dimBlock2>>>(Label_d, Dens_d, ExtLabel_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
 
 
-__host__ void ComputeVelocities(float *Dens, float *label, float *Extlabel)
+__host__ void ComputeVelocities(float *Dens, float *Label, float *ExtLabel)
 {
   ComputeVelocitiesKernel<<<dimGrid2, dimBlock2>>>(Vrad_d, Vtheta_d, Dens_d, Rmed_d, ThetaMomP_d,
     ThetaMomM_d, RadMomP_d, RadMomM_d,  NRAD,  NSEC, OmegaFrame1);
@@ -61,13 +61,13 @@ __host__ void ComputeLRMomenta()
 
 __host__ void ComputeExtQty()
 {
-  ExtQtyKernel<<<dimGrid2, dimBlock2>>>(Extlabel_d, Dens_d, label_d, NSEC, NRAD);
+  ExtQtyKernel<<<dimGrid2, dimBlock2>>>(ExtLabel_d, Dens_d, Label_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
 
 
-__host__ void OneWindRad (float *Dens, float *Vrad, float *energy, float dt)
+__host__ void OneWindRad (float *Dens, float *Vrad, float *Energy, float dt)
 {
   gpuErrchk(cudaMemcpy(Qbase_d, Dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice)); // dens_d -> Qbase_d
   ComputeStarRad(Dens, Vrad, DensStar, dt);
@@ -78,30 +78,30 @@ __host__ void OneWindRad (float *Dens, float *Vrad, float *energy, float dt)
   VanLeerRadial (Vrad, ThetaMomP, dt, 0);
   VanLeerRadial (Vrad, ThetaMomP, dt, 0);
   if (Adiabaticc)
-    VanLeerRadial (Vrad, energy, dt, 0);
+    VanLeerRadial (Vrad, Energy, dt, 0);
   if (AdvecteLabel)
-    VanLeerRadial (Vrad, Extlabel, dt, 0);
+    VanLeerRadial (Vrad, ExtLabel, dt, 0);
   LostMass += VanLeerRadial (Vrad, Dens, dt, 1);
 
 }
 
 
 
-__host__ void OneWindTheta (float *Dens, float *Vtheta, float *energy, float dt)
+__host__ void OneWindTheta (float *Dens, float *Vtheta, float *Energy, float dt)
 {
   ComputeAverageThetaVelocities (Vtheta, dt);
   ComputeResiduals (Vtheta, dt);
   ComputeConstantResidual (Vtheta, dt); /* Constant residual is in Vtheta from now on */
   UniformTransport = NO;
-  QuantitiesAdvection (Dens, VthetaRes, energy, dt);
+  QuantitiesAdvection (Dens, VthetaRes, Energy, dt);
   UniformTransport = YES;
-  QuantitiesAdvection (Dens, Vtheta, energy, dt);
+  QuantitiesAdvection (Dens, Vtheta, Energy, dt);
   AdvectSHIFT (RadMomP);
   AdvectSHIFT (RadMomM);
   AdvectSHIFT (ThetaMomP);
   AdvectSHIFT (ThetaMomM);
-  if (Adiabaticc) AdvectSHIFT (energy);
-  if (AdvecteLabel) AdvectSHIFT (Extlabel);
+  if (Adiabaticc) AdvectSHIFT (Energy);
+  if (AdvecteLabel) AdvectSHIFT (ExtLabel);
   AdvectSHIFT (Dens);
 }
 
@@ -186,7 +186,7 @@ __host__ void VanLeerTheta (float *Vazimutal, float *Qbase, float dt)
 
 
 
-__host__ void QuantitiesAdvection (float *Dens, float *Vazimutal, float *energy, float dt)
+__host__ void QuantitiesAdvection (float *Dens, float *Vazimutal, float *Energy, float dt)
 {
   ComputeStarTheta (Dens, Vazimutal, DensStar, dt);
   ActualiseGasDens (DensInt, Dens);
@@ -194,8 +194,8 @@ __host__ void QuantitiesAdvection (float *Dens, float *Vazimutal, float *energy,
   VanLeerTheta (Vazimutal, RadMomM, dt);
   VanLeerTheta (Vazimutal, ThetaMomP, dt);
   VanLeerTheta (Vazimutal, ThetaMomM, dt);
-  if (Adiabaticc) VanLeerTheta (Vazimutal, energy, dt);
-  if (AdvecteLabel) VanLeerTheta (Vazimutal, Extlabel, dt);
+  if (Adiabaticc) VanLeerTheta (Vazimutal, Energy, dt);
+  if (AdvecteLabel) VanLeerTheta (Vazimutal, ExtLabel, dt);
   VanLeerTheta (Vazimutal, Dens, dt); /* MUST be the last line */
 }
 
@@ -217,7 +217,7 @@ __host__ void InitTransport ()
   ThetaMomM       = (float *)malloc(size_grid*sizeof(float));
   Work            = (float *)malloc(size_grid*sizeof(float));
   QRStar          = (float *)malloc(size_grid*sizeof(float));
-  Extlabel        = (float *)malloc(size_grid*sizeof(float));
+  ExtLabel        = (float *)malloc(size_grid*sizeof(float));
   VthetaRes       = (float *)malloc(size_grid*sizeof(float));
   TempShift       = (float *)malloc(size_grid*sizeof(float));
   dq              = (float *)malloc(size_grid*sizeof(float));
@@ -235,7 +235,7 @@ __host__ void InitTransportDevice()
   gpuErrchk(cudaMalloc((void**)&ThetaMomM_d,      size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Work_d,           size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&QRStar_d,         size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Extlabel_d,       size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&ExtLabel_d,       size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&dq_d,             size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&LostByDisk_d,     size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&VthetaRes_d,      size_grid*sizeof(float)));

@@ -1,22 +1,22 @@
 __host__ void FillPolar1DArrays ();
-__host__ void InitEuler (float *Dens, float *energy, float *Vrad, float *Vtheta);
+__host__ void InitEuler (float *Dens, float *Energy, float *Vrad, float *Vtheta);
 __host__ void InitGasVelocities (float *Vrad, float *Vtheta);
-__host__ void Computecudamalloc (float *energy);
+__host__ void Computecudamalloc (float *Energy);
 __host__ float ConstructSequence (float *u, float *v, int n);
 __host__ void Init_azimutalvelocity_withSG (float *Vtheta);
 __host__ bool DetectCrash (float *array);
-__host__ void ComputePressureField (float *Dens, float *energy);
+__host__ void ComputePressureField (float *Dens, float *Energy);
 __host__ void ComputeSoundSpeed ();
 __host__ void ComputeTemperatureField ();
 __host__ void InitVelocities (float *Vrad, float* Vtheta);
-__host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, float *energy, float *label,
+__host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label,
   PlanetarySystem *sys, int iteracion);
 __host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int initialization);
 __host__ void Substep2 (float dt);
 __host__ void Substep3 (float *Dens, float dt);
 __host__ void ActualiseGasVrad (float *Vrad, float *VradNew);
 __host__ void ActualiseGasVtheta (float *Vtheta, float *VthetaNew);
-__host__ void ActualiseGasEnergy (float *energy, float *energyNew);
+__host__ void ActualiseGasEnergy (float *Energy, float *EnergyNew);
 __host__ void Substep1cudamalloc (float *Vrad, float *Vtheta);
-__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *energy);
+__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy);
 __host__ int ConditionCFL (float *Vrad, float *Vtheta , float DeltaT);

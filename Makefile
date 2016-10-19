@@ -22,7 +22,7 @@ endif
 endif
 
 
-main: build/Main.o build/Viscosity.o build/Kernels.o build/Readfiles.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
+main: build/Main.o build/Viscosity.o build/Kernels.o build/Interpret.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
 	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o build/TransportEuler.o build/Planet.o \
 	build/RungeKutta.o
 	@ echo "Linking"
@@ -42,9 +42,9 @@ build/Kernels.o: src/Kernels.cu
 	@ echo "Building Kernels"
 	@ nvcc $(CFLAGS) $(INC_DIRS)  src/Kernels.cu -o build/Kernels.o $(LDFLAGS) $(ARCHFLAG) $(CUFFTFLAG)
 
-build/Readfiles.o: src/Readfiles.cu
-	@ echo "Building Readfiles"
-	@ nvcc $(CFLAGS) $(INC_DIRS) src/Readfiles.cu -o build/Readfiles.o $(LDFLAGS) $(ARCHFLAG)
+build/Interpret.o: src/Interpret.cu
+	@ echo "Building Interpret"
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/Interpret.cu -o build/Interpret.o $(LDFLAGS) $(ARCHFLAG)
 
 build/SourceEuler.o: src/SourceEuler.cu
 	@ echo "Building SourceEuler"
