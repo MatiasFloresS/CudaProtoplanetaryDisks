@@ -6,7 +6,7 @@ extern dim3 dimGrid, dimBlock, dimGrid4;
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potential,
    float *Rinf, float *invRinf, float *Vrad, float *VthetaInt, float *Vtheta, float *Rmed, float dt,
-   int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE,
+   int nrad, int nsec, float OmegaFrame, boolean ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE,
    float *powRmed)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -676,14 +676,19 @@ __global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, fl
   }
 
 __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity,
-  float *DRP, float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad,
-  int nsec, float *TAURR, float *TAUPP, float *dens, float *viscosity_array, float onethird, float *TAURP, float *invRinf)
+  float *DRP, float *invdiffRsup, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad,
+  int nsec, float *TAURR, float *TAUPP, float *dens, float *viscosity_array, float *TAURP, float *invRinf)
 {
    int j = threadIdx.x + blockDim.x*blockIdx.x;
    int i = threadIdx.y + blockDim.y*blockIdx.y;
 
+   float dphi, invdphi, onethird;
    if (i<nrad && j<nsec) /* Drr, Dpp and divV computation */
    {
+     dphi = 2.0*CUDART_PI_F/(float)nsec;
+     invdphi = 1.0/dphi;
+     onethird = 1.0/3.0;
+
      DRR[i*nsec + j] = (Vradial[(i+1)*nsec + j] - Vradial[i*nsec + j])*invdiffRsup[i];
      DPP[i*nsec + j] = (Vazimutal[i*nsec + (j+1)%nsec] - Vazimutal[i*nsec + j])*invdphi*invRmed[i]+0.5* \
        (Vradial[(i+1)*nsec + j]+Vradial[i*nsec + j])*invRmed[i];
@@ -881,7 +886,7 @@ __global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float
   }
 }
 
-__global__ void CrashKernel (float *array, int nrad, int nsec, bool Crash)
+__global__ void CrashKernel (float *array, int nrad, int nsec, boolean Crash)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;

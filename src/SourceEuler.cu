@@ -3,10 +3,15 @@
 #define CFLSECURITY 0.5 /* Maximum fraction of zone size */
               /* swept in one timestep */
 
+#define CVNR 1.41 /* Shocks are spread over CVNR zones:   */
+              /* Von Neumann-Richtmyer viscosity constant */
+              /* Beware of misprint in Stone and Norman's */
+              /* paper : use C2^2 instead of C2           */
+
 extern int NRAD, NSEC, YES, LogGrid, size_grid, SelfGravity, ViscosityAlpha,       \
 Adiabaticc, Cooling, Corotating, MARK, NO, IsDisk, GET, Evanescent, FastTransport;
 
-extern bool CentrifugalBalance, ZMPlus = false, SloppyCFL;
+extern boolean CentrifugalBalance, ZMPlus = NO, SloppyCFL;
 extern string OUTPUTDIR;
 
 extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGINDEX, *vt_int, OmegaFrame1,         \
@@ -14,8 +19,8 @@ extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGIND
 *Dens_d, *Rmed_d, *SG_Accr, *SG_Accr_d, *SG_Acct_d, *GLOBAL_bufarray_d, *array_d, *array, mdcp, PhysicalTime,     \
 *Qplus, *Qplus_d, *EnergyInt_d, *EnergyNew_d, *VradNew_d, *invdiffRsup_d, *Potential_d, *invRinf_d, *VthetaInt_d, \
 *powRmed_d, *invdiffRmed_d, *VthetaNew_d, *SigmaMed_d, *SigmaMed, *QplusMed_d, *QplusMed, *CoolingTimeMed_d,      \
-*EnergyMed_d, *EnergyMed, *DensInt_d, CVNR, DT, MASSTAPER, *DivergenceVelocity_d, *TAURR_d, *TAURP_d, *TAUPP_d,   \
-*Rsup_d, *Vmoy_d, *invRmed_d;
+*EnergyMed_d, *EnergyMed, *DensInt_d, DT, MASSTAPER, *DivergenceVelocity_d, *TAURR_d, *TAURP_d, *TAUPP_d,   \
+*Rsup_d, *Vmoy_d, *invRmed_d, SGP_eps;
 
 float *Pressure, *AspectRatioRmed, *SoundSpeed, *Temperature, *Vtheta_d, *vt_cent, *Rinf_d, *SigmaInf_d, *Vrad_d,   \
 *SoundSpeed_d, *Energy_d, *AspectRatioRmed_d, *Pressure_d, *Temperature_d, *viscosity_array_d, *Kr_aux, *Kt_aux,    \
@@ -25,7 +30,7 @@ exces_mdcp = 0.0, mdcp1, MassTaper, *vt_cent_d, *DensStar_d, *DensStar, *invRmed
 *Vresidual_d;
 
 
-bool CrashedDens, CrashedEnergy;
+boolean CrashedDens, CrashedEnergy;
 
 extern dim3 dimGrid2, dimBlock2, dimGrid, dimBlock;
 
@@ -34,6 +39,8 @@ double *Radii2;
 
 Pair DiskOnPrimaryAcceleration;
 
+
+
 __host__ void FillPolar1DArrays ()
 {
   FILE *input, *output;
@@ -41,10 +48,11 @@ __host__ void FillPolar1DArrays ()
   float drrsep, temporary;
   double u, theta, base, kr, den_SGP_K, kt;
   string InputName, OutputName;
-  drrsep = (RMAX-RMIN)/NRAD;
-  InputName = OUTPUTDIR +"radii.dat";
-  OutputName = OUTPUTDIR +"used_rad.dat";
+  drrsep = (RMAX-RMIN)/(float)NRAD;
+  InputName = OUTPUTDIR + "radii.dat";
+  OutputName = OUTPUTDIR + "used_rad.dat";
 
+  /* Creo los arreglos de FillPolar1DArrays */
   Radii       = (float *)malloc((NRAD+1)*sizeof(float));
   Radii2      = (double *)malloc((NRAD+1)*sizeof(double));
   Rinf        = (float *)malloc(NRAD*sizeof(float));
@@ -59,45 +67,48 @@ __host__ void FillPolar1DArrays ()
   vt_cent     = (float *)malloc(NRAD*sizeof(float));
   powRmed     = (float *)malloc(NRAD*sizeof(float));
 
-  if(SelfGravity)
-  {
+  /* Si se elige la opcion SelfGravity se crean los arreglos para calcular
+     los Kernels Kr, Kt */
+  if(SelfGravity){
     Kr_aux      = (float *)malloc(2*size_grid*sizeof(float));
     Kt_aux      = (float *)malloc(2*size_grid*sizeof(float));
   }
 
-  char inputcharname[100];
-  strncpy(inputcharname, InputName.c_str(), sizeof(inputcharname));
-  inputcharname[sizeof(inputcharname)-1]=0;
+  char InputCharName[100];
+  char OutputCharName[100];
+  /* string to char InputName */
+  strncpy(InputCharName, InputName.c_str(), sizeof(InputCharName));
+  InputCharName[sizeof(InputCharName)-1]=0;
 
-  input = fopen (inputcharname, "r");
-  if (input == NULL)
-  {
+  input = fopen (InputCharName, "r");
+  if (input == NULL){
     printf("Warning : no `radii.dat' file found. Using default.\n");
-    if (LogGrid == YES)
-    { printf("entro\n" );
-      for (i = 0; i <= NRAD; i++)
-      {
+    if (LogGrid == YES){
+      for (i = 0; i <= NRAD; i++){
+        /* Usamos doubles para calcular los valores de los arrays, luego
+           los pasamos a float */
         Radii2[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX / RMIN));
         Radii[i] = (float) Radii2[i];
       }
 
-      if(SelfGravity)
-      {
-        for (i = 0; i < 2*NRAD; i++)
-        {
-          if(i<NRAD) u = log(Radii2[i]/Radii2[0]);
-          else u = -log(Radii2[2*NRAD-i]/Radii2[0]);
+      /* Aca calculo los kernels Kr y Kt en CPU ya que son constantes */
+      if(SelfGravity){
+        for (i = 0; i < 2*NRAD; i++){
+          if(i < NRAD)
+            u = log(Radii2[i]/Radii2[0]);
+          else
+            u = -log(Radii2[2*NRAD-i]/Radii2[0]);
 
-          for (j = 0; j < NSEC; j++)
-          {
+          for (j = 0; j < NSEC; j++){
             theta = 2.0*M_PI*(double)j  / (double)NSEC;
-            base = 0.03*0.03 * exp(u) + 2.0* (cosh(u) - cos(theta));
+            base = SGP_eps*SGP_eps*exp(u) + 2.0*(cosh(u) - cos(theta));
             den_SGP_K = pow(base , -1.5);
 
-            kr = 1.0 + 0.03*0.03 - cos(theta) * exp(-u);
+            kr = 1.0 + SGP_eps*SGP_eps - cos(theta)*exp(-u);
             kr *= den_SGP_K;
 
             kt = sin(theta) * den_SGP_K;
+
             Kr_aux[i*NSEC+j] = (float) kr;
             Kt_aux[i*NSEC+j] = (float) kt;
           }
@@ -105,51 +116,54 @@ __host__ void FillPolar1DArrays ()
       }
     }
     else {
-      for (i = 0; i <= NRAD; i++) Radii[i] = RMIN+drrsep*i;
+      for (i = 0; i <= NRAD; i++)
+        Radii[i] = RMIN+drrsep*i;
     }
   }
-  else
-  {
+  else {
     printf("Reading 'radii.dat' file.\n");
-    for (i = 0; i <= NRAD; i++)
-    {
+    for (i = 0; i <= NRAD; i++){
       fscanf (input, "%f", &temporary);
       Radii[i] = (float)temporary;
     }
   }
 
-  for (i = 0; i < NRAD; i++)
-  {
-    Rinf[i] = Radii2[i];
-    Rsup[i] = Radii2[i+1];
-    Rmed[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]); // 2/3*(Rsup^3 - Rinf^3)
-    Rmed[i] = Rmed[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]); // Rmed /(Rsup^2 - Rinf^2)
-    Surf[i] = M_PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC;  // (Rsup^2 - Rinf^2)
+  for (i = 0; i < NRAD; i++){
+    Rinf[i] = (float) Radii2[i];
+    Rsup[i] = (float) Radii2[i+1];
+    Rmed[i] = (float)(2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i])); // 2/3*(Rsup[i]^3 - Rinf[i]^3)
+    Rmed[i] = (float) (Rmed[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])); // Rmed /(Rsup[i]^2 - Rinf[i]^2)
+    Surf[i] = (float) (M_PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC);  // (Rsup[i]^2 - Rinf[i]^2)
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]); // 1.0 / (Rsup - Rinf)
+    invdiffRsup[i] = (float) (1.0/(Radii2[i+1]-Radii2[i])); // 1.0/(Rsup[i] - Rinf[i])
     invRinf[i] = 1.0/Rinf[i];
   }
 
-  Rinf[NRAD]=Radii[NRAD];
+  Rinf[NRAD] = Radii2[NRAD];
 
-  for (i = 1; i < NRAD; i++) invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
-  for (i = 0; i < NRAD; i++) powRmed[i] = pow(Rmed[i],-2.5+SIGMASLOPE);
+  for (i = 1; i < NRAD; i++) {
+    invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
+    powRmed[i] = (float) pow(Rmed[i],-2.5+SIGMASLOPE);
+  }
 
-  char outputcharname[100];
-  strncpy(outputcharname, OutputName.c_str(), sizeof(outputcharname));
-  outputcharname[sizeof(outputcharname)-1]=0;
-  output = fopen (outputcharname, "w");
-  if (output == NULL)
-  {
-    printf ("Can't write %s.\nProgram stopped.\n", outputcharname);
+  /* string to char OutputName */
+  strncpy(OutputCharName, OutputName.c_str(), sizeof(OutputCharName));
+  OutputCharName[sizeof(OutputCharName)-1]=0;
+
+  output = fopen (OutputCharName, "w");
+  if (output == NULL){
+    printf ("Can't write %s.\nProgram stopped.\n", OutputCharName);
     exit (1);
   }
-  for (i = 0; i <= NRAD; i++)fprintf (output, "%f\n", Radii[i]);
-
+  for (i = 0; i <= NRAD; i++){
+    fprintf (output, "%f\n", Radii[i]);
+  }
   fclose (output);
   if (input != NULL) fclose (input);
 }
+
+
 
 __host__ void InitEuler (float *Vrad, float *Vtheta, float *Dens, float *Energy)
 {
@@ -374,7 +388,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
 
 __host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int initialization)
 {
-  bool selfgravityupdate;
+  boolean selfgravityupdate;
   if(initialization == 0) Substep1cudamalloc(Vrad, Vtheta);
 
   Substep1Kernel<<<dimGrid2, dimBlock2>>>(Pressure_d, Dens_d, VradInt_d, invdiffRmed_d, Potential_d, Rinf_d,
@@ -466,9 +480,9 @@ __host__ void Init_azimutalvelocity_withSG (float *Vtheta)
   gpuErrchk(cudaDeviceSynchronize());
 }
 
-__host__ bool DetectCrash (float *array)
+__host__ boolean DetectCrash (float *array)
 {
-  bool Crash = false;
+  boolean Crash = NO;
   float numCrush;
 
   gpuErrchk(cudaMemcpy(array_d, array, size_grid*sizeof(float), cudaMemcpyHostToDevice));

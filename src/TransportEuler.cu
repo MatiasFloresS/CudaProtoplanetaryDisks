@@ -13,7 +13,7 @@ float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *Ra
 *ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *ExtLabel_d, *dq, *dq_d, *LostByDisk_d, LostMass = 0.0, \
 *VMed_d, *VthetaRes_d, *VthetaRes, *TempShift, *TempShift_d;
 
-static bool UniformTransport;
+static boolean UniformTransport;
 
 int *NoSplitAdvection_d, *Nshift_d;
 

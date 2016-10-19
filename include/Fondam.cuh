@@ -6,14 +6,12 @@ float PI	= 3.14159265358979323844;
 float MU  = 1.0;  /* Mean molecular weight */
 float R   = 1.0; /* Universal Gas Constant in code units */
 
-float CVNR = 1.41;
-
 int GET       = 0;
 int MARK      = 1;
 int FREQUENCY = 2;
 
-bool SloppyCFL, debug, CentrifugalBalance, Merge, MonitorIntegral, GotoNextOutput;
-bool FakeSequential, StoreSigma, StoreEnergy, OnlyInit;
+boolean SloppyCFL, debug, CentrifugalBalance, Merge, MonitorIntegral, GotoNextOutput;
+boolean FakeSequential, StoreSigma, StoreEnergy, OnlyInit;
 int OverridesOutputdir;
 char NewOutputdir[1024];
 

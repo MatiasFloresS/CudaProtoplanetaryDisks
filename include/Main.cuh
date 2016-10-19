@@ -38,7 +38,7 @@ __host__ void Init_planetarysys_withSG (PlanetarySystem *sys);
 __host__ void Cudamalloc (float *label, float *Dens, float *Vrad, float *Vtheta);
 __host__ void ExecuteExeC2Cforward ();
 __host__ void ExecuteExeC2Cbackward ();
-__host__ void Compute_selfgravity (float *Dens, float *Vrad, float *Vtheta, float DeltaT, bool SGUpdate);
+__host__ void Compute_selfgravity (float *Dens, float *Vrad, float *Vtheta, float DeltaT, boolean SGUpdate);
 __host__ void Fft ();
 __host__ void Fftmul ();
 __host__ void Sg_Acc ();

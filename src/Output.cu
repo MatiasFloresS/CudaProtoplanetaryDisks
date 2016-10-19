@@ -108,7 +108,7 @@ __host__ void WritePlanetFile (int TimeStep, int n)
   char name2[256];
   string input;
   input = OUTPUTDIR + "planet";
-  //printf("Updating 'planet%d.dat'...",n);
+  printf("Updating 'planet%d.dat'...",n);
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
   sprintf (name2, "%s%d.dat", name, n);
@@ -121,13 +121,13 @@ __host__ void WritePlanetFile (int TimeStep, int n)
   fprintf (output, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n",
   TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame1, mdcp, exces_mdcp);
   fclose(output);
-  //printf("done\n");
+  printf("done\n");
 
 }
 
 __host__ void SendOutput (int index, float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label)
 {
-  //printf("\n*** OUTPUT %d ***\n", index);
+  printf("\n*** OUTPUT %d ***\n", index);
   if (IsDisk == YES)
   {
     if (Write_Density == YES) WriteDiskPolar(Dens, "gasdensity", index);
@@ -173,8 +173,8 @@ __host__ void WriteDiskPolar(float *array, char *inputname, int number)
     fprintf(stderr, "Unable to open '%s'\n", name2);
     exit(1);
   }
-  //printf("Writting '%s%d.dat'...\n", nameinput, number);
+  printf("Writting '%s%d.dat'...\n", nameinput, number);
   fwrite(array, sizeof(float), NRAD*NSEC, dump);
   fclose(dump);
-  //printf("done\n");
+  printf("done\n");
 }

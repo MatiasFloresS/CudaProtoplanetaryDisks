@@ -4,7 +4,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta);
 __host__ void Computecudamalloc (float *Energy);
 __host__ float ConstructSequence (float *u, float *v, int n);
 __host__ void Init_azimutalvelocity_withSG (float *Vtheta);
-__host__ bool DetectCrash (float *array);
+__host__ boolean DetectCrash (float *array);
 __host__ void ComputePressureField (float *Dens, float *Energy);
 __host__ void ComputeSoundSpeed ();
 __host__ void ComputeTemperatureField ();

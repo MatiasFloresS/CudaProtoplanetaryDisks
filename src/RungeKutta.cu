@@ -6,7 +6,7 @@ static float Dist[100];
 extern float G;
 extern int Indirect_Term, YES;
 
-__host__ void RungeKutta (float *q0, float timestep, float *PlanetMasses, float *q1, int nb, bool *feelothers)
+__host__ void RungeKutta (float *q0, float timestep, float *PlanetMasses, float *q1, int nb, boolean *feelothers)
 {
   for (int i = 0; i < 4*nb; i++)
   {
@@ -30,7 +30,7 @@ __host__ void RungeKutta (float *q0, float timestep, float *PlanetMasses, float 
   }
 }
 
-__host__ void DerivMotionRK5 (float *q_init, float *PlanetMasses, float *deriv, int nb, float dt, bool *feelothers)
+__host__ void DerivMotionRK5 (float *q_init, float *PlanetMasses, float *deriv, int nb, float dt, boolean *feelothers)
 {
   float *x, *y, *vx, *vy, dist;
   float *derivx, *derivy, *derivvx, *derivvy;

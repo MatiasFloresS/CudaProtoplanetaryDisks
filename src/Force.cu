@@ -6,7 +6,7 @@ extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *C
 *forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, \
 *Surf_d, *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
 
-extern bool RocheSmoothing;
+extern boolean RocheSmoothing;
 extern int size_grid, NRAD, NSEC;
 extern dim3 dimGrid2, dimBlock2;
 
@@ -62,16 +62,21 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
   }
 }
 
+
+
 __host__ Force *AllocateForce (int dimfxy)
 {
   Force *force;
   float *globalforce;
   force = (Force *)malloc(sizeof(Force));
   globalforce = (float *)malloc(sizeof(float)*4*dimfxy);
-  for (int i = 0; i < 4*dimfxy; i++) globalforce[i] = 0.0;
+  for (int i = 0; i < 4*dimfxy; i++)
+    globalforce[i] = 0.0;
   force->GlobalForce = globalforce;
   return force;
 }
+
+
 
 __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float rsmoothing,
   float mass, int dimfxy, float a, float rh)

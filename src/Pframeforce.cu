@@ -1,21 +1,25 @@
 #include "Main.cuh"
 
-extern int NRAD, NSEC, NO, Indirect_Term, size_grid, RocheSmoothing, ForcedCircular;
+extern int NRAD, NSEC, NO, size_grid, RocheSmoothing;
+exterm boolean ForcedCircular
+extern int Indirect_Term;
+
 extern float *SigmaMed, *EnergyMed, *Potential_d, G, *Rmed_d, ROCHESMOOTHING, MassTaper, *q0, \
 *PlanetMasses, *q1;
 
-static Pair IndirectTerm;
 extern Pair DiskOnPrimaryAcceleration;
+static Pair IndirectTerm;
 
 extern dim3 dimGrid2, dimBlock2;
 
+
+
 __host__ void InitGasDensity (float *Dens)
 {
+  int i, j;
   FillSigma ();
-  for (int i = 0; i < NRAD; i++)
-  {
-    for (int j = 0; j < NSEC; j++)
-    {
+  for (i = 0; i < NRAD; i++){
+    for (j = 0; j < NSEC; j++){
       Dens[j+i*NSEC] = SigmaMed[i];
     }
   }
@@ -103,7 +107,7 @@ __host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, P
 __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
 {
   int nb;
-  bool *feelothers;
+  boolean *feelothers;
   nb = sys->nb;
   if (!ForcedCircular)
   {

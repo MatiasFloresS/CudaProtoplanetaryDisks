@@ -6,34 +6,6 @@ extern float *Rmed, *Rinf, CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, *Qplus
 ADIABATICINDEX, *EnergyMed, ScalingFactor, *CoolingTimeMed, *QplusMed, R, MU, ASPECTRATIO, FLARINGINDEX,   \
 COOLINGTIME0;
 
-__host__ void FillSigma ()
-{
-    for (int i = 0; i < NRAD; i++)
-    {
-      SigmaMed[i] = Sigma(Rmed[i]);
-      SigmaInf[i] = Sigma(Rinf[i]);
-    }
-}
-
-__host__ void FillEnergy ()
-{
-  for (int i = 0; i < NRAD; i++) EnergyMed[i] = Energy(Rmed[i]);
-}
-
-/* Thermal energy */
-__host__ float Energy(float r)
-{
-  float energy0;
-  if (ADIABATICINDEX == 1.0)
-  {
-    fprintf(stderr, "The adiabatic index must differ from unity to initialized \
-    the gas internal energy. I must exit.\n");
-    exit(1);
-  }
-  else
-    energy0 = R/MU/(ADIABATICINDEX-1.0)*SIGMA0*pow(ASPECTRATIO,2.0)*pow(r,-SIGMASLOPE-1.0+2.0*FLARINGINDEX);
-  return energy0;
-}
 
 /* Surface density */
 __host__ float Sigma(float r)
@@ -43,9 +15,46 @@ __host__ float Sigma(float r)
   /* This is *not* a steady state */
   /* profile, if a cavity is defined. It first needs */
   /* to relax towards steady state, on a viscous time scale */
-
   return cavity*ScalingFactor*SIGMA0*pow(r,-SIGMASLOPE);
 }
+
+
+
+__host__ void FillSigma ()
+{
+  int i;
+  for (i = 0; i < NRAD; i++){
+    SigmaMed[i] = Sigma(Rmed[i]);
+    SigmaInf[i] = Sigma(Rinf[i]);
+  }
+}
+
+
+
+/* Thermal energy */
+__host__ float Energy(float r)
+{
+  float energy0;
+  if (ADIABATICINDEX == 1.0){
+    fprintf(stderr, "The adiabatic index must differ from unity to initialized \
+    the gas internal energy. I must exit.\n");
+    exit(1);
+  }
+  else
+    energy0 = R/MU/(ADIABATICINDEX-1.0)*SIGMA0*pow(ASPECTRATIO,2.0)*pow(r,-SIGMASLOPE-1.0+2.0*FLARINGINDEX);
+  return energy0;
+}
+
+
+
+__host__ void FillEnergy ()
+{
+  int i;
+  for (i = 0; i < NRAD; i++)
+    EnergyMed[i] = Energy(Rmed[i]);
+}
+
+
 
 __host__ float CoolingTime(float r)
 {

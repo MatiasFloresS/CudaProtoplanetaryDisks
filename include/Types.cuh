@@ -10,8 +10,8 @@ struct planetary_system {
   float *vy;
   float *acc;			/* Their accretion times^-1 */
   char **name;			/* their names */
-  bool *FeelDisk;		/* will "migrate" ? */
-  bool *FeelOthers;		/* will feel other planets ? */
+  boolean *FeelDisk;		/* will "migrate" ? */
+  boolean *FeelOthers;		/* will feel other planets ? */
 };
 
 typedef struct planetary_system PlanetarySystem;

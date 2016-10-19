@@ -11,7 +11,7 @@ inline void gpuAssert (cudaError_t code, const char *file, int line, bool abort=
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potencial,
   float *Rinf, float *invRinf, float *Vrad, float *VthetaInt, float *Rmed, float *Vtheta, float dt,
-  int nrad, int nsec, float OmegaFrame, bool ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
+  int nrad, int nsec, float OmegaFrame, boolean ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
 
 __global__ void Substep2Kernel (float *Dens, float *VradInt, float *VthetaInt, float *TemperInt,
   int nrad, int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *DensInt, int Adiabaticc,
@@ -77,8 +77,8 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
 __host__ void Make1Dprofile (float *gridfield);
 
 __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity, float *DRP,
-  float *invdiffRsup, int invdphi, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
-  float *TAURR, float *TAUPP, float *Dens, float *viscosity_array, float onethird, float *TAURP, float *invRinf);
+  float *invdiffRsup, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
+  float *TAURR, float *TAUPP, float *Dens, float *viscosity_array, float *TAURP, float *invRinf);
 
 __global__ void LRMomentaKernel (float *RadMomP, float *RadMomM, float *ThetaMomP, float *ThetaMomM, float *Dens,
   float *Vrad, float *Vtheta, int nrad, int nsec, float *Rmed, float OmegaFrame);
@@ -103,7 +103,7 @@ __global__ void Update_sgvelocityKernel (float *Vrad, float *Vtheta, float *SG_A
 __global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
   float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec);
 
-__global__ void CrashKernel (float *array, int NRAD, int NSEC, bool Crash);
+__global__ void CrashKernel (float *array, int NRAD, int NSEC, boolean Crash);
 
 __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *Energy, float *Dens,
   float *AspectRatioRmed, float *viscosity_array, float DRMIN, float DRMAX, int nrad, int nsec, float Tin,

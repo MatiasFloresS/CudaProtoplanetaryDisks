@@ -10,7 +10,7 @@ extern float *TemperInt_d, *DensStar_d, *VradInt_d, *LostByDisk_d, *VthetaRes_d,
 extern float *TempShift_d, *Vmoy_d, *newDT_d, *DT1D_d, *DT2D_d, *Vresidual_d;
 
 extern float OMEGAFRAME, OmegaFrame1, HillRadius, PhysicalTimeInitial, PhysicalTime;
-extern float CVNR, THICKNESSSMOOTHING, G;
+extern float THICKNESSSMOOTHING, G;
 
 extern float *Pressure, *CellAbscissa, *CellOrdinate, *Temperature, *vt_cent;
 extern float *SoundSpeed, *AspectRatioRmed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM;
@@ -36,7 +36,7 @@ float *mean_dens_d2, *mean_energy_d, *mean_energy_d2, *forcesxi_d, *forcesyi_d, 
 float *forcesyo_d, *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Rmed_d, *Dens_d;
 float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *array_d, *mdcp0_d;
 
-float mdcp, SGP_tstep, SGP_eps, SGP_rstep, dphi, invdphi, onethird;
+float mdcp, SGP_tstep, SGP_eps, SGP_rstep;
 
 extern int NRAD, NSEC, FREQUENCY, Cooling;
 extern int *NoSplitAdvection_d, *Nshift_d;
@@ -77,6 +77,7 @@ __host__ int main (int argc, char *argv[])
   boolean   disable = NO, TimeInfo = NO, Profiling = NO;
   boolean   Stockholm = NO, SGUpdate = NO;
   char      ParameterFile[256];
+  char      configplanet[100];
   PlanetarySystem *sys;
   Force *force;
 
@@ -172,6 +173,7 @@ __host__ int main (int argc, char *argv[])
   /* size grid */
   size_grid = (NRAD+1)*NSEC;
 
+  /* aca falta ordenar --------------------------------------->*/
   if(!IsPow2(NRAD)) nrad2pot = NearestPowerOf2(NRAD);
   if(!IsPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
   if(!IsPow2(2*NRAD)) nrad2potSG = NearestPowerOf2(2*NRAD);
@@ -193,20 +195,14 @@ __host__ int main (int argc, char *argv[])
   dim3 dimG4 (nrad2pot/blocksize1D, 1);
   dimGrid4 = dimG4;
 
-  /*  ---------------------------  */
-
-  dphi = 2.0*M_PI/(float)NSEC;
-  invdphi = 1.0/dphi;
-  onethird = 1.0/3.0;
+  /*  hasta aca falta ---------------------------------------> */
 
   if (verbose == YES)
     TellEverything();
   if (disable == YES)
     exit(0);
   printf("Allocating arrays...\n");
-
   /* local arrays */
-
   Dens   = (float *)malloc(size_grid*sizeof(float));
   Vrad   = (float *)malloc(size_grid*sizeof(float));
   Vtheta = (float *)malloc(size_grid*sizeof(float));
@@ -217,38 +213,32 @@ __host__ int main (int argc, char *argv[])
   CreateArrays();
 
   printf("done.\n");
-
   FillPolar1DArrays ();
-
-  if (SelfGravity)
-  {
-    SGP_eps = THICKNESSSMOOTHING * ASPECTRATIO;
-    SGP_rstep = log(Radii[NRAD]/Radii[0])/(float)NRAD;
-    SGP_tstep = 2.0*M_PI/(float)NSEC;
-  }
-
   force = AllocateForce (dimfxy);
 
-  char configplanet[100];
+  /* string to char configplanet */
   strncpy(configplanet, PLANETCONFIG.c_str(), sizeof(configplanet));
   configplanet[sizeof(configplanet)-1]=0;
 
   /* Here planets are initialized feeling star potential but they do
      not feel disk potential  */
-
-  sys = InitPlanetarySystem(configplanet);
+  sys = InitPlanetarySystem (configplanet);
 
   /* Gas density initialization */
   InitGasDensity (Dens);
 
   /* If energy equation is taken into account, we initialize the gas
      thermal energy  */
-  if ( Adiabaticc == YES) InitGasEnergy (Energy);
+  if (Adiabaticc)
+    InitGasEnergy (Energy);
 
   Cudamalloc(Label, Dens, Vrad, Vtheta);
 
-  if ( SelfGravity )
-  {
+  if (SelfGravity){
+    SGP_eps = THICKNESSSMOOTHING * ASPECTRATIO;
+    SGP_rstep = (float)(log(Radii[NRAD]/Radii[0])/(float)NRAD);
+    SGP_tstep = 2.0*M_PI/(float)NSEC;
+
     /* If SelfGravity = YES or Z, planets are initialized feeling disk
        potential. Only the surface density is required to calculate
        the radial self-gravity acceleration. The disk radial and
@@ -576,7 +566,7 @@ __host__ float CircumPlanetaryMass (float *Dens, PlanetarySystem *sys)
   return mdcp;
 }
 
-__host__ void CreateArrays ()
+__host__ void CreateArrays () // ordenar
 {
   EnergyMed       = (float *)malloc(NRAD*sizeof(float));
   SigmaMed        = (float *)malloc(NRAD*sizeof(float));
@@ -627,7 +617,7 @@ __host__ void CreateArrays ()
 
 }
 
-__host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
+__host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta) // arreglar
 {
   /* cudaMalloc ComputeForce */
   gpuErrchk(cudaMalloc(&forcesxi_d, dimfxy*sizeof(float)));
@@ -668,7 +658,6 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
 
   gpuErrchk(cudaMalloc((void**)&Qplus_d,          size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&EnergyNew_d,      size_grid*sizeof(float)));
-
   gpuErrchk(cudaMalloc((void**)&GLOBAL_bufarray_d, NRAD*sizeof(float)));
 
 
@@ -677,6 +666,7 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMalloc((void**)&Vtheta_d,         size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Dens_d,           size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Label_d,          size_grid*sizeof(float)));
+
 
   gpuErrchk(cudaMalloc((void**)&Vresidual_d,      NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&newDT_d,          NRAD*sizeof(float)));
@@ -690,12 +680,9 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMalloc((void**)&DT2D_d,           size_grid*sizeof(float)));
 
 
-
-
   /* cudaMalloc SelfGravity */
 
-  if (SelfGravity)
-  {
+  if (SelfGravity){
     gpuErrchk(cudaMalloc((void**)&SGP_Kt_d,  2*size_grid*sizeof(cufftComplex)));
     gpuErrchk(cudaMalloc((void**)&SGP_Kr_d,  2*size_grid*sizeof(cufftComplex)));
     gpuErrchk(cudaMalloc((void**)&SGP_St_d,  2*size_grid*sizeof(cufftComplex)));
@@ -717,6 +704,7 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
     gpuErrchk(cudaMemcpy(Kt_aux_d, Kt_aux, 2*size_grid*sizeof(float), cudaMemcpyHostToDevice));
   }
 
+  /* cudaMemcpy Host to Device */
   gpuErrchk(cudaMemcpy(Radii_d, Radii,             (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Rmed_d, Rmed,               NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Rinf_d, Rinf,               NRAD*sizeof(float), cudaMemcpyHostToDevice));
@@ -727,7 +715,7 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMemcpy(powRmed_d, powRmed,         NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(invdiffRsup_d, invdiffRsup, NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Surf_d, Surf,               NRAD*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Dens_d, Dens,   size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Dens_d, Dens,               size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
 }
 
@@ -818,7 +806,7 @@ __host__ void Init_planetarysys_withSG (PlanetarySystem *sys)
   }
 }
 
-__host__ void Compute_selfgravity (float *Dens, float *Vrad, float *Vtheta, float DeltaT, bool SGUpdate)
+__host__ void Compute_selfgravity (float *Dens, float *Vrad, float *Vtheta, float DeltaT, boolean SGUpdate)
 {
   Fft();
   ExecuteExeC2Cforward();
