@@ -23,7 +23,7 @@ IndirectTerm		YES
 
 ### Mesh parameters
 
-Nrad			2048		Radial number of zones
+Nrad			4096		Radial number of zones
 Nsec			4096		Azimuthal number of zones (sectors)
 Rmin			3.2		Inner boundary radius
 Rmax			7.2		Outer boundary radius

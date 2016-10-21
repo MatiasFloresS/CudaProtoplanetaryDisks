@@ -1,7 +1,7 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC, NO, size_grid, RocheSmoothing;
-exterm boolean ForcedCircular
+extern boolean ForcedCircular;
 extern int Indirect_Term;
 
 extern float *SigmaMed, *EnergyMed, *Potential_d, G, *Rmed_d, ROCHESMOOTHING, MassTaper, *q0, \

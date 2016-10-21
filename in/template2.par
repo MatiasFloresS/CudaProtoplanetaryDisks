@@ -38,9 +38,9 @@ Ninterm	 		20		Time steps between outputs
 DT			0.314159265359	Time step length. 2PI = 1 orbit
 OutputDir		out/
 
-SelfGravity	NO     #choose: Yes, Z or No
+SelfGravity	YES     #choose: Yes, Z or No
 
-Adiabatic	NO        #choose No for an isothermal eq. of state
+Adiabatic	YES        #choose No for an isothermal eq. of state
 
 AdiabaticIndex	1.4 #Default value: 1.4
 

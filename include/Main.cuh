@@ -24,6 +24,7 @@
 #include "Planet.cuh"
 #include "Viscosity.cuh"
 #include "RungeKutta.cuh"
+#include "SgMain.cuh"
 
 using namespace std;
 
@@ -34,13 +35,5 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *energy
 __host__ void DeviceToHostcudaMemcpy (float *Dens, float *energy, float *label, float *Temperature, float *Vrad, float *Vtheta);
 __host__ void Viscouscudamalloc ();
 __host__ void CreateArrays ();
-__host__ void Init_planetarysys_withSG (PlanetarySystem *sys);
 __host__ void Cudamalloc (float *label, float *Dens, float *Vrad, float *Vtheta);
-__host__ void ExecuteExeC2Cforward ();
-__host__ void ExecuteExeC2Cbackward ();
-__host__ void Compute_selfgravity (float *Dens, float *Vrad, float *Vtheta, float DeltaT, boolean SGUpdate);
-__host__ void Fft ();
-__host__ void Fftmul ();
-__host__ void Sg_Acc ();
-__host__ void Update_sgvelocity (float DeltaT);
 __host__ float CircumPlanetaryMass (float *Dens, PlanetarySystem *sys);

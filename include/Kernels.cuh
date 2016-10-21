@@ -68,13 +68,13 @@ __global__ void NonReflectingBoundaryKernel (float *Dens, float *energy, int i_a
 __global__ void MinusMeanKernel (float *Dens, float *Energy, float SigmaMed, float mean_dens_r, float mean_dens_r2, float mean_energy_r,
   float mean_energy_r2, float EnergyMed, int NSEC, int NRAD, float SigmaMed2, float EnergyMed2);
 
-__global__ void Make1DprofileKernel (float *device_out2, float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad);
+__global__ void Make1DprofileKernel (float *device_out2, float *gridfield, float *axifield, int nsec, int nrad);
 
 __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed, float G,
   float ASPECTRATIO, float FLARINGINDEX, float SIGMASLOPE, int CentrifugalBalance, float *Vrad, float *Vtheta,
   float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, float OmegaFrame, float *Rinf, float *vt_cent);
 
-__host__ void Make1Dprofile (float *gridfield);
+__host__ void Make1Dprofile (int option);
 
 __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity, float *DRP,
   float *invdiffRsup, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
@@ -88,17 +88,21 @@ __global__ void ExtQtyKernel (float *ExtLabel, float *Dens, float *Label, int ns
 __global__ void StarRadKernel (float *Qbase, float *Vrad, float *QStar, float dt, int nrad, int nsec,
   float *invdiffRmed, float *Rmed, float *dq);
 
-__global__ void FftKernel (float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
+
+/* SG_ACCELERATION Kernels */
+__global__ void ComputeFFTKernel (float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
   cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *Dens, float *Rmed, float *Kr_aux, float *Kt_aux);
 
-__global__ void FftmulKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
+__global__ void ComputeConvolutionKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
   cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad);
 
-__global__ void Sg_AccKernel (float *SG_Accr, float *SG_Acct, float *Dens , float SGP_rstep, float SGP_tstep,
+__global__ void ComputeSgAccKernel (float *SG_Accr, float *SG_Acct, float *Dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G);
 
-__global__ void Update_sgvelocityKernel (float *Vrad, float *Vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
-  float *invdiffRmed, float dt, int nrad, int nsec);
+__global__ void Update_sgvelocityKernel (float *Vradial, float *Vazimutal, float *SG_Accr, float *SG_Acct, float *Rinf,
+  float *Rmed, float *invdiffRmed, float dt, int nrad, int nsec);
+
+
 
 __global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
   float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec);

@@ -23,11 +23,11 @@ extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGIND
 *Rsup_d, *Vmoy_d, *invRmed_d, SGP_eps;
 
 float *Pressure, *AspectRatioRmed, *SoundSpeed, *Temperature, *Vtheta_d, *vt_cent, *Rinf_d, *SigmaInf_d, *Vrad_d,   \
-*SoundSpeed_d, *Energy_d, *AspectRatioRmed_d, *Pressure_d, *Temperature_d, *viscosity_array_d, *Kr_aux, *Kt_aux,    \
-exces_mdcp = 0.0, mdcp1, MassTaper, *vt_cent_d, *DensStar_d, *DensStar, *invRmed, *invRinf, *invSurf, *invdiffRmed, \
+*SoundSpeed_d, *Energy_d, *AspectRatioRmed_d, *Pressure_d, *Temperature_d, *viscosity_array_d, exces_mdcp = 0.0,   \
+mdcp1, MassTaper, *vt_cent_d, *DensStar_d, *DensStar, *invRmed, *invRinf, *invSurf, *invdiffRmed, \
 *invdiffRsup, *Radii, *Rinf, *Rmed, *Rsup, *Surf, *TemperInt_d, *TemperInt, *VradInt, *VradInt_d, *powRmed,         \
 *VthetaInt, *DensInt, *VradNew, *VthetaNew, *EnergyInt, *Potential, *EnergyNew, *DT1D_d, *DT2D_d, *newDT_d,         \
-*Vresidual_d;
+*Vresidual_d, *Vradial_d, *Vazimutal_d;
 
 
 boolean CrashedDens, CrashedEnergy;
@@ -46,7 +46,6 @@ __host__ void FillPolar1DArrays ()
   FILE *input, *output;
   int i,j;
   float drrsep, temporary;
-  double u, theta, base, kr, den_SGP_K, kt;
   string InputName, OutputName;
   drrsep = (RMAX-RMIN)/(float)NRAD;
   InputName = OUTPUTDIR + "radii.dat";
@@ -67,13 +66,6 @@ __host__ void FillPolar1DArrays ()
   vt_cent     = (float *)malloc(NRAD*sizeof(float));
   powRmed     = (float *)malloc(NRAD*sizeof(float));
 
-  /* Si se elige la opcion SelfGravity se crean los arreglos para calcular
-     los Kernels Kr, Kt */
-  if(SelfGravity){
-    Kr_aux      = (float *)malloc(2*size_grid*sizeof(float));
-    Kt_aux      = (float *)malloc(2*size_grid*sizeof(float));
-  }
-
   char InputCharName[100];
   char OutputCharName[100];
   /* string to char InputName */
@@ -89,30 +81,6 @@ __host__ void FillPolar1DArrays ()
            los pasamos a float */
         Radii2[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX / RMIN));
         Radii[i] = (float) Radii2[i];
-      }
-
-      /* Aca calculo los kernels Kr y Kt en CPU ya que son constantes */
-      if(SelfGravity){
-        for (i = 0; i < 2*NRAD; i++){
-          if(i < NRAD)
-            u = log(Radii2[i]/Radii2[0]);
-          else
-            u = -log(Radii2[2*NRAD-i]/Radii2[0]);
-
-          for (j = 0; j < NSEC; j++){
-            theta = 2.0*M_PI*(double)j  / (double)NSEC;
-            base = SGP_eps*SGP_eps*exp(u) + 2.0*(cosh(u) - cos(theta));
-            den_SGP_K = pow(base , -1.5);
-
-            kr = 1.0 + SGP_eps*SGP_eps - cos(theta)*exp(-u);
-            kr *= den_SGP_K;
-
-            kt = sin(theta) * den_SGP_K;
-
-            Kr_aux[i*NSEC+j] = (float) kr;
-            Kt_aux[i*NSEC+j] = (float) kt;
-          }
-        }
       }
     }
     else {
@@ -211,7 +179,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
     ./bin/fargoGPU  -b in/template.par */
 
     gpuErrchk(cudaMemcpy(Pressure, Pressure_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-    Make1Dprofile(Pressure);
+    Make1Dprofile(1);
 
     /* global axisymmetric pressure field */
     for (i = 1; i < NRAD; i++)
@@ -223,7 +191,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
     if ( SelfGravity ) // Better test with CL rigid!
     {
       gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-      Make1Dprofile(SG_Accr);
+      Make1Dprofile(1);
 
       for (i = 1; i < NRAD; i++)
         vt_int[i] -= ((Radii[i] - Rmed[i-1]) * GLOBAL_bufarray[i] + \
@@ -250,7 +218,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
   if (ViscosityAlpha)
   {
     gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-    Make1Dprofile(SoundSpeed);
+    Make1Dprofile(1);
   }
 
 
@@ -398,7 +366,7 @@ __host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int i
 
     if (SelfGravity){
       selfgravityupdate = YES;
-      Compute_selfgravity(Dens, VradInt, VthetaInt, dt, selfgravityupdate);
+      compute_selfgravity(Dens, dt, selfgravityupdate, 2, 0); /* option = 2, using VradInt and VthetaInt arrays */
     }
 
   ComputeViscousTerms (VradInt, VthetaInt, Dens, 0);
@@ -473,7 +441,7 @@ __host__ void Init_azimutalvelocity_withSG (float *Vtheta)
 {
   // !SGZeroMode
   gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  Make1Dprofile(SG_Accr);
+  Make1Dprofile(1);
 
   Azimutalvelocity_withSGKernel<<<dimGrid2, dimBlock2>>>(Vtheta_d, Rmed_d, FLARINGINDEX, SIGMASLOPE, ASPECTRATIO, G, \
     GLOBAL_bufarray_d, NRAD, NSEC);

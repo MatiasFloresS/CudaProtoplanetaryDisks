@@ -1,7 +1,8 @@
 #include "Main.cuh"
 
 extern int blocksize2, size_grid, NRAD, NSEC;
-extern float *GLOBAL_bufarray, *gridfield_d, *GLOBAL_bufarray_d;
+extern float *GLOBAL_bufarray, *gridfield_d, *GLOBAL_bufarray_d, *axifield_d;
+extern float *SG_Accr_d, *GLOBAL_AxiSGAccr_d;
 extern dim3 dimGrid, dimBlock, dimGrid4;
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potential,
@@ -561,28 +562,39 @@ __global__ void MinusMeanKernel (float *Dens, float *Energy, float SigmaMed, flo
     }
   }
 
-__global__ void Make1DprofileKernel (float *gridfield, float *GLOBAL_bufarray, int nsec, int nrad)
+__global__ void Make1DprofileKernel (float *gridfield, float *axifield, int nsec, int nrad)
 {
   int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j;
 
-  if (i < nrad)
-  {
+  if (i < nrad){
     float sum = 0.0;
 
-    for (int j = 0; j < nsec; j++)
+    for (j = 0; j < nsec; j++)
       sum += gridfield[i*nsec + j];
 
-    GLOBAL_bufarray[i] = sum/nsec; // every thread updates one EvanescentBoundary
+    axifield[i] = sum/(float)nsec;
   }
 }
 
-__host__ void Make1Dprofile (float *gridfield)
+
+__host__ void Make1Dprofile (int option)
 {
 
-  gpuErrchk(cudaMemcpy(gridfield_d, gridfield, size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  Make1DprofileKernel<<<dimGrid4, dimBlock>>>(gridfield_d, GLOBAL_bufarray_d, NSEC, NRAD);
+  /* GLOBAL AxiSGAccr option */
+  if (option == 1){
+    gpuErrchk(cudaMemcpy(gridfield_d, SG_Accr_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+    //gpuErrchk(cudaMemcpy(GLOBAL_AxiSGAccr_d, axifield_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
+
+  }
+  /* GLOBAL_bufarray option */
+  if (option == 2){
+    //gpuErrchk(cudaMemcpy(gridfield_d, SG_Accr_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+    //gpuErrchk(cudaMemcpy(GLOBAL_AxiSGAccr_d, axifield_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
+  }
+
+  Make1DprofileKernel<<<dimGrid4, dimBlock>>>(gridfield_d, axifield_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
-  gpuErrchk(cudaMemcpy(GLOBAL_bufarray, GLOBAL_bufarray_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
 
 }
 
@@ -767,7 +779,7 @@ __global__ void StarRadKernel (float *Qbase, float *Vrad, float *QStar, float dt
   if (j<nsec)  QStar[j] = QStar[j+nsec*nrad] = 0.0;
 }
 
-__global__ void FftKernel (float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
+__global__ void ComputeFFTKernel (float *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, float SGP_eps, int nrad, int nsec,
 cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *Dens, float *Rmed, float *Kr_aux, float *Kt_aux)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -775,8 +787,7 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *Dens, float *Rmed, float *Kr_
   float u, cosj, sinj, coshu, expu, den_SGP_K, theta, base;
   float a, var, radii;
 
-  if (i<2*nrad && j<nsec)
-  {
+  if (i<2*nrad && j<nsec){
     SGP_Kr[i*nsec + j].x = Kr_aux[i*nsec + j];
     SGP_Kr[i*nsec + j].y = 0.;
 
@@ -786,21 +797,19 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, float *Dens, float *Rmed, float *Kr_
     SGP_Sr[i*nsec + j].y = 0.;
     SGP_St[i*nsec + j].y = 0.;
 
-    if (i<nrad)
-    {
+    if (i<nrad){
       var = Dens[i*nsec + j] * sqrtf(Rmed[i]/Rmed[0]);
       SGP_Sr[i*nsec + j].x = var;
       SGP_St[i*nsec + j].x = var*(Rmed[i]/Rmed[0]);
     }
-    else
-    {
+    else{
       SGP_Sr[i*nsec + j].x = 0.;
       SGP_St[i*nsec + j].x = 0.;
     }
   }
 }
 
-__global__ void FftmulKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
+__global__ void ComputeConvolutionKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
   cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, float G, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -823,7 +832,7 @@ __global__ void FftmulKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex
   }
 }
 
-__global__ void Sg_AccKernel (float *SG_Accr, float *SG_Acct, float *Dens , float SGP_rstep, float SGP_tstep,
+__global__ void ComputeSgAccKernel (float *SG_Accr, float *SG_Acct, float *Dens , float SGP_rstep, float SGP_tstep,
   float SGP_eps, int nrad, int nsec, float *Rmed, cufftComplex *Gr, cufftComplex *Gphi, float G)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
@@ -834,7 +843,7 @@ __global__ void Sg_AccKernel (float *SG_Accr, float *SG_Acct, float *Dens , floa
   if (i<nrad && j<nsec)
   {
     divRmed = Rmed[i]/Rmed[0];
-    normaccr = SGP_rstep*SGP_tstep / ((float)(2*nrad) * (float) nsec);
+    normaccr = SGP_rstep * SGP_tstep / ((float)(2*nrad) * (float)nsec);
     normacct = normaccr;
     normaccr /= sqrtf(divRmed);
     normacct /= (divRmed * sqrtf(divRmed));
@@ -845,8 +854,8 @@ __global__ void Sg_AccKernel (float *SG_Accr, float *SG_Acct, float *Dens , floa
   }
 }
 
-__global__ void Update_sgvelocityKernel (float *Vrad, float *Vtheta, float *SG_Accr, float *SG_Acct, float *Rinf, float *Rmed,
-  float *invdiffRmed, float dt, int nrad, int nsec)
+__global__ void Update_sgvelocityKernel (float *Vradial, float *Vazimutal, float *SG_Accr, float *SG_Acct, float *Rinf,
+  float *Rmed, float *invdiffRmed, float dt, int nrad, int nsec)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -857,14 +866,12 @@ __global__ void Update_sgvelocityKernel (float *Vrad, float *Vtheta, float *SG_A
   if (i<nrad && j<nsec)
   {
     /* We compute VRAD - half-centered in azimuth - from centered-in-cell radial sg acceleration. */
-    if (i > 0) Vrad[i*nsec + j] =  dt*((Rinf[i] - Rmed[i-1]) * SG_Accr[i*nsec + j] + \
+    if (i > 0) Vradial[i*nsec + j] +=  dt*((Rinf[i] - Rmed[i-1]) * SG_Accr[i*nsec + j] + \
     (Rmed[i] - Rinf[i]) * SG_Accr[(i-1)*nsec + j]) *invdiffRmed[i]; // caso !SGZeroMode
 
     /* We compute VTHETA - half-centered in radius - from centered-in-cell azimutal sg acceleration. */
-    if (j==0) jm1 = nsec-1;
-    else jm1 = j-1;
-    lm1 = i*nsec + jm1;
-    Vtheta[i*nsec + j] = 0.5 * dt * (SG_Acct[i*nsec + j] + SG_Acct[lm1]);
+
+    Vazimutal[i*nsec + j] = 0.5 * dt * (SG_Acct[i*nsec + j] + SG_Acct[i*nsec + (j-1)%nsec]);
   }
 }
 

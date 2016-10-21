@@ -65,7 +65,7 @@ __host__ void ComputeViscousTerms (float *Vrad, float *Vtheta, float *Dens, int 
   if (ViscosityAlpha)
   {
     gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-    Make1Dprofile (SoundSpeed);
+    Make1Dprofile (1);
   }
 
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
