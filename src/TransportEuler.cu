@@ -3,7 +3,7 @@
 extern int NRAD, NSEC, size_grid, AdvecteLabel, YES, OpenInner,         \
 Adiabaticc, FastTransport, NO;
 
-extern float OmegaFrame1, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *DensStar, *invdiffRmed_d,   \
+extern float OmegaFrame, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *DensStar, *invdiffRmed_d,   \
 *QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d,   \
 *Vtheta_d, *Surf_d, *array_d;
 
@@ -44,7 +44,7 @@ __host__ void ComputeSpeQty (float *Dens, float *labe, float *ExtLabel)
 __host__ void ComputeVelocities(float *Dens, float *Label, float *ExtLabel)
 {
   ComputeVelocitiesKernel<<<dimGrid2, dimBlock2>>>(Vrad_d, Vtheta_d, Dens_d, Rmed_d, ThetaMomP_d,
-    ThetaMomM_d, RadMomP_d, RadMomM_d,  NRAD,  NSEC, OmegaFrame1);
+    ThetaMomM_d, RadMomP_d, RadMomM_d,  NRAD,  NSEC, OmegaFrame);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -53,7 +53,7 @@ __host__ void ComputeVelocities(float *Dens, float *Label, float *ExtLabel)
 __host__ void ComputeLRMomenta()
 {
   LRMomentaKernel<<<dimGrid2, dimBlock2>>>(RadMomP_d, RadMomM_d, ThetaMomP_d, ThetaMomM_d, Dens_d, Vrad_d, Vtheta_d,
-    NRAD, NSEC, Rmed_d, OmegaFrame1);
+    NRAD, NSEC, Rmed_d, OmegaFrame);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

@@ -14,7 +14,7 @@ Adiabaticc, Cooling, Corotating, MARK, NO, IsDisk, GET, Evanescent, FastTranspor
 extern boolean CentrifugalBalance, ZMPlus = NO, SloppyCFL;
 extern string OUTPUTDIR;
 
-extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGINDEX, *vt_int, OmegaFrame1,         \
+extern float RMAX, RMIN, PI, MU, R, *GLOBAL_bufarray, ADIABATICINDEX, FLARINGINDEX, *vt_int, OmegaFrame,         \
 *SigmaInf, G, ASPECTRATIO, SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT, *CoolingTimeMed, *QplusMed , *viscosity_array,   \
 *Dens_d, *Rmed_d, *SG_Accr, *SG_Accr_d, *SG_Acct_d, *GLOBAL_bufarray_d, *array_d, *array, mdcp, PhysicalTime,     \
 *Qplus, *Qplus_d, *EnergyInt_d, *EnergyNew_d, *VradNew_d, *invdiffRsup_d, *Potential_d, *invRinf_d, *VthetaInt_d, \
@@ -199,7 +199,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
     }
 
     for (i = 1; i < NRAD; i++)
-      vt_int[i] = sqrt(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame1;
+      vt_int[i] = sqrt(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
 
     t1 = vt_cent[0] = vt_int[1]+.75*(vt_int[1]-vt_int[2]);
     r1 = ConstructSequence (vt_cent, vt_int, NRAD);
@@ -309,11 +309,11 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     if (Corotating == YES)
     {
       OmegaNew = GetPsysInfo(sys, GET) / dt;
-      domega = OmegaNew - OmegaFrame1;
+      domega = OmegaNew - OmegaFrame;
       if (IsDisk == YES) CorrectVtheta (Vtheta, domega);
-      OmegaFrame1 = OmegaNew;
+      OmegaFrame = OmegaNew;
     }
-    RotatePsys (sys, OmegaFrame1*dt);
+    RotatePsys (sys, OmegaFrame*dt);
 
     /* Now we update gas */
     if (IsDisk == YES)
@@ -360,7 +360,7 @@ __host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int i
   if(initialization == 0) Substep1cudamalloc(Vrad, Vtheta);
 
   Substep1Kernel<<<dimGrid2, dimBlock2>>>(Pressure_d, Dens_d, VradInt_d, invdiffRmed_d, Potential_d, Rinf_d,
-    invRinf_d, Vrad_d, VthetaInt_d, Vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame1, ZMPlus,
+    invRinf_d, Vrad_d, VthetaInt_d, Vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame, ZMPlus,
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
   gpuErrchk(cudaDeviceSynchronize());
 
@@ -492,7 +492,7 @@ __host__ void InitVelocities (float *Vrad, float *Vtheta)
 
   InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(viscosity_array_d, NSEC, NRAD, SelfGravity, Rmed_d,
   G, ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,
-  IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame1, Rinf_d, vt_cent_d);
+  IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame, Rinf_d, vt_cent_d);
 
   gpuErrchk(cudaDeviceSynchronize());
   gpuErrchk(cudaMemcpy(Vrad, Vrad_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));

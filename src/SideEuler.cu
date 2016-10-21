@@ -7,7 +7,7 @@ extern float *SigmaMed, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed,
 *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *AspectRatioRmed_d, *Rmed_d, *mean_dens, *mean_energy, *cs0, *cs1, \
 *csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *mean_dens_d, *mean_energy_d, *cs0_d, *cs1_d, *csnrm1_d, G,      \
 *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array, *viscosity_array_d, *Vtheta_d, SIGMASLOPE,        \
-OmegaFrame1, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
+OmegaFrame, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
 
 float  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, *CellAbscissa,        \
 csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
@@ -99,7 +99,7 @@ __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float step)
 
   EvanescentBoundaryKernel<<<dimGrid2, dimBlock2>>>(Rmed_d, Vrad_d, Vtheta_d, Energy_d, Dens_d, AspectRatioRmed_d,
     viscosity_array_d, DRMIN, DRMAX, NRAD, NSEC, Tin, Tout, step, G, SIGMASLOPE, FLARINGINDEX,  GLOBAL_bufarray_d,
-    OmegaFrame1, SigmaMed_d, EnergyMed_d, Adiabaticc, SelfGravity);
+    OmegaFrame, SigmaMed_d, EnergyMed_d, Adiabaticc, SelfGravity);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

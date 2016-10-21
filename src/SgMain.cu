@@ -99,8 +99,6 @@ __host__ void compute_kernel ()
 
 __host__ void compute_FFT ()
 {
-  gpuErrchk(cudaMemcpy(Kr_aux_d, Kr_aux, 2*size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Kt_aux_d, Kt_aux, 2*size_grid*sizeof(float), cudaMemcpyHostToDevice));
   ComputeFFTKernel<<<dimGrid3, dimBlock2>>>(Radii_d, SGP_Kr_d, SGP_Kt_d, SGP_eps, NRAD, NSEC, SGP_Sr_d,
     SGP_St_d, Dens_d, Rmed_d, Kr_aux_d, Kt_aux_d);
     gpuErrchk(cudaDeviceSynchronize());

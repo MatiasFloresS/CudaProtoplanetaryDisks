@@ -10,7 +10,7 @@ extern float *TemperInt_d, *DensStar_d, *VradInt_d, *LostByDisk_d, *VthetaRes_d,
 extern float *TempShift_d, *Vmoy_d, *newDT_d, *DT1D_d, *DT2D_d, *Vresidual_d, *Vazimutal_d;
 extern float *Vradial_d;
 
-extern float OMEGAFRAME, OmegaFrame1, HillRadius, PhysicalTimeInitial, PhysicalTime;
+extern float OMEGAFRAME, HillRadius, PhysicalTimeInitial, PhysicalTime;
 extern float THICKNESSSMOOTHING, G;
 
 extern float *Pressure, *CellAbscissa, *CellOrdinate, *Temperature, *vt_cent;
@@ -37,7 +37,7 @@ float *mean_dens_d2, *mean_energy_d, *mean_energy_d2, *forcesxi_d, *forcesyi_d, 
 float *forcesyo_d, *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Rmed_d, *Dens_d;
 float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *array_d, *mdcp0_d, *axifield_d, *GLOBAL_AxiSGAccr_d;
 
-float mdcp, SGP_tstep, SGP_eps, SGP_rstep;
+float mdcp, SGP_tstep, SGP_eps, SGP_rstep, OmegaFrame;
 
 extern int NRAD, NSEC, FREQUENCY, Cooling;
 extern int *NoSplitAdvection_d, *Nshift_d;
@@ -250,9 +250,9 @@ __host__ int main (int argc, char *argv[])
   }
 
   ListPlanets (sys);
-  OmegaFrame1 = OMEGAFRAME;
+  OmegaFrame = OMEGAFRAME;
 
-  if (Corotating) OmegaFrame1 = GetPsysInfo (sys, FREQUENCY);
+  if (Corotating) OmegaFrame = GetPsysInfo (sys, FREQUENCY);
 
   /* Only gas velocities remain to be initialized */
   Initialization (Dens, Vrad, Vtheta, Energy, Label, sys);
