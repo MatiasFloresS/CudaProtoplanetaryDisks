@@ -2,11 +2,13 @@
 
 extern string OUTPUTDIR;
 
-extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, *CellAbscissa, *CellOrdinate, *Surf, G, \
-*forcesxi, *forcesyi, *forcesxo, *forcesyo, *Rmed, *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, \
-*Surf_d, *forcesxi_d, *forcesyi_d, *forcesxo_d, *forcesyo_d;
+extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, G;
+extern float *CellAbscissa, *CellOrdinate, *Surf, *forcesxi, *forcesyi, *forcesxo;
+extern float *forcesyo, *Rmed;
+extern float *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d, *forcesxi_d;
+extern float *forcesyi_d, *forcesxo_d, *forcesyo_d;
 
-extern boolean RocheSmoothing;
+extern int RocheSmoothing;
 extern int size_grid, NRAD, NSEC;
 extern dim3 dimGrid2, dimBlock2;
 
@@ -24,8 +26,7 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
   input = OUTPUTDIR +"tqwk";
   strncpy(filename, input.c_str(), sizeof(filename));
   filename[sizeof(filename)-1]=0;
-  for (i = 0; i < nb; i++)
-  {
+  for (i = 0; i < nb; i++){
     x = sys->x[i];
     y = sys->y[i];
     vx = sys->vx[i];
@@ -43,8 +44,7 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
     globalforce = force->GlobalForce;
     sprintf (filename2, "%s%d.dat", filename,i);
     out = fopen(filename2, "a");
-    if (out == NULL)
-    {
+    if (out == NULL){
       fprintf(stderr, "Can't open %s\n",filename2 );
       fprintf(stderr, "Aborted.\n");
     }
@@ -99,8 +99,7 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
   gpuErrchk(cudaMemcpy(forcesxo, forcesxo_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(forcesyo, forcesyo_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
 
-  for (k = 0; k < dimfxy; k++)
-  {
+  for (k = 0; k < dimfxy; k++){
     globalforce[k]            = forcesxi[k];
     globalforce[k + dimfxy]   = forcesxo[k];
     globalforce[k + 2*dimfxy] = forcesyi[k];
@@ -116,7 +115,6 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
   force->fy_outer = globalforce[3*dimfxy];
   force->fy_ex_outer = globalforce[4*dimfxy-1];
   force->GlobalForce = globalforce;
-
 }
 
 __host__ float Compute_smoothing(float r)

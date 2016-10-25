@@ -3,7 +3,7 @@
 extern int YES, NO, GET, MARK, FREQUENCY;
 extern float *Rmed,  G,  *Radii, ECCENTRICITY;
 static float Xplanet, Yplanet;
-extern boolean GuidingCenter;
+extern int GuidingCenter;
 float HillRadius;
 
 
@@ -31,7 +31,7 @@ __host__ int FindNumberOfPlanets (char *filename)
 __host__ PlanetarySystem *AllocPlanetSystem (int nb)
 {
   float *mass, *x, *y, *vx, *vy, *acc;
-  boolean *feeldisk, *feelothers;
+  int *feeldisk, *feelothers;
   int i;
   PlanetarySystem *sys;
   sys = (PlanetarySystem *)malloc(sizeof(PlanetarySystem));
@@ -50,8 +50,8 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
     exit (1);
   }
 
-  feeldisk   = (boolean *)malloc(sizeof(boolean)*(nb+1));
-  feelothers = (boolean *)malloc(sizeof(boolean)*(nb+1));
+  feeldisk   = (int *)malloc(sizeof(int)*(nb+1));
+  feelothers = (int *)malloc(sizeof(int)*(nb+1));
   if ((feeldisk == NULL) || (feelothers == NULL)){
     fprintf (stderr, "Not enough memory.\n");
     exit (1);
@@ -91,13 +91,13 @@ __host__ void FreePlanetary (PlanetarySystem *sys)
 
 __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
 {
-  extern boolean CICPlanet, ForcedCircular;
+  extern int CICPlanet, ForcedCircular;
   FILE *input;
   char s[512], nm[512], test1[512], test2[512], *s1;
   PlanetarySystem *sys;
   int i=0, j, nb;
   float mass, dist, accret;
-  boolean feeldis, feelothers;
+  int feeldis, feelothers;
   nb = FindNumberOfPlanets(filename);
   printf("%d planet(s) found.\n",nb);
   sys = AllocPlanetSystem (nb);

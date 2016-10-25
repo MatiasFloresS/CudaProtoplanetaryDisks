@@ -1,6 +1,6 @@
 __host__ void ExecuteExeC2Cforward ();
 __host__ void ExecuteExeC2Cbackward ();
-__host__ void compute_selfgravity (float *Dens, float DeltaT, boolean SGUpdate, int option, int initialization);
+__host__ void compute_selfgravity (float *Dens, float DeltaT, int SGUpdate, int initialization);
 __host__ void compute_FFT ();
 __host__ void compute_Convolution ();
 __host__ void compute_sgacc ();

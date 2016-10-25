@@ -42,6 +42,7 @@ __host__ float Energy(float r)
   }
   else
     energy0 = R/MU/(ADIABATICINDEX-1.0)*SIGMA0*pow(ASPECTRATIO,2.0)*pow(r,-SIGMASLOPE-1.0+2.0*FLARINGINDEX);
+
   return energy0;
 }
 

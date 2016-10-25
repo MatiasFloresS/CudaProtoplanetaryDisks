@@ -25,6 +25,7 @@
 #include "Viscosity.cuh"
 #include "RungeKutta.cuh"
 #include "SgMain.cuh"
+#include "LowTasks.cuh"
 
 using namespace std;
 
@@ -36,4 +37,3 @@ __host__ void DeviceToHostcudaMemcpy (float *Dens, float *energy, float *label, 
 __host__ void Viscouscudamalloc ();
 __host__ void CreateArrays ();
 __host__ void Cudamalloc (float *label, float *Dens, float *Vrad, float *Vtheta);
-__host__ float CircumPlanetaryMass (float *Dens, PlanetarySystem *sys);

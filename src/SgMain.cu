@@ -19,7 +19,7 @@ extern cufftHandle planf, planb;
 float *Kr_aux, *Kt_aux;
 extern double *Radii2;
 
-__host__ void compute_selfgravity (float *Dens, float DeltaT, boolean SGUpdate, int option, int initialization)
+__host__ void compute_selfgravity (float *Dens, float DeltaT, int SGUpdate, int initialization)
 {
   /* We compute Kernel */
   if (initialization)
@@ -39,24 +39,7 @@ __host__ void compute_selfgravity (float *Dens, float DeltaT, boolean SGUpdate, 
   if (SGUpdate) {
     /* Computes polar components of acceleration and
       updates values of vrad, vtheta at each step */
-      if (option == 1)
-      {
-        // Vrad and Vtheta case
-        gpuErrchk(cudaMemcpy(Vradial_d, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        gpuErrchk(cudaMemcpy(Vazimutal_d, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        update_sgvelocity(DeltaT);
-        gpuErrchk(cudaMemcpy(Vrad_d, Vradial_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        gpuErrchk(cudaMemcpy(Vtheta_d, Vazimutal_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-      }
-      if (option == 2)
-      {
-        // VradInt and VthetaInt case
-        gpuErrchk(cudaMemcpy(Vradial_d, VradInt_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        gpuErrchk(cudaMemcpy(Vazimutal_d, VthetaInt_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        update_sgvelocity(DeltaT);
-        gpuErrchk(cudaMemcpy(VradInt_d, Vradial_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        gpuErrchk(cudaMemcpy(VthetaInt_d, Vazimutal_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-      }
+      update_sgvelocity(DeltaT);
   }
 }
 

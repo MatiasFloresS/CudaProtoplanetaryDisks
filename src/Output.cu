@@ -2,11 +2,12 @@
 
 extern string OUTPUTDIR;
 
-extern int NSEC, NRAD, NTOT, NINTERM, Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, \
-Write_Density, Write_Velocity, IsDisk, YES, AdvecteLabel;
+extern int NSEC, NRAD, NTOT, NINTERM, IsDisk, YES, AdvecteLabel;
+extern int Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, Write_Density, Write_Velocity;
 
-extern float RMAX, *Temperature, mdcp, exces_mdcp, OmegaFrame, PhysicalTime, LostMass, *Qplus, \
-*DivergenceVelocity;
+extern float RMAX, mdcp, exces_mdcp, OmegaFrame, PhysicalTime, LostMass;
+extern float *Temperature, *Qplus, *DivergenceVelocity;
+
 static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 
 __host__ void WriteDim ()
@@ -19,8 +20,7 @@ __host__ void WriteDim ()
   FILE *dim;
   int ntotterm;
   ntotterm = NTOT / NINTERM;
-  if ((dim = fopen (filename, "w")) == NULL)
-  {
+  if ((dim = fopen (filename, "w")) == NULL){
     fprintf(stderr, "Unable to open %s. Program stopped\n", filename);
     exit(1);
   }
@@ -33,18 +33,17 @@ __host__ void EmptyPlanetSystemFile(PlanetarySystem *sys)
   FILE *output;
   char name[256];
   char name2[256];
-  int n = sys->nb;
+  int i, n;
+  n = sys->nb;
   string input;
   input = OUTPUTDIR +"planet";
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
 
-  for (int i = 0; i < n; i++)
-  {
+  for (i = 0; i < n; i++){
     sprintf (name2, "%s%d.dat", name,i);
     output = fopen (name2, "w");
-    if (output == NULL)
-    {
+    if (output == NULL){
       fprintf(stderr, "Can't write %s file. Aborting\n", name2);
       exit(1);
     }
@@ -54,9 +53,9 @@ __host__ void EmptyPlanetSystemFile(PlanetarySystem *sys)
 
 __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
 {
-  int n = sys->nb;
-  for (int i = 0; i < n; i++)
-  {
+  int i, n;
+  n = sys->nb;
+  for (i = 0; i < n; i++){
     Xplanet = sys->x[i];
     Yplanet = sys->y[i];
     VXplanet = sys->vx[i];
@@ -68,9 +67,9 @@ __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
 
 __host__ void WritePlanetSystemFile (PlanetarySystem *sys, int TimeStep)
 {
-  int n = sys->nb;
-  for (int i = 0; i < n; i++)
-  {
+  int i, n;
+  n = sys->nb;
+  for (i = 0; i < n; i++){
     Xplanet = sys->x[i];
     Yplanet = sys->y[i];
     VXplanet = sys->vx[i];
@@ -91,8 +90,7 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
   name[sizeof(name)-1] = 0;
   sprintf (name2, "%s%d.dat", name,n);
   output = fopen (name2, "a");
-  if (output == NULL)
-  {
+  if (output == NULL){
     fprintf(stderr, "Can't write 'bigplanet.dat' file. Aborting.\n");
     exit(1);
   }
@@ -108,13 +106,12 @@ __host__ void WritePlanetFile (int TimeStep, int n)
   char name2[256];
   string input;
   input = OUTPUTDIR + "planet";
-  printf("Updating 'planet%d.dat'...",n);
+  printf("Updating 'planet%d.dat'...\n",n);
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
   sprintf (name2, "%s%d.dat", name, n);
   output = fopen (name2, "a");
-  if (output == NULL)
-  {
+  if (output == NULL){
     fprintf(stderr, "Can't write 'planet%d,dat' file. Aborting.\n", n);
     exit(1);
   }
@@ -128,11 +125,9 @@ __host__ void WritePlanetFile (int TimeStep, int n)
 __host__ void SendOutput (int index, float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label)
 {
   printf("\n*** OUTPUT %d ***\n", index);
-  if (IsDisk == YES)
-  {
-    if (Write_Density == YES) WriteDiskPolar(Dens, "gasdensity", index);
-    if (Write_Velocity == YES)
-    {
+  if (IsDisk == YES){
+    if (Write_Density == YES) WriteDiskPolar(Dens, "gasdens", index);
+    if (Write_Velocity == YES){
       WriteDiskPolar(Vrad, "gasvrad", index);
       WriteDiskPolar(Vtheta, "gasvtheta", index);
     }
@@ -163,13 +158,11 @@ __host__ void WriteDiskPolar(float *array, char *inputname, int number)
   sprintf (name2, "%s%d.dat", name, number);
 
   // mkdir ("/some/directory") ... etc
-
   struct stat st = {0};
   if (stat(url.c_str(), &st) == -1) mkdir(url.c_str(), 0700);
 
   dump = fopen(name2, "w");
-  if (dump == NULL)
-  {
+  if (dump == NULL){
     fprintf(stderr, "Unable to open '%s'\n", name2);
     exit(1);
   }

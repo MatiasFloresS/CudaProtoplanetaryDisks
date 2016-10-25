@@ -11,7 +11,7 @@ inline void gpuAssert (cudaError_t code, const char *file, int line, bool abort=
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potencial,
   float *Rinf, float *invRinf, float *Vrad, float *VthetaInt, float *Rmed, float *Vtheta, float dt,
-  int nrad, int nsec, float OmegaFrame, boolean ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
+  int nrad, int nsec, float OmegaFrame, int ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE, float *powRmed);
 
 __global__ void Substep2Kernel (float *Dens, float *VradInt, float *VthetaInt, float *TemperInt,
   int nrad, int nsec, float CVNR, float *invdiffRmed, float *invdiffRsup, float *DensInt, int Adiabaticc,
@@ -28,10 +28,10 @@ __global__ void UpdateVelocitiesKernel (float *VthetaInt, float *VradInt, float 
 __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate, float *Rmed, int nsec, int nrad);
 
 __global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *Dens, float *Rmed, float *Energy, int nsec, int nrad,
-  int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed);
+  int Adiabaticc, float ADIABATICINDEX, float FLARINGINDEX, float *AspectRatioRmed, float G);
 
 __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *Dens, float *Pressure, int Adiabaticc, int nrad, int nsec,
-  int ADIABATICINDEX, float *Energy);
+  float ADIABATICINDEX, float *Energy);
 
 __global__ void ComputeTemperatureFieldKernel (float *Dens, float *Temperature, float *Pressure, float *Energy, float MU, float R,
   float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
@@ -107,7 +107,7 @@ __global__ void Update_sgvelocityKernel (float *Vradial, float *Vazimutal, float
 __global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
   float ASPECTRATIO, float G, float *GLOBAL_bufarray, int nrad, int nsec);
 
-__global__ void CrashKernel (float *array, int NRAD, int NSEC, boolean Crash);
+__global__ void CrashKernel (float *array, int NRAD, int NSEC, int Crash);
 
 __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *Energy, float *Dens,
   float *AspectRatioRmed, float *viscosity_array, float DRMIN, float DRMAX, int nrad, int nsec, float Tin,
@@ -153,4 +153,4 @@ __device__ float min2(float a, float b);
 
 __global__ void ConditionCFLKernel2D (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
   float *Vresidual, float *Vtheta, float *Vmoy, int FastTransport, float *SoundSpeed, float *Vrad,
-  float DeltaT, float *DT1D, float CVNR, float *invRmed, float *DT2D, float CFLSECURITY, float *newDT);
+  float DeltaT, float *DT1D, float CVNR, float *invRmed, float *DT2D, float CFLSECURITY, float *newDT, int *CFL);

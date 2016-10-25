@@ -22,13 +22,13 @@ extern string EXCLUDEHILL, RADIALSPACING;
 int ExcludeHill, ViscosityAlpha, RocheSmoothing, OpenInner, AdvecteLabel;
 int LogGrid;
 
-boolean       FastTransport = YES,  GuidingCenter = NO, Indirect_Term = YES;
-boolean       IsDisk = YES, NonReflecting = NO, Corotating = NO,  OuterSourceMass = NO, Evanescent = NO;
-boolean       Write_Density = YES, Write_Velocity = YES, Write_Energy = NO;
-boolean       Write_Temperature = NO, Write_DivV = NO, Write_Qplus = NO;
-boolean       SelfGravity = NO, SGZeroMode = NO, ZMPluss = NO;
-boolean       Adiabaticc = NO, Cooling = NO;
-boolean       CICPlanet = NO, ForcedCircular = NO;
+int       FastTransport = YES,  GuidingCenter = NO, Indirect_Term = YES;
+int       IsDisk = YES, NonReflecting = NO, Corotating = NO,  OuterSourceMass = NO, Evanescent = NO;
+int       Write_Density = YES, Write_Velocity = YES, Write_Energy = NO;
+int       Write_Temperature = NO, Write_DivV = NO, Write_Qplus = NO;
+int       SelfGravity = NO, SGZeroMode = NO, ZMPluss = NO;
+int       Adiabatic = NO, Cooling = NO;
+int       CICPlanet = NO, ForcedCircular = NO;
 
 
 /* Busco la palabra en el archivo, si existe tomo el valor y lo paso a float
@@ -160,14 +160,14 @@ __host__ void ReadVariables(char *filename)
     }
 
     if (ADIABATIC.compare("YES") == 0){
-      Adiabaticc = YES;
+      Adiabatic = YES;
       Write_Temperature = YES;
     }
     if (COOLING.compare("YES") == 0) Cooling = YES;
-    if ((Adiabaticc) && (ADIABATICINDEX == 1)){
+    if ((Adiabatic) && (ADIABATICINDEX == 1.0)){
       printf("You cannot have Adiabatic = YES and AdiabatcIndex = 1. I decided to put Adiabatic = No,\
        to simulate a locally isothermal equation of state. Please check that it what you really wanted to do!\n");
-      Adiabaticc = NO;
+      Adiabatic = NO;
     }
     if (WRITEENERGY.compare("NO") == 0) Write_Energy = NO;
     if (EXCLUDEHILL.compare("YES") == 0) ExcludeHill = YES;
@@ -296,14 +296,14 @@ __host__ void TellEverything()
   printf ("gasdens[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
   printf ("gasvrad[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
   printf ("gasvtheta[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
-  if (Adiabaticc == YES)
+  if (Adiabatic == YES)
     printf ("gasTemperature[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
   if (AdvecteLabel == YES)
     printf ("gaslabel[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
   printf ("There will be in total %d outputs\n", NTOT/NINTERM);
   printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
   nbfileoutput = 3.0;
-  if (Adiabaticc == YES)
+  if (Adiabatic == YES)
     nbfileoutput += 1.0;
   if (AdvecteLabel == YES)
     nbfileoutput += 1.0;

@@ -10,8 +10,8 @@ int GET       = 0;
 int MARK      = 1;
 int FREQUENCY = 2;
 
-boolean SloppyCFL, debug, CentrifugalBalance, Merge, MonitorIntegral, GotoNextOutput;
-boolean FakeSequential, StoreSigma, StoreEnergy, OnlyInit;
+int SloppyCFL, debug, CentrifugalBalance, Merge, MonitorIntegral, GotoNextOutput;
+int FakeSequential, StoreSigma, StoreEnergy, OnlyInit;
 int OverridesOutputdir;
 char NewOutputdir[1024];
 

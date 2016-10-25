@@ -1,6 +1,6 @@
 #include "Main.cuh"
 
-extern int OpenInner, YES, NSEC, size_grid, NonReflecting, Adiabaticc, NRAD,   \
+extern int OpenInner, YES, NSEC, size_grid, NonReflecting, Adiabatic, NRAD,   \
 Evanescent, SelfGravity, NO, ExcludeHill, dimfxy;
 
 extern float *SigmaMed, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, FLARINGINDEX, \
@@ -20,7 +20,7 @@ __host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, f
 
   if (NonReflecting == YES)
   {
-    if (Adiabaticc) ComputeSoundSpeed ();
+    if (Adiabatic) ComputeSoundSpeed ();
 
     //NonReflectingBoundary (Dens, energy, Vrad);
     gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
@@ -99,7 +99,7 @@ __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float step)
 
   EvanescentBoundaryKernel<<<dimGrid2, dimBlock2>>>(Rmed_d, Vrad_d, Vtheta_d, Energy_d, Dens_d, AspectRatioRmed_d,
     viscosity_array_d, DRMIN, DRMAX, NRAD, NSEC, Tin, Tout, step, G, SIGMASLOPE, FLARINGINDEX,  GLOBAL_bufarray_d,
-    OmegaFrame, SigmaMed_d, EnergyMed_d, Adiabaticc, SelfGravity);
+    OmegaFrame, SigmaMed_d, EnergyMed_d, Adiabatic, SelfGravity);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

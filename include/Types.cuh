@@ -1,6 +1,4 @@
 
-typedef int  boolean;
-
 struct planetary_system {
   int nb;			/* Number of planets */
   float *mass;			/* their masses */
@@ -10,8 +8,8 @@ struct planetary_system {
   float *vy;
   float *acc;			/* Their accretion times^-1 */
   char **name;			/* their names */
-  boolean *FeelDisk;		/* will "migrate" ? */
-  boolean *FeelOthers;		/* will feel other planets ? */
+  int *FeelDisk;		/* will "migrate" ? */
+  int *FeelOthers;		/* will feel other planets ? */
 };
 
 typedef struct planetary_system PlanetarySystem;

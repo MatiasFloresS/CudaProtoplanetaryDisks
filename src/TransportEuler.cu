@@ -1,7 +1,7 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC, size_grid, AdvecteLabel, YES, OpenInner,         \
-Adiabaticc, FastTransport, NO;
+Adiabatic, FastTransport, NO;
 
 extern float OmegaFrame, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *DensStar, *invdiffRmed_d,   \
 *QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d,   \
@@ -13,7 +13,7 @@ float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *Ra
 *ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *ExtLabel_d, *dq, *dq_d, *LostByDisk_d, LostMass = 0.0, \
 *VMed_d, *VthetaRes_d, *VthetaRes, *TempShift, *TempShift_d;
 
-static boolean UniformTransport;
+static int UniformTransport;
 
 int *NoSplitAdvection_d, *Nshift_d;
 
@@ -77,7 +77,7 @@ __host__ void OneWindRad (float *Dens, float *Vrad, float *Energy, float dt)
   VanLeerRadial (Vrad, RadMomM, dt, 0);
   VanLeerRadial (Vrad, ThetaMomP, dt, 0);
   VanLeerRadial (Vrad, ThetaMomP, dt, 0);
-  if (Adiabaticc)
+  if (Adiabatic)
     VanLeerRadial (Vrad, Energy, dt, 0);
   if (AdvecteLabel)
     VanLeerRadial (Vrad, ExtLabel, dt, 0);
@@ -100,7 +100,7 @@ __host__ void OneWindTheta (float *Dens, float *Vtheta, float *Energy, float dt)
   AdvectSHIFT (RadMomM);
   AdvectSHIFT (ThetaMomP);
   AdvectSHIFT (ThetaMomM);
-  if (Adiabaticc) AdvectSHIFT (Energy);
+  if (Adiabatic) AdvectSHIFT (Energy);
   if (AdvecteLabel) AdvectSHIFT (ExtLabel);
   AdvectSHIFT (Dens);
 }
@@ -194,7 +194,7 @@ __host__ void QuantitiesAdvection (float *Dens, float *Vazimutal, float *Energy,
   VanLeerTheta (Vazimutal, RadMomM, dt);
   VanLeerTheta (Vazimutal, ThetaMomP, dt);
   VanLeerTheta (Vazimutal, ThetaMomM, dt);
-  if (Adiabaticc) VanLeerTheta (Vazimutal, Energy, dt);
+  if (Adiabatic) VanLeerTheta (Vazimutal, Energy, dt);
   if (AdvecteLabel) VanLeerTheta (Vazimutal, ExtLabel, dt);
   VanLeerTheta (Vazimutal, Dens, dt); /* MUST be the last line */
 }
