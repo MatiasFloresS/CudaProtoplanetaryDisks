@@ -1199,8 +1199,7 @@ __global__ void CorrectVthetaKernel (float *Vtheta, float domega, float *Rmed, i
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-    if (i<nrad && j<nsec)
-    {
+    if (i<nrad && j<nsec){
       Vtheta[i*nsec + j] -= domega*Rmed[i];
     }
 }

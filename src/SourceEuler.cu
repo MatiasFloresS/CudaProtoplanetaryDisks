@@ -257,12 +257,11 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     if (IsDisk == YES){
       /* Indirect term star's potential computed here */
       DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
-      exit(1);
       /* Gravitational potential from star and planet(s) is computed and stored here */
       FillForcesArrays (sys, Dens, Energy);
+
       /* Planet's velocities are update here from gravitational interaction with disk */
       AdvanceSystemFromDisk (force, Dens, Energy, sys, dt);
-
     }
 
     /* Planet's positions and velocities are update from gravitational interaction with star
@@ -270,13 +269,13 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     AdvanceSystemRK5 (sys,dt);
 
     /* Below we correct vtheta, planet's position and velocities if we work in a frame non-centered on the star */
-    if (Corotating == YES)
-    {
-      OmegaNew = GetPsysInfo(sys, GET) / dt;
+    if (Corotating == YES){
+      OmegaNew = GetPsysInfo(sys, GET);
       domega = OmegaNew - OmegaFrame;
       if (IsDisk == YES) CorrectVtheta (Vtheta, domega);
       OmegaFrame = OmegaNew;
     }
+    exit(1); // aca voy
     RotatePsys (sys, OmegaFrame*dt);
 
     /* Now we update gas */
