@@ -151,6 +151,9 @@ __device__ float max2(float a, float b);
 
 __device__ float min2(float a, float b);
 
-__global__ void ConditionCFLKernel2D (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
+__global__ void ConditionCFLKernel2D1 (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
   float *Vresidual, float *Vtheta, float *Vmoy, int FastTransport, float *SoundSpeed, float *Vrad,
-  float DeltaT, float *DT1D, float CVNR, float *invRmed, float *DT2D, float CFLSECURITY, float *newDT, int *CFL);
+  float CVNR, float *DT2D, float CFLSECURITY);
+
+__global__ void ConditionCFLKernel2D2 (float *newDT, float *DT2D, float *DT1D, float *Vmoy, float *invRmed,
+  int *CFL, int nsec, int nrad, float CFLSECURITY, float DeltaT);

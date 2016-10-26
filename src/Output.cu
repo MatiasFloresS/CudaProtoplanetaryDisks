@@ -8,7 +8,7 @@ extern int Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, Write_Densi
 extern float RMAX, mdcp, exces_mdcp, OmegaFrame, PhysicalTime, LostMass;
 extern float *Temperature, *Qplus, *DivergenceVelocity;
 
-static float Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
+static double Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 
 __host__ void WriteDim ()
 {

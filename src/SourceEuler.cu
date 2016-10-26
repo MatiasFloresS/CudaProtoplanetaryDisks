@@ -41,7 +41,7 @@ float exces_mdcp = 0.0, mdcp1, MassTaper;
 
 int CrashedDens, CrashedEnergy;
 
-extern dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid5;
+extern dim3 dimGrid2, dimBlock2, dimGrid4, dimBlock;
 
 int init = 0;
 double *Radii2;
@@ -218,7 +218,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
 {
   float dt, dtemp =0.0;
   float OmegaNew, domega;
-  int GasTimeStepsCFL = 1, gastimestepcfl;
+  int gastimestepcfl = 1;
   CrashedDens = 0;
   CrashedEnergy = 0;
 
@@ -238,23 +238,15 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     }
   }
 
-  dt = DT / GasTimeStepsCFL; // es 1
+  dt = DT / gastimestepcfl;
 
-  while (dtemp < 0.99999*DT)
-  {
+  while (dtemp < 0.99999*DT){
     MassTaper = PhysicalTime/(MASSTAPER*2.0*M_PI);
     MassTaper = (MassTaper > 1.0 ? 1.0 : pow(sin(MassTaper*M_PI/2.0), 2.0));
-    //exit(1);
-    if(IsDisk == YES)
-    {
-      // communicateBoundaries -> mismo que arriba
-      if (SloppyCFL == NO)
-      {
-        gastimestepcfl = 1;
+    if(IsDisk == YES){
+      if (SloppyCFL == NO){
         gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
         dt = (DT-dtemp)/(float)gastimestepcfl;
-        printf("nuevo dt = %f\n", dt);
-        exit(1);
       }
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys);
     }
@@ -262,11 +254,10 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     DiskOnPrimaryAcceleration.x = 0.0;
     DiskOnPrimaryAcceleration.y = 0.0;
     if (Corotating == YES) GetPsysInfo (sys, MARK);
-
-    if (IsDisk == YES)
-    {
+    if (IsDisk == YES){
       /* Indirect term star's potential computed here */
       DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
+      exit(1);
       /* Gravitational potential from star and planet(s) is computed and stored here */
       FillForcesArrays (sys, Dens, Energy);
       /* Planet's velocities are update here from gravitational interaction with disk */
@@ -510,12 +501,16 @@ __host__ void Substep1cudamalloc (float *Vrad, float *Vtheta)
 
 __host__ int ConditionCFL (float *Vrad, float *Vtheta , float DeltaT)
 {
-  ConditionCFLKernel1D<<<dimGrid, dimBlock>>>(Rsup_d, Rinf_d, Rmed_d, NRAD, NSEC, Vtheta_d, Vmoy_d);
+  ConditionCFLKernel1D<<<dimGrid4, dimBlock>>>(Rsup_d, Rinf_d, Rmed_d, NRAD, NSEC, Vtheta_d, Vmoy_d);
   gpuErrchk(cudaDeviceSynchronize());
 
-  ConditionCFLKernel2D<<<dimGrid5, dimBlock2>>>(Rsup_d, Rinf_d, Rmed_d, NSEC, NRAD,
-    Vresidual_d, Vtheta_d, Vmoy_d, FastTransport, SoundSpeed_d, Vrad_d, DeltaT, DT1D_d,
-    CVNR, invRmed_d, DT2D_d, CFLSECURITY, newDT_d, CFL_d);
+  ConditionCFLKernel2D1<<<dimGrid2, dimBlock2>>>(Rsup_d, Rinf_d, Rmed_d, NSEC, NRAD,
+    Vresidual_d, Vtheta_d, Vmoy_d, FastTransport, SoundSpeed_d, Vrad_d, CVNR, DT2D_d,
+    CFLSECURITY);
+  gpuErrchk(cudaDeviceSynchronize());
+
+  ConditionCFLKernel2D2<<<dimGrid4, dimBlock>>>(newDT_d, DT2D_d, DT1D_d, Vmoy_d, invRmed_d,
+    CFL_d, NSEC, NRAD, CFLSECURITY, DeltaT);
   gpuErrchk(cudaDeviceSynchronize());
 
   gpuErrchk(cudaMemcpy(CFL, CFL_d,  sizeof(int), cudaMemcpyDeviceToHost));

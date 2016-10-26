@@ -1,6 +1,6 @@
 #include "Main.cuh"
 
-extern int YES, NO, GET, MARK, FREQUENCY;
+extern int YES, NO;
 extern float *Rmed,  G,  *Radii, ECCENTRICITY;
 static float Xplanet, Yplanet;
 extern int GuidingCenter;
@@ -30,7 +30,7 @@ __host__ int FindNumberOfPlanets (char *filename)
 
 __host__ PlanetarySystem *AllocPlanetSystem (int nb)
 {
-  float *mass, *x, *y, *vx, *vy, *acc;
+  double *mass, *x, *y, *vx, *vy, *acc;
   int *feeldisk, *feelothers;
   int i;
   PlanetarySystem *sys;
@@ -39,12 +39,12 @@ __host__ PlanetarySystem *AllocPlanetSystem (int nb)
     fprintf(stderr, "Not enough memory.\n");
     exit(1);
   }
-  x    = (float *)malloc(sizeof(float)*(nb+1));
-  y    = (float *)malloc(sizeof(float)*(nb+1));
-  vy   = (float *)malloc(sizeof(float)*(nb+1));
-  vx   = (float *)malloc(sizeof(float)*(nb+1));
-  mass = (float *)malloc(sizeof(float)*(nb+1));
-  acc  = (float *)malloc(sizeof(float)*(nb+1));
+  x    = (double *)malloc(sizeof(double)*(nb+1));
+  y    = (double *)malloc(sizeof(double)*(nb+1));
+  vy   = (double *)malloc(sizeof(double)*(nb+1));
+  vx   = (double *)malloc(sizeof(double)*(nb+1));
+  mass = (double *)malloc(sizeof(double)*(nb+1));
+  acc  = (double *)malloc(sizeof(double)*(nb+1));
   if ((x == NULL) || (y == NULL) || (vx == NULL) || (vy == NULL) || (acc == NULL) || (mass == NULL)){
     fprintf (stderr, "Not enough memory.\n");
     exit (1);
@@ -114,7 +114,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
         while (Rmed[j] < dist) j++;
         dist = Radii[j+1];
       }
-      sys->mass[i] = (float)mass;
+      sys->mass[i] = (double)mass;
       feeldis = feelothers = YES;
       if (tolower(*test1) == 'n') feeldis = NO;
       /*
@@ -124,10 +124,11 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
       }
       */
       if (tolower(*test2) == 'n') feelothers = NO;
-      sys->x[i] = (float)dist*(1.0+ECCENTRICITY);
+      sys->x[i] = (double)dist*(1.0+ECCENTRICITY);
       sys->y[i] = 0.0;
-      sys->vy[i] = (float)sqrt(G*(1.0+mass)/dist)*			\
+      sys->vy[i] = sqrt(G*(1.0+mass)/dist)*			\
   	   sqrt((1.0-ECCENTRICITY)/(1.0+ECCENTRICITY));
+
       sys->vx[i] = -0.0000000001*sys->vy[i];
       sys->acc[i] = accret;
       sys->FeelDisk[i] = feeldis;
@@ -172,10 +173,10 @@ __host__ void ListPlanets (PlanetarySystem *sys)
 __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
 {
 
-  float d1, d2, cross;
-  float x,y, vx, vy, m, h, d, Ax, Ay, e, a, E, M;
-  float xc, yc, vxc, vyc, omega;
-  float arg, PerihelionPA;
+  double d1, d2, cross;
+  double x,y, vx, vy, m, h, d, Ax, Ay, e, a, E, M;
+  double xc, yc, vxc, vyc, omega;
+  double arg, PerihelionPA;
   xc = x = sys->x[0];
   yc = y = sys->y[0];
   vxc = vx= sys->vx[0];
@@ -184,43 +185,43 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   h = x*vy-y*vx;
   d = sqrt(x*x+y*y);
 
-  Ax = x*vy*vy-y*vx*vy-G*m*x/d;
-  Ay = y*vx*vx-x*vx*vy-G*m*y/d;
+  Ax = x*vy*vy-y*vx*vy -G*m*x/d;
+  Ay = y*vx*vx-x*vx*vy -G*m*y/d;
+
   e = sqrt(Ax*Ax+Ay*Ay)/m;
   a = h*h/G/m/(1.-e*e);
   if (e == 0.0) arg = 1.0;
   else arg = (1.0-d/a)/e;
 
-  if (fabsf(arg) >= 1.0) E = M_PI*(1.-arg/fabsf(arg))/2.;
-  else E = acosf((1.0-d/a)/e);
+  if (fabs(arg) >= 1.0) E = M_PI*(1.-arg/fabs(arg))/2.;
+  else E = acos((1.0-d/a)/e);
 
   if ((x*y*(vy*vy-vx*vx)+vx*vy*(x*x-y*y)) < 0) E= -E;
-  M = E-e*sinf(E);
-
-  PerihelionPA=atan2f(Ay,Ax);
+  M = E-e*sin(E);
+  PerihelionPA=atan2(Ay,Ax);
   omega = sqrt(m/a/a/a);
-  if (GuidingCenter == YES)
-  {
-    xc = a*cosf(M+PerihelionPA);
-    yc = a*sinf(M+PerihelionPA);
-    vxc = -a*omega*sinf(M+PerihelionPA);
-    vyc =  a*omega*cosf(M+PerihelionPA);
+
+  if (GuidingCenter){
+    xc = a*cos(M+PerihelionPA);
+    yc = a*sin(M+PerihelionPA);
+    vxc = -a*omega*sin(M+PerihelionPA);
+    vyc =  a*omega*cos(M+PerihelionPA);
   }
-  if (e < 1e-8)
-  {
+
+  if (e < 1e-8){
     xc = x;
     yc = y;
     vxc = vx;
     vyc = vy;
   }
-  switch (action)
-  {
-    case 0:
+
+  switch (action){
+    case 1:
       Xplanet = xc;
       Yplanet = yc;
       return 0.;
       break;
-    case 1:
+    case 0:
       x = xc;
       y = yc;
       vx = vxc;
@@ -230,7 +231,7 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
       cross = Xplanet*y-x*Yplanet;
       Xplanet = x;
       Yplanet = y;
-      return asinf(cross/(d1*d2));
+      return asin(cross/(d1*d2));
       break;
     case 2:
       return omega;

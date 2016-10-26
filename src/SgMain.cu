@@ -179,7 +179,7 @@ __host__ void Init_planetarysys_withSG (PlanetarySystem *sys)
   for (k = 0; k < sys->nb; k++){
     r = sys->x[k];
     /* dist denotes the planet's semi-major axis */
-    dist = (float) (r / (1. + ECCENTRICITY));
+    dist = (double) (r / (1. + ECCENTRICITY));
     ipl = 0;
     while (Rmed[ipl] <= dist) ipl++;
     ri = Rmed[ipl];
@@ -189,6 +189,6 @@ __host__ void Init_planetarysys_withSG (PlanetarySystem *sys)
     sgacc /= dr;
 
     /* sgacc is the radial sg acc. at the planet's semi-major axis */
-    sys->vy[k] *= (float) sqrt(1. - dist*dist*sgacc);
+    sys->vy[k] *= (double) sqrt(1. - dist*dist*sgacc);
   }
 }

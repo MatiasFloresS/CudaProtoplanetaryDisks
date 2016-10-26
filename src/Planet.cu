@@ -6,14 +6,14 @@ extern float *Rinf, *Rsup;
 __host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
 {
 
+  float RRoche, Rplanet, distance;
   int i_min, i_max, j_min, j_max, angle;
   float facc, facc1, facc2, frac1, frac2; /* We adopt the same notations as W. Kley*/
-  float Xplanet, Yplanet, Mplanet, VXplanet, VYplanet, PxPlanet, PyPlanet;
-  float dMplanet, dPxPlanet, dPyPlanet, RRoche, Rplanet;
+  double Xplanet, Yplanet, Mplanet, VXplanet, VYplanet, PxPlanet, PyPlanet;
+  float dMplanet, dPxPlanet, dPyPlanet;
 
   for (int k = 0; k < sys->nb; k++) {
-    if (sys->acc[k] > 1e-10)
-    {
+    if (sys->acc[k] > 1e-10){ // case acc positive
       dMplanet = dPxPlanet = dPyPlanet = 0.0;
       /* Hereafter: initialization of W. Kley's parameters */
       facc = dt*(sys->acc[k]);

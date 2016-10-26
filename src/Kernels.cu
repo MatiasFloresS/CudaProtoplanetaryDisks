@@ -1225,26 +1225,21 @@ __global__ void ConditionCFLKernel1D (float *Rsup, float *Rinf, float *Rmed, int
   }
 }
 
-__global__ void ConditionCFLKernel2D (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
+__global__ void ConditionCFLKernel2D1 (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
   float *Vresidual, float *Vtheta, float *Vmoy, int FastTransport, float *SoundSpeed, float *Vrad,
-  float DeltaT, float *DT1D, float CVNR, float *invRmed, float *DT2D, float CFLSECURITY, float *newDT,
-  int *CFL)
+  float CVNR, float *DT2D, float CFLSECURITY)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  int k;
   float dxrad, dxtheta, invdt1, invdt2, invdt3, invdt4, dvr, dvt, dt;
-  float newdt = 1e20;
 
   if (i > 0 && i<nrad && j<nsec){
     dxrad = Rsup[i]-Rinf[i];
     dxtheta = Rmed[i]*2.0*M_PI/(float)nsec;
     if (FastTransport) Vresidual[i*nsec + j] = Vtheta[i*nsec + j]-Vmoy[i]; /* Fargo algorithm */
     else Vresidual[i*nsec + j] = Vtheta[i*nsec + j];                       /* Standard algorithm */
-    __syncthreads();
-    Vresidual[i*nsec + nsec] = Vresidual[i*nsec];
-
+    //Vresidual[i*nsec + nsec] = Vresidual[i*nsec];
     invdt1 = SoundSpeed[i*nsec + j]/(min2(dxrad,dxtheta));
     invdt2 = fabs(Vrad[i*nsec + j])/dxrad;
     invdt3 = fabs(Vresidual[i*nsec + j])/dxtheta;
@@ -1257,42 +1252,49 @@ __global__ void ConditionCFLKernel2D (float *Rsup, float *Rinf, float *Rmed, int
     invdt4 = max2(dvr/dxrad, dvt/dxtheta);
     invdt4*= 4.0*CVNR*CVNR;
     dt = CFLSECURITY/sqrtf(invdt1*invdt1+invdt2*invdt2+invdt3*invdt3+invdt4*invdt4);
-
     DT2D[i*nsec + j] = dt; // array nrad*nsec size dt
-    __syncthreads();
-
-    if (i > 0 && i<nrad && j == 0){
-      newDT[i] = newdt;
-      for (k = 1; k < nsec; k++){
-        if (DT2D[i*nsec + k] < newDT[i]) newDT[i] = DT2D[i*nsec + k]; // for each dt in nrad
-      }
-      __syncthreads();
-
-      if(i==1){
-        for (k = 2; k < nrad; k++){
-          newdt = newDT[1];
-          if (newDT[k] < newdt) newdt = newDT[k]; // min dt
-        }
-      }
-
-      dt = 2.0*M_PI*CFLSECURITY/(float)nsec/fabs(Vmoy[i]*invRmed[i]-Vmoy[i+1]*invRmed[i+1]);
-      DT1D[i] = dt; // array nrad size dt
-      __syncthreads();
-
-      if (i == 1){
-        for (k = 1; k < nrad-1; k++) {
-          if (DT1D[k] < newdt)
-            newdt = DT1D[k];
-        }
-        if (DeltaT < newdt)
-          newdt = DeltaT;
-
-          CFL[0] = (int)(ceil(DeltaT/newdt));
-      }
-    }
   }
 }
 
+
+
+__global__ void ConditionCFLKernel2D2 (float *newDT, float *DT2D, float *DT1D, float *Vmoy, float *invRmed,
+  int *CFL, int nsec, int nrad, float CFLSECURITY, float DeltaT)
+{
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int k;
+  float dt;
+  float newdt = 1e30;
+
+  if (i>0 && i<nrad){
+    newDT[i] = newdt;
+    for (k = 0; k < nsec; k++){
+      if (DT2D[i*nsec + k] < newDT[i]) newDT[i] = DT2D[i*nsec + k]; // for each dt in nrad
+    }
+  }
+  if (i<nrad-1){
+    dt = 2.0*M_PI*CFLSECURITY/(float)nsec/fabs(Vmoy[i]*invRmed[i]-Vmoy[i+1]*invRmed[i+1]);
+    DT1D[i] = dt; // array nrad size dt
+    __syncthreads();
+
+    if (i == 1){ // one thread
+      newdt = newDT[1];
+      for (k = 2; k < nrad; k++){
+        if (newDT[k] < newdt) newdt = newDT[k]; // min dt
+      }
+
+      for (k = 0; k < nrad-1; k++) {
+        if (DT1D[k] < newdt)
+          newdt = DT1D[k];
+      }
+
+      if (DeltaT < newdt)
+        newdt = DeltaT;
+
+      CFL[0] = (int)(ceil(DeltaT/newdt));
+    }
+  }
+}
 
 __device__ float max2(float a, float b)
 {

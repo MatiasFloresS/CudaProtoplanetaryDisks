@@ -1,12 +1,12 @@
 
 struct planetary_system {
   int nb;			/* Number of planets */
-  float *mass;			/* their masses */
-  float *x;			/* their coordinates */
-  float *y;
-  float *vx;			/* their velocities */
-  float *vy;
-  float *acc;			/* Their accretion times^-1 */
+  double *mass;			/* their masses */
+  double *x;			/* their coordinates */
+  double *y;
+  double *vx;			/* their velocities */
+  double *vy;
+  double *acc;			/* Their accretion times^-1 */
   char **name;			/* their names */
   int *FeelDisk;		/* will "migrate" ? */
   int *FeelOthers;		/* will feel other planets ? */

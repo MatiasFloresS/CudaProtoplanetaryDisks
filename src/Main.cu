@@ -59,7 +59,7 @@ extern int  Corotating;
 extern int  SelfGravity, SGZeroMode, Adiabatic;
 float           ScalingFactor = 1.0;
 
-dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4, dimGrid5;
+dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4;
 
 cufftHandle planf, planb;
 
@@ -70,7 +70,7 @@ cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *
 
 __host__ int main (int argc, char *argv[])
 {
-  //cudaSetDevice(1); Using gpu nvidia gtx 960 4 gb
+  //cudaSetDevice(1); Using gpu nvidia m4000 8 gb
   cudaSetDevice(0); // Using gpu nvidia m4000 8gb
 
   float     *Dens;
@@ -183,8 +183,7 @@ __host__ int main (int argc, char *argv[])
   if(!IsPow2(NRAD+1)) nrad2pot = NearestPowerOf2(NRAD+1);
   if(!IsPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
   if(!IsPow2(2*(NRAD+1))) nrad2potSG = NearestPowerOf2(2*(NRAD+1));
-  if(!IsPow2(NSEC+1)) nsec2potplus = NearestPowerOf2(NSEC+1);
-  printf("%d\n",nsec2potplus );
+
 
   /* dim gridsize and blocksize of */
   dim3 dimG2( nsec2pot/blocksize2D, nrad2pot/blocksize2D);
@@ -203,8 +202,6 @@ __host__ int main (int argc, char *argv[])
   dim3 dimG4 (nrad2pot/blocksize1D, 1);
   dimGrid4 = dimG4;
 
-  dim3 dimG5 (nsec2potplus/blocksize2D, nrad2pot/blocksize2D);
-  dimGrid5 = dimG5;
 
   /*  hasta aca falta ---------------------------------------> */
 
@@ -706,7 +703,7 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
 
 
 
-  gpuErrchk(cudaMalloc((void**)&Vresidual_d,      (NRAD+1)*(NSEC+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Vresidual_d,      size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&newDT_d,          NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&DT1D_d,           NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&gridfield_d,      size_grid*sizeof(float)));

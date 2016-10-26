@@ -6,9 +6,9 @@ float PI	= 3.14159265358979323844;
 float MU  = 1.0;  /* Mean molecular weight */
 float R   = 1.0; /* Universal Gas Constant in code units */
 
-int GET       = 0;
-int MARK      = 1;
-int FREQUENCY = 2;
+int   GET       = 0;
+int   MARK      = 1;
+int   FREQUENCY = 2;
 
 int SloppyCFL, debug, CentrifugalBalance, Merge, MonitorIntegral, GotoNextOutput;
 int FakeSequential, StoreSigma, StoreEnergy, OnlyInit;

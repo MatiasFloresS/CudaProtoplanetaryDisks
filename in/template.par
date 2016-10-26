@@ -25,8 +25,8 @@ IndirectTerm		YES
 
 Nrad			400		Radial number of zones
 Nsec			900		Azimuthal number of zones (sectors)
-Rmin			3.2		Inner boundary radius
-Rmax			7.2		Outer boundary radius
+Rmin			0.4		Inner boundary radius
+Rmax			2.5		Outer boundary radius
 RadialSpacing 		LOGARITHM      Zone interfaces evenly spaced
 
 
@@ -38,12 +38,12 @@ Ninterm	 		20		Time steps between outputs
 DT			0.314159265359	Time step length. 2PI = 1 orbit
 OutputDir		out/
 
-SelfGravity	YES     #choose: Yes, Z or No
+SelfGravity	NO     #choose: Yes, Z or No
 
 Adiabatic	YES        #choose No for an isothermal eq. of state
 
 AdiabaticIndex	1.4 #Default value: 1.4
 
-Cooling	No           #choose: Yes or No
+Cooling	NO           #choose: Yes or No
 
 CoolingTime0	62.8 #Cooling time at r=1
