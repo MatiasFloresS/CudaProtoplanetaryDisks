@@ -2,50 +2,36 @@
 
 extern int NSEC, size_grid, NRAD;
 
-extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING, *SoundSpeed_d, \
-*SoundSpeed, VISCOSITY, ViscosityAlpha, *Rmed, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, *GLOBAL_bufarray,     \
-ALPHAVISCOSITY, *Vrad_d, *Vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *Dens_d, *viscosity_array_d,    \
-*invRinf_d, *Rsup, *invRmed, *VthetaInt_d, *VradInt_d, *viscosity_array, *Rsup_d, *invRmed_d, *VradInt,  \
-*VthetaInt, *Rmed_d, *invdiffRsup_d;
+extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
+extern float VISCOSITY, ViscosityAlpha, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
 
-float PhysicalTime =0.0, PhysicalTimeInitial= 0.0, *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP,    \
-*TAUPP, *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
+extern float *SoundSpeed_d, *Vrad_d, *Vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *Dens_d;
+extern float *viscosity_array_d,  *invRinf_d, *VthetaInt_d, *VradInt_d, *Rsup_d, *invRmed_d, *Rmed_d;
+extern float *invdiffRsup_d;
+
+extern float *SoundSpeed, *Rmed, *GLOBAL_bufarray, *Rsup, *invRmed, *viscosity_array, *VradInt;
+extern float *VthetaInt;
+
+float *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP;
+float *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
+float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
 
 extern dim3 dimGrid2, dimBlock2;
 
 __host__ void UpdateVelocitiesWithViscosity(float *VradInt, float *VthetaInt, float *Dens, float DeltaT)
 {
-
   UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(VthetaInt_d, VradInt_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
     invdiffRmed_d, invdiffRsup_d,  Dens_d, invRinf_d, TAURR_d, TAURP_d, TAUPP_d, DeltaT, NRAD, NSEC);
     gpuErrchk(cudaDeviceSynchronize());
-
 }
 
-__host__ float AspectRatio(float r)
-{
-  float aspectratio, rmin, rmax, scale;
-  aspectratio = ASPECTRATIO;
-  rmin = TRANSITIONRADIUS-TRANSITIONWIDTH*ASPECTRATIO;
-  rmax = TRANSITIONRADIUS+TRANSITIONWIDTH*ASPECTRATIO;
-  scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
-  rmin *= scale;
-  rmax *= scale;
-  if (r < rmin) aspectratio *= TRANSITIONRATIO;
-  if ((r >= rmin) && (r <= rmax))
-  {
-    aspectratio *= exp((rmax-r)/(rmax-rmin)*log(TRANSITIONRATIO));
-  }
-  return aspectratio;
-}
 
 __host__ float FViscosity(float r)
 {
   float viscosity, rmin, rmax, scale;
   int i = 0;
   viscosity = VISCOSITY;
-  if (ViscosityAlpha)
-  {
+  if (ViscosityAlpha){
     while (Rmed[i] < r) i++;
     viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * pow(r, 1.5);
   }
@@ -109,4 +95,21 @@ __host__ void InitViscosityDevice ()
   gpuErrchk(cudaMalloc((void**)&TAURR_d,              size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&TAURP_d,              size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&TAUPP_d,              size_grid*sizeof(float)));
+}
+
+
+__host__ float AspectRatioHost(float r)
+{
+  float aspectratio, rmin, rmax, scale;
+  aspectratio = ASPECTRATIO;
+  rmin = TRANSITIONRADIUS-TRANSITIONWIDTH*ASPECTRATIO;
+  rmax = TRANSITIONRADIUS+TRANSITIONWIDTH*ASPECTRATIO;
+  scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
+  rmin *= scale;
+  rmax *= scale;
+  if (r < rmin) aspectratio *= TRANSITIONRATIO;
+  if ((r >= rmin) && (r <= rmax)){
+    aspectratio *= expf((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
+  }
+  return aspectratio;
 }

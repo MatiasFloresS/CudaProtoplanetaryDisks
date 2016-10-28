@@ -22,9 +22,9 @@ endif
 endif
 
 
-main: build/Main.o build/Viscosity.o build/Kernels.o build/Interpret.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
+main: build/Main.o build/Viscosity.o build/Interpret.o build/SourceEuler.o build/Psys.o build/Pframeforce.o \
 	build/Theo.o build/Init.o build/SideEuler.o build/Output.o build/Force.o build/TransportEuler.o build/Planet.o \
-	build/RungeKutta.o build/SgMain.o build/LowTasks.o
+	build/RungeKutta.o build/SgMain.o build/LowTasks.o build/Kernels.o
 	@ echo "Linking"
 	@ mkdir -p bin
 	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG)

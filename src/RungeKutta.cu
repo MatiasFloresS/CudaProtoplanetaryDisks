@@ -3,8 +3,7 @@
 static float k1[100], k2[100], k3[100], k4[100], k5[100], k6[100];
 static float Dist[100];
 
-extern float G;
-extern int Indirect_Term, YES;
+extern int Indirect_Term;
 
 __host__ void RungeKutta (float *q0, float timestep, float *PlanetMasses, float *q1, int nb, int *feelothers)
 {

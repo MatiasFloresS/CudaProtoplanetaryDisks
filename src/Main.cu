@@ -1,8 +1,8 @@
 #include "Main.cuh"
-#include "Fondam.cuh"
+#include "Param.cuh"
 
 /* extern float device arrays */
-extern float *SigmaInf_d, *AspectRatioRmed_d, *Vrad_d, *CellAbscissa_d, *CellOrdinate_d;
+extern float *SigmaInf_d, *Vrad_d, *CellAbscissa_d, *CellOrdinate_d;
 extern float *Temperature_d, *Energy_d, *Vtheta_d, *Pressure_d, *Rinf_d, *SoundSpeed_d;
 extern float *viscosity_array_d, *QStar_d, *ExtLabel_d, *dq_d, *DRP_d, *vt_cent_d;
 extern float *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d;
@@ -13,11 +13,11 @@ extern float *Vradial_d;
 
 /* extern float values */
 extern float OMEGAFRAME, HillRadius, PhysicalTimeInitial, PhysicalTime;
-extern float THICKNESSSMOOTHING, G;
+extern float THICKNESSSMOOTHING;
 
 /* extern float host arrays */
 extern float *Pressure, *CellAbscissa, *CellOrdinate, *Temperature, *vt_cent;
-extern float *SoundSpeed, *AspectRatioRmed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM;
+extern float *SoundSpeed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM;
 extern float *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *dq, *DivergenceVelocity;
 extern float *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *Rinf, *Rmed, *Rsup, *Radii;
 extern float *Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *TemperInt;
@@ -44,11 +44,11 @@ float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *array_d, *mdcp0_d, *axifiel
 
 float mdcp, SGP_tstep, SGP_eps, SGP_rstep, OmegaFrame;
 
-extern int NRAD, NSEC, FREQUENCY, Cooling;
+extern int NRAD, NSEC, Cooling;
 extern int *NoSplitAdvection_d, *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
-int blocksize2D = 32;
+int blocksize2D = 16;
 int blocksize1D = 256;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
@@ -254,18 +254,20 @@ __host__ int main (int argc, char *argv[])
 
     /* Here we copy Vrad to Vradial -> device to device */
     gpuErrchk(cudaMemcpy(Vradial_d, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+    /* Here we copy Vtheta to Vazimutal -> device to device */
     gpuErrchk(cudaMemcpy(Vazimutal_d, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
 
     compute_selfgravity(Dens, foostep, SGUpdate, 1);
 
+    /* Here we copy Vradial to Vrad -> device to device */
     gpuErrchk(cudaMemcpy(Vrad_d, Vradial_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+    /* Here we copy Vazimutal to Vtheta -> device to device */
     gpuErrchk(cudaMemcpy(Vtheta_d, Vazimutal_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
     Init_planetarysys_withSG (sys);
   }
 
   ListPlanets (sys);
   OmegaFrame = OMEGAFRAME;
-
 
   if (Corotating) OmegaFrame = GetPsysInfo (sys, FREQUENCY);
 
@@ -358,7 +360,6 @@ __host__ void FreeCuda ()
   cudaFree(DensStar_d);
   cudaFree(VradInt_d);
   cudaFree(VthetaInt_d);
-  cudaFree(AspectRatioRmed_d);
   cudaFree(Potential_d);
   cudaFree(DensInt_d);
   cudaFree(VradNew_d);
@@ -497,7 +498,6 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *Energy
   free(SoundSpeed);
   free(DensStar);
   free(VradInt);
-  free(AspectRatioRmed);
   free(VthetaInt);
   free(DensInt);
   free(VradNew);

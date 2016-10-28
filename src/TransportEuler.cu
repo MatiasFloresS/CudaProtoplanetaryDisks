@@ -1,17 +1,22 @@
 #include "Main.cuh"
 
-extern int NRAD, NSEC, size_grid, AdvecteLabel, YES, OpenInner,         \
-Adiabatic, FastTransport, NO;
+extern int NRAD, NSEC, size_grid, AdvecteLabel, OpenInner, Adiabatic, FastTransport;
 
-extern float OmegaFrame, *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *DensStar, *invdiffRmed_d,   \
-*QStar, *Qbase, *QStar_d, *Qbase_d, *DensInt, *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d,   \
-*Vtheta_d, *Surf_d, *array_d;
+extern float OmegaFrame;
+
+extern float *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *invdiffRmed_d, *QStar_d, *Qbase_d;
+extern float *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d, *Vtheta_d, *Surf_d, *array_d;
+extern float *DensStar, *QStar, *Qbase, *DensInt;
 
 extern dim3 dimGrid2, dimBlock2, dimBlock, dimGrid4;
 
-float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *RadMomP_d, *RadMomM_d,    \
-*ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *ExtLabel_d, *dq, *dq_d, *LostByDisk_d, LostMass = 0.0, \
-*VMed_d, *VthetaRes_d, *VthetaRes, *TempShift, *TempShift_d;
+float *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *dq;
+float *VthetaRes, *TempShift;
+
+float *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d, *ExtLabel_d;
+float *dq_d, *LostByDisk_d, *VMed_d, *VthetaRes_d, *TempShift_d;
+
+float LostMass = 0.0;
 
 static int UniformTransport;
 
@@ -118,7 +123,7 @@ __host__ void AdvectSHIFT (float *array)
 __host__ void ComputeConstantResidual (float *Vtheta, float dt)
 {
   ComputeConstantResidualKernel<<<dimGrid2, dimBlock2>>>(VMed_d, invRmed_d, Nshift_d, NoSplitAdvection_d,
-    NSEC, NRAD, dt, YES, NO, Vtheta_d, VthetaRes_d, Rmed_d, FastTransport);
+    NSEC, NRAD, dt, Vtheta_d, VthetaRes_d, Rmed_d, FastTransport);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -180,7 +185,7 @@ __host__ void VanLeerTheta (float *Vazimutal, float *Qbase, float dt)
   ComputeStarTheta (Work, Vazimutal, QRStar, dt);
 
   VanLeerThetaKernel<<<dimGrid2, dimBlock2>>>(Rsup_d, Rinf_d, Surf_d, dt, NRAD, NSEC, UniformTransport,
-    NoSplitAdvection_d, QRStar_d, DensStar_d, Vtheta_d, Qbase_d, NO);
+    NoSplitAdvection_d, QRStar_d, DensStar_d, Vtheta_d, Qbase_d);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

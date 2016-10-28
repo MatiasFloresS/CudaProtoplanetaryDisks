@@ -1,31 +1,36 @@
 #include "Main.cuh"
 
-extern int OpenInner, YES, NSEC, size_grid, NonReflecting, Adiabatic, NRAD,   \
-Evanescent, SelfGravity, NO, ExcludeHill, dimfxy;
+extern int OpenInner, NSEC, size_grid, NonReflecting, Adiabatic, NRAD;
+extern int Evanescent, SelfGravity, ExcludeHill, dimfxy, OuterSourceMass;
 
-extern float *SigmaMed, *Rmed, *SoundSpeed, *AspectRatioRmed, *Rinf, *EnergyMed, ADIABATICINDEX, FLARINGINDEX, \
-*Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *AspectRatioRmed_d, *Rmed_d, *mean_dens, *mean_energy, *cs0, *cs1, \
-*csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *mean_dens_d, *mean_energy_d, *cs0_d, *cs1_d, *csnrm1_d, G,      \
-*csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array, *viscosity_array_d, *Vtheta_d, SIGMASLOPE,        \
-OmegaFrame, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
+extern float *SigmaMed, *Rmed, *SoundSpeed, *Rinf, *EnergyMed, *mean_dens, *mean_energy;
+extern float *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *viscosity_array;
+
+extern float ADIABATICINDEX, FLARINGINDEX, OmegaFrame, SIGMASLOPE, ASPECTRATIO;
+extern float TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS, PhysicalTime, PhysicalTimeInitial;
+extern float LAMBDADOUBLING;
+
+extern float *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *Rmed_d, *mean_dens_d, *mean_energy_d;
+extern float *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array_d;
+extern float *Vtheta_d, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
 
 float  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, *CellAbscissa,        \
 csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
 
 extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
+
+
 __host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, float *Vtheta, float step)
 {
-  if(OpenInner == YES) OpenBoundary ();
+  if(OpenInner) OpenBoundary ();
 
-  if (NonReflecting == YES)
-  {
+  if (NonReflecting == YES){
     if (Adiabatic) ComputeSoundSpeed ();
-
-    //NonReflectingBoundary (Dens, energy, Vrad);
-    gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+    NonReflectingBoundary (Dens, Energy, Vrad);
   }
-  if (Evanescent == YES) EvanescentBoundary (Vrad, Vtheta, step);
+  if (Evanescent == YES) EvanescentBoundary (Vrad, Vtheta, Dens, Energy, step);
+  if (OuterSourceMass == YES) printf("hola\n" );
 }
 
 __host__ void NonReflectingBoundary (float *Dens, float *Energy, float *Vrad)
@@ -38,14 +43,14 @@ __host__ void NonReflectingBoundary (float *Dens, float *Energy, float *Vrad)
   i = 1;
   dangle = (pow(Rinf[i],-1.5)-1.0)/(.5*(cs0_r+cs1_r));
   dangle *= (Rmed[i] - Rmed[i-1]);
-  i_angle = (int)(dangle/2.0/M_PI*(float)NSEC+.5);
+  i_angle = (int)(dangle/2.0/M_PI*(double)NSEC+.5);
 
-
+  printf("%d\n", i_angle);
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
   dangle2 *= (Rmed[i]-Rmed[i-1]);
-  i_angle2 = (int)(dangle2/2.0/M_PI*(float)NSEC+.5);
-
+  i_angle2 = (int)(dangle2/2.0/M_PI*(double)NSEC+.5);
+  printf("%d\n", i_angle2);
 
   NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(Dens_d, Energy_d, i_angle, NSEC, Vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
@@ -81,7 +86,7 @@ __host__ void ReduceMean (float *Dens, float *Energy)
   mean_energy_r2 = DeviceReduce(mean_energy_d2, NSEC) / NSEC;
 }
 
-__host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float step)
+__host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float *Dens, float *Energy, float step)
 {
   float Tin, Tout, DRMIN, DRMAX;
   /* Orbital period at inner and outer boundary */
@@ -92,14 +97,12 @@ __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float step)
   DRMAX = Rmed[NRAD-1]*0.84;
 
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
-  for (int i = 0; i < NRAD; i++) AspectRatioRmed[i] = AspectRatio(Rmed[i]);
-
   gpuErrchk(cudaMemcpy(viscosity_array_d,viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(AspectRatioRmed_d,AspectRatioRmed, NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
-  EvanescentBoundaryKernel<<<dimGrid2, dimBlock2>>>(Rmed_d, Vrad_d, Vtheta_d, Energy_d, Dens_d, AspectRatioRmed_d,
-    viscosity_array_d, DRMIN, DRMAX, NRAD, NSEC, Tin, Tout, step, G, SIGMASLOPE, FLARINGINDEX,  GLOBAL_bufarray_d,
-    OmegaFrame, SigmaMed_d, EnergyMed_d, Adiabatic, SelfGravity);
+  EvanescentBoundaryKernel<<<dimGrid2, dimBlock2>>>(Rmed_d, Vrad_d, Vtheta_d, Energy_d, Dens_d,
+    viscosity_array_d, DRMIN, DRMAX, NRAD, NSEC, Tin, Tout, step, SIGMASLOPE, FLARINGINDEX,  GLOBAL_bufarray_d,
+    OmegaFrame, SigmaMed_d, EnergyMed_d, Adiabatic, SelfGravity, ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS,
+    TRANSITIONRATIO, PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

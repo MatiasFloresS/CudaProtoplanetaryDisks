@@ -3,7 +3,7 @@ __host__ void NonReflectingBoundary (float *Dens, float *Energy, float *Vrad);
 __host__ void ReduceMean (float *Dens, float *Energy);
 __host__ void ReduceCs ();
 __host__ void MinusMean (float *Dens, float *Energy);
-__host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float step);
+__host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float *Dens, float *Energy, float step);
 __host__ void Cscudamalloc ();
 __host__ void Meancudamalloc ();
 __host__ void OpenBoundary ();

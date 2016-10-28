@@ -1,7 +1,6 @@
 #include "Main.cuh"
 
-extern int YES, NO;
-extern float *Rmed,  G,  *Radii, ECCENTRICITY;
+extern float *Rmed, *Radii, ECCENTRICITY;
 static float Xplanet, Yplanet;
 extern int GuidingCenter;
 float HillRadius;
@@ -242,15 +241,14 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
 
 
 
-__host__ void RotatePsys (PlanetarySystem *sys, float angle)
+__host__ void RotatePsys (PlanetarySystem *sys, float angle) /* Rotate by angle '-angle' */
 {
-  int nb;
-  float sint, cost, xt, yt;
+  int i, nb;
+  double sint, cost, xt, yt;
   nb = sys->nb;
   sint = sin(angle);
-  cost = sin(angle);
-  for (int i = 0; i < nb; i++)
-  {
+  cost = cos(angle);
+  for (i = 0; i < nb; i++){
     xt = sys->x[i];
     yt = sys->y[i];
     sys->x[i] = xt*cost+yt*sint;

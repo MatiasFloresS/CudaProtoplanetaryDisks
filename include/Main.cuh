@@ -9,6 +9,7 @@
 #include "math_constants.h"
 #include "cuda_runtime.h"
 
+#include "Fondam.cuh"
 #include "Types.cuh"
 #include "Kernels.cuh"
 #include "SourceEuler.cuh"

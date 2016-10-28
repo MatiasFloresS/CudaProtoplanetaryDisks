@@ -2,7 +2,7 @@
 
 extern string OUTPUTDIR;
 
-extern int NSEC, NRAD, NTOT, NINTERM, IsDisk, YES, AdvecteLabel;
+extern int NSEC, NRAD, NTOT, NINTERM, IsDisk, AdvecteLabel;
 extern int Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, Write_Density, Write_Velocity;
 
 extern float RMAX, mdcp, exces_mdcp, OmegaFrame, PhysicalTime, LostMass;

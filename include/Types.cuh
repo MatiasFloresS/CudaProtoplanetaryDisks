@@ -35,3 +35,11 @@ struct pair {
 };
 
 typedef struct pair Pair;
+
+
+#define   YES   1
+#define   NO    0
+
+#define   GET         0
+#define   MARK        1
+#define   FREQUENCY   2

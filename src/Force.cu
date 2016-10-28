@@ -2,14 +2,16 @@
 
 extern string OUTPUTDIR;
 
-extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX, G;
+extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
+
 extern float *CellAbscissa, *CellOrdinate, *Surf, *forcesxi, *forcesyi, *forcesxo;
 extern float *forcesyo, *Rmed;
+
 extern float *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d, *forcesxi_d;
 extern float *forcesyi_d, *forcesxo_d, *forcesyo_d;
 
-extern int RocheSmoothing;
-extern int size_grid, NRAD, NSEC;
+extern int RocheSmoothing, size_grid, NRAD, NSEC;
+
 extern dim3 dimGrid2, dimBlock2;
 
 __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float *Energy, int TimeStep,
@@ -91,7 +93,7 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
   gpuErrchk(cudaMemset(forcesyo_d, 0, dimfxy*sizeof(float)));
 
   ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
-    forcesxi_d, forcesyi_d, forcesxo_d, forcesyo_d, NSEC, NRAD, G, a, Rmed_d, dimfxy, rh);
+    forcesxi_d, forcesyi_d, forcesxo_d, forcesyo_d, NSEC, NRAD, a, Rmed_d, dimfxy, rh);
   gpuErrchk(cudaDeviceSynchronize());
 
   gpuErrchk(cudaMemcpy(forcesxi, forcesxi_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
@@ -120,7 +122,7 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
 __host__ float Compute_smoothing(float r)
 {
   float smooth;
-  smooth = THICKNESSSMOOTHING * AspectRatio(r) * pow(r, 1.0+FLARINGINDEX);
+  smooth = THICKNESSSMOOTHING * AspectRatioHost(r) * pow(r, 1.0+FLARINGINDEX);
   return smooth;
 }
 

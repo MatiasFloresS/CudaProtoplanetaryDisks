@@ -12,7 +12,7 @@ extern float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimuta
 extern float *VthetaInt_d, *VradInt_d, *Rmed, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
 extern float *GLOBAL_AxiSGAccr;
 
-extern float G, SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
+extern float SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
 
 extern cufftHandle planf, planb;
 
@@ -92,7 +92,7 @@ __host__ void compute_FFT ()
 __host__ void compute_Convolution ()
 {
   ComputeConvolutionKernel<<<dimGrid3, dimBlock2>>>(Gr_dc, Gphi_dc, SGP_Kr_dc, SGP_Kt_dc, SGP_Sr_dc, SGP_St_dc,
-    NSEC, G, NRAD);
+    NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -100,7 +100,7 @@ __host__ void compute_Convolution ()
 __host__ void compute_sgacc ()
 {
   ComputeSgAccKernel<<<dimGrid2, dimBlock2>>>(SG_Accr_d, SG_Acct_d, Dens_d, SGP_rstep, SGP_tstep, SGP_eps,
-    NRAD, NSEC, Rmed_d, Gr_d, Gphi_d, G);
+    NRAD, NSEC, Rmed_d, Gr_d, Gphi_d);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

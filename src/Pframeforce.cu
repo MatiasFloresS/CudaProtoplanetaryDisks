@@ -1,22 +1,21 @@
 #include "Main.cuh"
 
-extern int NRAD, NSEC, NO, size_grid, RocheSmoothing;
-extern int ForcedCircular;
-extern int Indirect_Term, SelfGravity, Cooling, CentrifugalBalance;
+extern int NRAD, NSEC, size_grid, RocheSmoothing;
+extern int ForcedCircular, Indirect_Term, SelfGravity, Cooling, CentrifugalBalance;
 
-extern float *SigmaMed, *EnergyMed, *Potential_d, G, *Rmed_d, ROCHESMOOTHING, MassTaper, *q0, \
-*PlanetMasses, *q1, *Pressure, *Pressure_d, *SoundSpeed, *SoundSpeed_d, *Rmed, *viscosity_array;
+extern float *SigmaMed, *EnergyMed, *q0, *PlanetMasses, *q1, *Pressure, *SoundSpeed, *Rmed;
+extern float *viscosity_array, *Radii, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
 
-extern float *Radii, ViscosityAlpha, *GLOBAL_bufarray, OmegaFrame, *vt_int, *SG_Accr, *SG_Accr_d, *vt_cent;
-extern float ASPECTRATIO, FLARINGINDEX, *viscosity_array_d, *vt_cent_d, *Vrad_d, *Vtheta_d;
-extern float SIGMASLOPE, SIGMA0, *SigmaInf_d, *Rinf_d, IMPOSEDDISKDRIFT, PhysicalTime, RELEASEDATE, RELEASERADIUS;
+extern float *Potential_d, *Rmed_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
+extern float *viscosity_array_d, *vt_cent_d, *Vtheta_d, *SigmaInf_d, *Rinf_d;
+
+extern float ROCHESMOOTHING, MassTaper, ViscosityAlpha, OmegaFrame, ASPECTRATIO, FLARINGINDEX;
+extern float SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT, PhysicalTime, RELEASEDATE, RELEASERADIUS;
 
 extern Pair DiskOnPrimaryAcceleration;
 static Pair IndirectTerm;
 
 extern dim3 dimGrid2, dimBlock2;
-
-
 
 __host__ void InitGasDensity (float *Dens)
 {
@@ -62,7 +61,7 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy
     smooth = smoothing*smoothing;
 
     FillForcesArraysKernel<<<dimGrid2,dimBlock2>>>(Rmed_d, NSEC, NRAD, xplanet, yplanet, smooth,
-      G, mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm);
+      mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm);
     gpuErrchk(cudaDeviceSynchronize());
   }
 }
@@ -243,7 +242,7 @@ __host__ void InitVelocities (float *Vrad, float *Vtheta)
   gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
 
   InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(viscosity_array_d, NSEC, NRAD, SelfGravity, Rmed_d,
-  G, ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,
+  ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,
   IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame, Rinf_d, vt_cent_d);
   gpuErrchk(cudaDeviceSynchronize());
 
