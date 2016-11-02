@@ -7,7 +7,7 @@ extern float VISCOSITY, ViscosityAlpha, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, 
 
 extern float *SoundSpeed_d, *Vrad_d, *Vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *Dens_d;
 extern float *viscosity_array_d,  *invRinf_d, *VthetaInt_d, *VradInt_d, *Rsup_d, *invRmed_d, *Rmed_d;
-extern float *invdiffRsup_d;
+extern float *invdiffRsup_d, *Vradial_d, *Vazimutal_d;
 
 extern float *SoundSpeed, *Rmed, *GLOBAL_bufarray, *Rsup, *invRmed, *viscosity_array, *VradInt;
 extern float *VthetaInt;
@@ -45,11 +45,10 @@ __host__ float FViscosity(float r)
   return viscosity;
 }
 
-__host__ void ComputeViscousTerms (float *Vrad, float *Vtheta, float *Dens, int option)
+__host__ void ComputeViscousTerms (float *Vradial, float *Vazimutal, float *Dens)
 {
 
-  if (ViscosityAlpha)
-  {
+  if (ViscosityAlpha){
     gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
     Make1Dprofile (1);
   }
@@ -57,20 +56,9 @@ __host__ void ComputeViscousTerms (float *Vrad, float *Vtheta, float *Dens, int 
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
   gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
 
-  if (option == 1)
-  {
-
-    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vrad_d, Vtheta_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
-      invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d, viscosity_array_d,
-      TAURP_d, invRinf_d);
-  }
-  else
-  {
-    ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(VradInt_d, VthetaInt_d, DRR_d, DPP_d, DivergenceVelocity_d, DRP_d, invdiffRsup_d,
-      invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d, viscosity_array_d,
-      TAURP_d, invRinf_d);
-  }
-
+  ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vradial_d, Vazimutal_d, DRR_d, DPP_d, DivergenceVelocity_d,
+    DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
+    viscosity_array_d, TAURP_d, invRinf_d);
   gpuErrchk(cudaDeviceSynchronize());
 }
 

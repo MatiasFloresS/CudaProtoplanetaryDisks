@@ -10,14 +10,13 @@ extern int NSEC, NRAD, size_grid;
 extern float *Vrad_d, *Vtheta_d, *Rmed_d, *invdiffRmed_d, *Rinf_d, *Dens_d, *Radii_d;
 extern float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimutal_d;
 extern float *VthetaInt_d, *VradInt_d, *Rmed, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
-extern float *GLOBAL_AxiSGAccr;
+extern float *GLOBAL_AxiSGAccr, *Radii;
 
 extern float SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
 
 extern cufftHandle planf, planb;
 
 float *Kr_aux, *Kt_aux;
-extern double *Radii2;
 
 __host__ void compute_selfgravity (float *Dens, float DeltaT, int SGUpdate, int initialization)
 {
@@ -57,9 +56,9 @@ __host__ void compute_kernel ()
   /* Aca calculo los kernels Kr y Kt en CPU ya que son constantes */
   for (i = 0; i < 2*NRAD; i++){
     if(i < NRAD)
-      u = log(Radii2[i]/Radii2[0]);
+      u = log(Radii[i]/Radii[0]);
     else
-      u = -log(Radii2[2*NRAD-i]/Radii2[0]);
+      u = -log(Radii[2*NRAD-i]/Radii[0]);
 
     for (j = 0; j < NSEC; j++){
       theta = 2.0*M_PI*(double)j  / (double)NSEC;

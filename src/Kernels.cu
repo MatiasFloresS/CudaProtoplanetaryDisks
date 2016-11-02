@@ -27,15 +27,6 @@ __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, fl
     vt2 = vt2/4.0+Rinf[i]*OmegaFrame;
     vt2 = vt2*vt2;
     VradInt[i*nsec + j] = dt*(-gradp - gradphi + vt2*invRinf[i]);
-    if ( i == 5 && j == 5)
-    {
-      printf("dt %g\n", dt);
-      printf("%g\n", gradp);
-      printf("%g\n", gradphi);
-      printf("%g\n", vt2);
-      printf("%g\n", invRinf[i]);
-      printf("%g\n", VradInt[i*nsec + j]);
-    }
   }
 
 
@@ -111,24 +102,23 @@ __global__ void UpdateVelocitiesKernel (float *VthetaInt, float *VradInt, float 
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  i+=1;
   /* Now we can update velocities
      with the viscous source term
      of Navier-Stokes equation */
 
   /* vtheta first */
-  if (i<nrad-1 && j<nsec){
+  if (i > 1 && i<nrad-1 && j<nsec){
     VthetaInt[i*nsec +j] += DeltaT*invRmed[i]*((Rsup[i]*TAURP[(i+1)*nsec+ j]-Rinf[i]*TAURP[i*nsec +j])*invdiffRsup[i] + \
     (TAUPP[i*nsec +j]-TAUPP[i*nsec + ((j-1)+nsec)%nsec])*1.0/(2.0*M_PI/nsec) + 0.5*(TAURP[i*nsec + j] + TAURP[(i+1)*nsec +j]))/ \
     (0.5*(Dens[i*nsec +j]+Dens[i*nsec + ((j-1)+nsec)%nsec]));
   }
 
   /* now vrad */
-  if (i<nrad && j<nsec){
+  if (i > 0 && i<nrad && j<nsec){
     VradInt[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*TAURR[i*nsec +j]- Rmed[i-1]*TAURR[(i-1)*nsec + j])*invdiffRmed[i] + \
     (TAURP[i*nsec + (j+1)%nsec] -TAURP[i*nsec + j])*1.0/(2.0*M_PI/nsec) - 0.5*(TAURP[i*nsec +j] + TAURP[(i-1)*nsec + j]))/ \
     (0.5*(Dens[i*nsec +j] + Dens[(i-1)*nsec + j]));
-
+    if ( i == 5 && j == 5) printf("%f\n", VradInt[i*nsec + j]);
   }
 }
 
@@ -667,20 +657,45 @@ __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DR
      DRR[i*nsec + j] = (Vradial[(i+1)*nsec + j] - Vradial[i*nsec + j])*invdiffRsup[i];
      DPP[i*nsec + j] = (Vazimutal[i*nsec + (j+1)%nsec] - Vazimutal[i*nsec + j])*invdphi*invRmed[i]+0.5* \
        (Vradial[(i+1)*nsec + j]+Vradial[i*nsec + j])*invRmed[i];
-     DivergenceVelocity[i*nsec + j] = (Vradial[i*nsec + (j+1)]*Rsup[i]-Vradial[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
+
+     if (i == 5 && j == 5)
+     {
+       printf("asd %g\n",Vazimutal[i*nsec + (j+1)%nsec] );
+       printf("asd %g\n", Vazimutal[i*nsec + j] );
+       printf("asd %g\n",invdphi);
+       printf("asd %g\n",invRmed[i] );
+
+     }
+     DivergenceVelocity[i*nsec + j] = (Vradial[(i+1)*nsec + j]*Rsup[i]-Vradial[i*nsec + j]*Rinf[i])*invdiffRsup[i] * \
        invRmed[i];
      DivergenceVelocity[i*nsec + j] += (Vazimutal[i*nsec + (j+1)%nsec]-Vazimutal[i*nsec + j])*invdphi*invRmed[i];
 
-     if (i > 0) DRP[i*nsec + j] = 0.5*(Rinf[i]*(Vazimutal[i*nsec + j]*invRmed[i]-Vazimutal[(i-1)*nsec + j])*invRmed[i-1])* \
-          invdiffRmed[i] + (Vradial[i*nsec + j]-Vradial[i*nsec + (j-1)%nsec])*invdphi*invRinf[i];
+     if (i > 0) DRP[i*nsec + j] = 0.5*(Rinf[i]*(Vazimutal[i*nsec + j]*invRmed[i]-Vazimutal[(i-1)*nsec + j]*invRmed[i-1])* \
+          invdiffRmed[i] + (Vradial[i*nsec + j]-Vradial[i*nsec + ((j-1)+nsec)%nsec])*invdphi*invRinf[i]);
    }
+
+   __syncthreads();
 
    if (i<nrad && j<nsec){ /* TAUrr and TAUpp computation */
      TAURR[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(DRR[i*nsec + j]-onethird*DivergenceVelocity[i*nsec + j]);
      TAUPP[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(DPP[i*nsec + j]-onethird*DivergenceVelocity[i*nsec + j]);
 
-     if (i > 0) TAURP[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
-         viscosity_array[i]*DRP[i*nsec + j];
+     if (i > 0)
+      TAURP[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + \
+      dens[(i-1)*nsec + ((j-1)+nsec)%nsec] + dens[i*nsec + ((j-1)+nsec)%nsec])* \
+      viscosity_array[i]*DRP[i*nsec + j];
+   }
+
+   if (i == 5 && j == 5)
+   {
+     printf("%g\n", DRR[i*nsec + j]);
+     printf("%g\n", DPP[i*nsec + j]);
+     printf("%g\n", DRP[i*nsec + j]);
+     printf("%g\n", DivergenceVelocity[i*nsec + j]);
+     printf("%g\n", TAURR[i*nsec + j]);
+     printf("%g\n", TAUPP[i*nsec + j]);
+     printf("%g\n", TAURP[i*nsec + j]);
+
    }
  }
 
@@ -1235,4 +1250,20 @@ __device__ float AspectRatioDevice(float r, float ASPECTRATIO, float TRANSITIONW
     aspectratio *= expf((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
   }
   return aspectratio;
+}
+
+__global__ void ApplySubKeplerianBoundaryKernel(float *VthetaInt, float *Rmed, float OmegaFrame, int nsec,
+  int nrad, float VKepIn, float VKepOut)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = 0;
+
+  if (j<nsec)
+    VthetaInt[i*nsec + j] = VKepIn - Rmed[i]*OmegaFrame;
+
+  i = nrad - 1;
+
+  if (j<nsec)
+    VthetaInt[i*nsec + j] = VKepOut - Rmed[i]*OmegaFrame;
+    
 }

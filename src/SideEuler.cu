@@ -12,7 +12,7 @@ extern float LAMBDADOUBLING;
 
 extern float *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *Rmed_d, *mean_dens_d, *mean_energy_d;
 extern float *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array_d;
-extern float *Vtheta_d, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d;
+extern float *Vtheta_d, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d, *VthetaInt_d;
 
 float  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, *CellAbscissa,        \
 csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
@@ -160,8 +160,16 @@ __host__ void CorrectVtheta (float *Vtheta, float domega)
 
 __host__ void ApplySubKeplerianBoundary(float *VthetaInt)
 {
-  if (!SelfGravity)
-  {
-    //VKepIn = sqrt(G*1.0/Rmed[])
+  float VKepIn, VKepOut;
+
+  if (!SelfGravity){
+    VKepIn = sqrt(G*1.0/Rmed[0] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX) * \
+      pow(AspectRatioHost(Rmed[0]), 2.0)*pow(Rmed[0], 2.0*FLARINGINDEX)));
+    VKepOut = sqrt(G*1.0/Rmed[NRAD-1] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)* \
+      pow(AspectRatioHost(Rmed[NRAD-1]), 2.0)*pow(Rmed[NRAD-1], 2.0*FLARINGINDEX)));
   }
+
+  ApplySubKeplerianBoundaryKernel<<<dimGrid, dimBlock>>>(VthetaInt_d, Rmed_d, OmegaFrame, NSEC, NRAD,
+    VKepIn, VKepOut);
+  gpuErrchk(cudaDeviceSynchronize());
 }

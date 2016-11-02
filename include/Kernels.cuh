@@ -162,3 +162,6 @@ __global__ void ConditionCFLKernel2D1 (float *Rsup, float *Rinf, float *Rmed, in
 
 __global__ void ConditionCFLKernel2D2 (float *newDT, float *DT2D, float *DT1D, float *Vmoy, float *invRmed,
   int *CFL, int nsec, int nrad, float CFLSECURITY, float DeltaT);
+
+__global__ void ApplySubKeplerianBoundaryKernel(float *VthetaInt, float *Rmed, float OmegaFrame, int nsec, 
+  int nrad, float VKepIn, float VKepOut);

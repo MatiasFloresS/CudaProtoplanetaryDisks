@@ -24,8 +24,6 @@ extern float *Surf, *invRinf, *invSurf, *invdiffRsup, *invdiffRmed, *invRmed, *T
 extern float *DensStar, *VradInt, *powRmed, *Potential, *VthetaInt, *DensInt, *VradNew;
 extern float *VthetaNew, *EnergyInt, *EnergyNew, *VthetaRes, *TempShift;
 
-extern double *Radii2;
-
 /* float host arrays */
 float *SigmaMed, *SigmaInf, *EnergyMed, *forcesxi, *forcesyi, *forcesxo, *forcesyo;
 float *fieldsrc, *vt_int, *GLOBAL_bufarray, *CoolingTimeMed, *QplusMed , *viscosity_array;
@@ -459,7 +457,6 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *Energy
 {
   /* free FillPolar1DArrays */
   free(Radii);
-  free(Radii2);
   free(Rinf);
   free(Rmed);
   free(Rsup);
@@ -639,15 +636,13 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
     gpuErrchk(cudaMalloc((void**)&Kt_aux_d,  2*size_grid*sizeof(float)));
     gpuErrchk(cudaMalloc((void**)&SG_Accr_d, size_grid*sizeof(float)));
     gpuErrchk(cudaMalloc((void**)&SG_Acct_d, size_grid*sizeof(float)));
-
-    gpuErrchk(cudaMalloc((void**)&Vradial_d,   size_grid*sizeof(float)));
-    gpuErrchk(cudaMalloc((void**)&Vazimutal_d, size_grid*sizeof(float)));
-    gpuErrchk(cudaMemset(Vradial_d, 0, size_grid*sizeof(float)));
-    gpuErrchk(cudaMemset(Vazimutal_d, 0, size_grid*sizeof(float)));
-
     gpuErrchk(cudaMalloc((void**)&axifield_d, NRAD*sizeof(float)));
   }
 
+  gpuErrchk(cudaMalloc((void**)&Vradial_d,   size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Vazimutal_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMemset(Vradial_d, 0, size_grid*sizeof(float)));
+  gpuErrchk(cudaMemset(Vazimutal_d, 0, size_grid*sizeof(float)));
 
   /* cudaMalloc ComputeForce */
   gpuErrchk(cudaMalloc(&forcesxi_d, dimfxy*sizeof(float)));
