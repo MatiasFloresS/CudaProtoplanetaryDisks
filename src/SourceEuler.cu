@@ -242,15 +242,37 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
       CrashedEnergy = DetectCrash (Energy);
       if (CrashedDens == YES || CrashedEnergy == YES){
         fprintf(stdout, "\nCrash! at time %d\n", PhysicalTime);
+        printf("c");
       }
+      else
+        printf(".");
       // if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
       ComputePressureField ();
       Substep1 (Dens, Vrad, Vtheta, dt, init);
-      exit(1);
       Substep2 (dt);
       ActualiseGasVrad (Vrad, VradNew);
       ActualiseGasVtheta (Vtheta, VthetaNew);
+
+      gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      FILE *f;
+
+      f = fopen("vrad.txt","w");
+      for (int i = 0; i < NRAD*NSEC; i++) {
+        fprintf(f, "%g\n", Vrad[i]);
+      }
+      fclose(f);
+
+      f = fopen("vtheta.txt","w");
+      for (int i = 0; i < NRAD*NSEC; i++) {
+        fprintf(f, "%g\n", Vtheta[i]);
+      }
+      fclose(f);
+
+      exit(1);
+
+      
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
 
       if (Adiabatic){
@@ -258,8 +280,10 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
         gpuErrchk(cudaMemcpy(Vazimutal_d, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
         ComputeViscousTerms (Vrad, Vtheta, Dens);
         gpuErrchk(cudaMemcpy(Vrad_d, Vradial_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
-        gpuErrchk(cudaMemcpy(Vtheta_d, Vazimutal_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice))
+        gpuErrchk(cudaMemcpy(Vtheta_d, Vazimutal_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
+
         Substep3 (Dens, dt);
+
         ActualiseGasEnergy (Energy, EnergyNew);
       }
       Transport (Dens, Vrad, Vtheta, Energy, Label, dt);
@@ -311,12 +335,16 @@ __host__ void Substep1 (float *Dens, float *Vrad, float *Vtheta, float dt, int i
     ApplySubKeplerianBoundary(VthetaInt);
 }
 
+
+
 __host__ void Substep2 (float dt)
 {
   Substep2Kernel<<<dimGrid2, dimBlock2>>>(Dens_d, VradInt_d, VthetaInt_d, TemperInt_d, NRAD, NSEC, CVNR, invdiffRmed_d,
   invdiffRsup_d, DensInt_d, Adiabatic, Rmed_d, dt, VradNew_d, VthetaNew_d, Energy_d, EnergyInt_d);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
+
 
 __host__ void Substep3 (float *Dens, float dt)
 {
@@ -442,13 +470,6 @@ __host__ void ActualiseGasEnergy (float *Energy, float *EnergyNew)
 
 __host__ void Substep1cudamalloc (float *Vrad, float *Vtheta)
 {
-  //gpuErrchk(cudaMemcpy(TemperInt_d, TemperInt,           size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(DensInt_d, DensInt,               size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(VradNew_d, VradNew,               size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(VthetaNew_d, VthetaNew,           size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(energyInt_d, energyInt,           size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(Qplus_d, Qplus,                   size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(energyNew_d, energyNew,           size_grid*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(EnergyMed_d, EnergyMed,           NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed,             NRAD*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(QplusMed_d, QplusMed,             NRAD*sizeof(float), cudaMemcpyHostToDevice));

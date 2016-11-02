@@ -106,11 +106,13 @@ __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float *Dens, float
   gpuErrchk(cudaDeviceSynchronize());
 }
 
+
 __host__ void OpenBoundary ()
 {
   OpenBoundaryKernel<<<dimGrid, dimBlock>>> (Vrad_d, Dens_d, Energy_d, NSEC, SigmaMed);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
 
 __host__ Pair ComputeAccel (Force *force, float *Dens, float x, float y, float rsmoothing, float mass)
 {
@@ -127,10 +129,14 @@ __host__ Pair ComputeAccel (Force *force, float *Dens, float x, float y, float r
   return acceleration;
 }
 
+
+
 __host__ void DivisePolarGrid (float *Num, float *Denom, float *Res)
 {
   //DivisePolarGridKernel<<<dimGrid2, dimBlock2>>> (res_d, num_d, denom_d, NRAD, NSEC);
 }
+
+
 
 __host__ void InitComputeAccel ()
 {
@@ -144,6 +150,8 @@ __host__ void InitComputeAccel ()
 
 }
 
+
+
 __host__ void InitComputeAccelDevice()
 {
   gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(float)));
@@ -152,11 +160,15 @@ __host__ void InitComputeAccelDevice()
   gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(float), cudaMemcpyHostToDevice));
 }
 
+
+
 __host__ void CorrectVtheta (float *Vtheta, float domega)
 {
   CorrectVthetaKernel<<<dimGrid2, dimBlock2>>>(Vtheta_d, domega, Rmed_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
+
 
 __host__ void ApplySubKeplerianBoundary(float *VthetaInt)
 {
