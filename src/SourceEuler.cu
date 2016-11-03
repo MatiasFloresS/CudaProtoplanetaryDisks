@@ -20,7 +20,7 @@ extern float SGP_eps, mdcp, TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
 extern float LAMBDADOUBLING, PhysicalTimeInitial;
 
 extern float *GLOBAL_bufarray, *vt_int, *SigmaInf, *CoolingTimeMed, *QplusMed , *viscosity_array;
-extern float *SG_Accr, *array, *Qplus, *SigmaMed, *QplusMed, *EnergyMed, *CellOrdinate;
+extern float *SG_Accr, *array, *Qplus, *SigmaMed, *QplusMed, *EnergyMed, *CellOrdinate, *CellAbscissa;
 
 extern float *Dens_d, *Rmed_d, *SG_Accr_d, *SG_Acct_d, *GLOBAL_bufarray_d, *array_d, *invRinf_d;
 extern float *Qplus_d, *EnergyInt_d, *EnergyNew_d, *VradNew_d, *invdiffRsup_d, *Potential_d;
@@ -104,17 +104,20 @@ __host__ void FillPolar1DArrays ()
     }
   }
 
+  float numero=0;
   for (i = 0; i < NRAD; i++){
     Rinf[i] = Radii[i];
     Rsup[i] = Radii[i+1];
     Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
     Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
-    Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]/(float)NSEC);
+    Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(float)NSEC;
+    numero += Surf[i];
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
     invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
     invRinf[i] = 1.0/Rinf[i];
   }
+  printf("sumaSurf = %g\n", numero);
 
   Rinf[NRAD] = Radii[NRAD];
 
@@ -168,6 +171,69 @@ __host__ void InitEuler (float *Vrad, float *Vtheta, float *Dens, float *Energy)
   ComputePressureField ();
   ComputeTemperatureField ();
   InitGasVelocities (Vrad, Vtheta);
+
+
+  gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(Pressure, Pressure_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(Temperature, Temperature_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(Vrad, Vrad_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(CellOrdinate, CellOrdinate_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(CellAbscissa, CellAbscissa_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
+  FILE *f;
+
+  f = fopen("SoundSpeed.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", SoundSpeed[i]);
+  }
+  fclose(f);
+
+  f = fopen("Pressure.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", Pressure[i]);
+  }
+  fclose(f);
+
+  f = fopen("Temperature.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", Temperature[i]);
+  }
+  fclose(f);
+
+  f = fopen("Vrad.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", Vrad[i]);
+  }
+  fclose(f);
+
+  f = fopen("Vtheta.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", Vtheta[i]);
+  }
+  fclose(f);
+
+  f = fopen("ordinate.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", CellOrdinate[i]);
+  }
+  fclose(f);
+
+  f = fopen("abscisa.txt", "w");
+
+  for (int i = 0; i < NRAD*NSEC; i++) {
+    fprintf(f, "%g\n", CellAbscissa[i]);
+  }
+  fclose(f);
+
+
+
 }
 
 
@@ -272,7 +338,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
 
       exit(1);
 
-      
+
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
 
       if (Adiabatic){
@@ -357,6 +423,7 @@ __host__ void Substep3 (float *Dens, float dt)
   gpuErrchk(cudaDeviceSynchronize());
 }
 
+
 __host__ void Computecudamalloc (float *Energy)
 {
 
@@ -373,22 +440,28 @@ __host__ void Computecudamalloc (float *Energy)
   gpuErrchk(cudaMalloc((void**)&DensInt_d,     size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&VradNew_d,     size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&VthetaNew_d,   size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&EnergyInt_d,   size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&Potential_d,   size_grid*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&VthetaInt_d,   size_grid*sizeof(float)));
-  gpuErrchk(cudaMalloc((void**)&Energy_d,   size_grid*sizeof(float)));
+
 
   gpuErrchk(cudaMemset(Pressure_d, 0, size_grid*sizeof(float)));
   gpuErrchk(cudaMemset(SoundSpeed_d, 0, size_grid*sizeof(float)));
-  gpuErrchk(cudaMemset(Energy_d, 0, size_grid*sizeof(float)));
+  gpuErrchk(cudaMemset(VradNew_d, 0, size_grid*sizeof(float)));
+  gpuErrchk(cudaMemset(VthetaNew_d, 0, size_grid*sizeof(float)));
 
   gpuErrchk(cudaMalloc((void**)&SigmaInf_d,        NRAD*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&vt_cent_d,         (NRAD+1)*sizeof(float)));
   gpuErrchk(cudaMalloc((void**)&viscosity_array_d, (NRAD+1)*sizeof(float)));
 
   gpuErrchk(cudaMemcpy(SigmaInf_d, SigmaInf,               NRAD*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Energy_d, Energy,             size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
+
+  if (Adiabatic){
+    gpuErrchk(cudaMalloc((void**)&Energy_d,   size_grid*sizeof(float)));
+    gpuErrchk(cudaMalloc((void**)&EnergyInt_d,   size_grid*sizeof(float)));
+    gpuErrchk(cudaMemset(Energy_d, 0, size_grid*sizeof(float)));
+    gpuErrchk(cudaMemcpy(Energy_d, Energy,             size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  }
 }
 
 __host__ float ConstructSequence (float *u, float *v, int n)
@@ -402,6 +475,7 @@ __host__ float ConstructSequence (float *u, float *v, int n)
   return lapl;
 }
 
+
 __host__ void Init_azimutalvelocity_withSG (float *Vtheta)
 {
   // !SGZeroMode
@@ -412,6 +486,7 @@ __host__ void Init_azimutalvelocity_withSG (float *Vtheta)
     GLOBAL_bufarray_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
 
 __host__ int DetectCrash (float *array)
 {
@@ -503,6 +578,7 @@ __host__ float CircumPlanetaryMass (float *Dens, PlanetarySystem *sys)
   xpl = sys->x[0];
   ypl = sys->y[0];
 
+  printf("%g %g\n", xpl, ypl);
   CircumPlanetaryMassKernel<<<dimGrid2, dimBlock2>>> (Dens_d, Surf_d, CellAbscissa_d, CellOrdinate_d, xpl, ypl, NRAD, NSEC, \
     HillRadius, mdcp0_d);
   gpuErrchk(cudaDeviceSynchronize());

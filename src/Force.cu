@@ -7,10 +7,10 @@ extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
 extern float *CellAbscissa, *CellOrdinate, *Surf, *forcesxi, *forcesyi, *forcesxo;
 extern float *forcesyo, *Rmed;
 
-extern float *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d, *forcesxi_d;
-extern float *forcesyi_d, *forcesxo_d, *forcesyo_d;
+extern float *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d;
+extern float *fxi_d, *fxo_d, *fyi_d, *fyo_d;
 
-extern int RocheSmoothing, size_grid, NRAD, NSEC;
+extern int RocheSmoothing, size_grid, NRAD, NSEC, SelfGravity;
 
 extern dim3 dimGrid2, dimBlock2;
 
@@ -51,7 +51,7 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
       fprintf(stderr, "Aborted.\n");
     }
 
-    fprintf(out, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n", TimeStep, \
+    fprintf(out, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n", TimeStep, \
       x*force->fy_inner-y*force->fx_inner, \
       x*force->fy_outer-y*force->fx_outer, \
       x*force->fy_ex_inner-y*force->fx_ex_inner, \
@@ -61,6 +61,23 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
       vx*force->fx_ex_inner+vy*force->fy_ex_inner , \
       vx*force->fx_ex_outer+vy*force->fy_ex_outer , PhysicalTime);
     fclose (out);
+
+    if (!SelfGravity){
+      for (int k = 0; k < dimfxy; k++) {
+        sprintf( filename2, "%s%d_%d.dat", filename, i, k);
+        out = fopen(filename2, "a");
+        if (out == NULL){
+          fprintf(stderr, "Can't open %s\n", filename2);
+          fprintf(stderr, "Aborted.\n");
+        }
+        fprintf(out, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n", TimeStep, \
+          x*globalforce[2*dimfxy+k]-y*globalforce[k], \
+          x*globalforce[3*dimfxy+k]-y*globalforce[dimfxy+k], \
+          vx*globalforce[k]+vy*globalforce[2*dimfxy+k], \
+          vx*globalforce[dimfxy+k]+vy*globalforce[3*dimfxy+k], PhysicalTime);
+        fclose (out);
+      }
+    }
   }
 }
 
@@ -85,27 +102,18 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
 {
   float *globalforce;
   int k;
+
   globalforce = force->GlobalForce;
 
-  gpuErrchk(cudaMemset(forcesxi_d, 0, dimfxy*sizeof(float)));
-  gpuErrchk(cudaMemset(forcesxo_d, 0, dimfxy*sizeof(float)));
-  gpuErrchk(cudaMemset(forcesyi_d, 0, dimfxy*sizeof(float)));
-  gpuErrchk(cudaMemset(forcesyo_d, 0, dimfxy*sizeof(float)));
+  for (k = 0; k < dimfxy; k++) {
+    ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
+      NSEC, NRAD, a, Rmed_d, dimfxy, rh, fxi_d, fxo_d, fyi_d, fyo_d, k);
+    gpuErrchk(cudaDeviceSynchronize());
 
-  ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
-    forcesxi_d, forcesyi_d, forcesxo_d, forcesyo_d, NSEC, NRAD, a, Rmed_d, dimfxy, rh);
-  gpuErrchk(cudaDeviceSynchronize());
-
-  gpuErrchk(cudaMemcpy(forcesxi, forcesxi_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(forcesyi, forcesyi_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(forcesxo, forcesxo_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(forcesyo, forcesyo_d, dimfxy*sizeof(float), cudaMemcpyDeviceToHost));
-
-  for (k = 0; k < dimfxy; k++){
-    globalforce[k]            = forcesxi[k];
-    globalforce[k + dimfxy]   = forcesxo[k];
-    globalforce[k + 2*dimfxy] = forcesyi[k];
-    globalforce[k + 3*dimfxy] = forcesyo[k];
+    globalforce[k]            = DeviceReduce(fxi_d, NRAD*NSEC);
+    globalforce[k + dimfxy]   = DeviceReduce(fxo_d, NRAD*NSEC);
+    globalforce[k + 2*dimfxy] = DeviceReduce(fyi_d, NRAD*NSEC);
+    globalforce[k + 3*dimfxy] = DeviceReduce(fyo_d, NRAD*NSEC);
   }
 
   force->fx_inner = globalforce[0];

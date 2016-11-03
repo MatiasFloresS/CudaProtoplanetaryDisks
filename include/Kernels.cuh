@@ -52,9 +52,9 @@ __host__ float DeviceReduce (float *in, int N) ;
 
 __global__ void MultiplyPolarGridbyConstantKernel (float *Dens, int nrad, int nsec, float ScalingFactor);
 
-__global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, float *Surf, float *Dens, float x, float y, float rsmoothing,
-  float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec, int nrad, float a, float *Rmed,
-  int dimfxy, float rh);
+__global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, float *Surf, float *Dens, float x,
+  float y, float rsmoothing, int nsec, int nrad, float a, float *Rmed, int dimfxy, float rh, float *fxi,
+  float *fxo, float *fyi, float *fyo, int k);
 
 __global__ void OpenBoundaryKernel (float *Vrad, float *Dens, float *Energy, int nsec, float *SigmaMed);
 
@@ -102,7 +102,6 @@ __global__ void ComputeSgAccKernel (float *SG_Accr, float *SG_Acct, float *Dens 
 
 __global__ void Update_sgvelocityKernel (float *Vradial, float *Vazimutal, float *SG_Accr, float *SG_Acct, float *Rinf,
   float *Rmed, float *invdiffRmed, float dt, int nrad, int nsec);
-
 
 
 __global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
@@ -163,5 +162,7 @@ __global__ void ConditionCFLKernel2D1 (float *Rsup, float *Rinf, float *Rmed, in
 __global__ void ConditionCFLKernel2D2 (float *newDT, float *DT2D, float *DT1D, float *Vmoy, float *invRmed,
   int *CFL, int nsec, int nrad, float CFLSECURITY, float DeltaT);
 
-__global__ void ApplySubKeplerianBoundaryKernel(float *VthetaInt, float *Rmed, float OmegaFrame, int nsec, 
+__global__ void ApplySubKeplerianBoundaryKernel(float *VthetaInt, float *Rmed, float OmegaFrame, int nsec,
   int nrad, float VKepIn, float VKepOut);
+
+__device__ inline void MyAtomicAdd (float *address, float value);

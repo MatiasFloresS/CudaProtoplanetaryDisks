@@ -66,7 +66,7 @@ __global__ void Substep3Kernel (float *Dens, float *Qplus, float *viscosity_arra
   __syncthreads();
   if (i == 1 && j == 0)
   {
-    printf("Dens = %g\n",Dens[i*nsec + j]);
+    printf("Dens =  %g\n",Dens[i*nsec + j]);
     printf("Qplus = %g\n",Qplus[i*nsec+j]);
     printf("TAURR = %g\n",TAURR[i*nsec + j]);
     printf("TAURP = %g\n",TAURP[i*nsec + j]);
@@ -139,8 +139,8 @@ __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<nrad && j<nsec){
-    CellAbscissa[i*nsec+j] = Rmed[i] * cosf((2.0*M_PI*(float)j)/(float)nsec);
-    CellOrdinate[i*nsec+j] = Rmed[i] * sinf((2.0*M_PI*(float)j)/(float)nsec);
+    CellAbscissa[i*nsec+j] = Rmed[i] * cos((2.0*M_PI*(float)j)/(float)nsec);
+    CellOrdinate[i*nsec+j] = Rmed[i] * sin((2.0*M_PI*(float)j)/(float)nsec);
   }
 }
 
@@ -171,7 +171,9 @@ __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *Dens, floa
   int i = threadIdx.y + blockDim.y*blockIdx.y;
 
   if (i<nrad && j<nsec){
-    if (!Adiabatic) Pressure[i*nsec + j] = Dens[i*nsec + j]*SoundSpeed[i*nsec + j]*SoundSpeed[i*nsec + j];
+    if (!Adiabatic)
+      Pressure[i*nsec + j] = Dens[i*nsec + j]*SoundSpeed[i*nsec + j]*SoundSpeed[i*nsec + j];
+
     /* Since SoundSpeed is not update from initialization, cs remains axisymmetric*/
     else Pressure[i*nsec + j] = (ADIABATICINDEX-1.0)*Energy[i*nsec + j];
   }
@@ -604,9 +606,9 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-    float omega, r, ri;
+    float omega, r, ri, algo;
 
-    if (i < nrad+1 && j < nsec){
+    if (i <= nrad && j < nsec){
       if (i == nrad){
         r = Rmed[nrad - 1];
         ri = Rinf[nrad - 1];
@@ -640,48 +642,43 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
 
 
 __global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, float *Surf, float *Dens, float x,
-  float y, float rsmoothing, float *forcesxi, float *forcesyi, float *forcesxo, float *forcesyo, int nsec,
-  int nrad, float a, float *Rmed, int dimfxy, float rh)
+  float y, float rsmoothing, int nsec, int nrad, float a, float *Rmed, int dimfxy, float rh, float *fxi,
+  float *fxo, float *fyi, float *fyo, int k)
 {
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-    int j = threadIdx.x + blockDim.x*blockIdx.x;
-    int i = threadIdx.y + blockDim.y*blockIdx.y;
-    int k;
-    float cellmass, dx, dy, d2, InvDist3, dist2, distance, resultxi, resultyi;
-    float resultxo, resultyo, hillcutfactor, hill_cut;
+  float cellmass, dx, dy, d2, InvDist3, dist2, distance, resultxi, resultyi;
+  float resultxo, resultyo, hillcutfactor, hill_cut;
 
-    if (i<nrad && j<nsec){
-      cellmass = Surf[i] * Dens[i*nsec + j];
-      dx = CellAbscissa[i*nsec + j] - x;
-      dy = CellOrdinate[i*nsec + j] - y;
-      d2 = dx*dx + dy*dy;
-      dist2 = d2 + rsmoothing*rsmoothing;
-      distance = sqrtf(dist2);
-      InvDist3 = 1.0/dist2/distance;
+  if (i<nrad && j<nsec){
+    cellmass = Surf[i]* Dens[i*nsec + j];
+    dx = CellAbscissa[i*nsec + j] - x;
+    dy = CellOrdinate[i*nsec + j] - y;
+    d2 = dx*dx + dy*dy;
+    dist2 = d2 + rsmoothing*rsmoothing;
+    distance = sqrtf(dist2);
+    InvDist3 = 1.0/dist2/distance;
 
-      for (k = 0; k < dimfxy; k++){
-        hillcutfactor =  (float) k / (float)(dimfxy-1);
-        if (k != 0){
-          rh *= hillcutfactor;
-          hill_cut = 1.-expf(-d2/(rh*rh));
-        }
-        else hill_cut = 1.;
+    hillcutfactor =  (float) k / (float)(dimfxy-1);
+    if (k != 0){
+      rh *= hillcutfactor;
+      hill_cut = 1.-expf(-d2/(rh*rh));
+    }
+    else
+      hill_cut = 1.;
 
-        if (Rmed[i] < a){
-          resultxi = G * cellmass * dx * InvDist3 * hill_cut;
-          resultyi = G * cellmass * dy * InvDist3 * hill_cut;
-          atomicAdd(&(forcesxi[k]), resultxi);
-          atomicAdd(&(forcesyi[k]), resultyi);
-        }
-        else{
-          resultxo = G * cellmass * dx * InvDist3 * hill_cut;
-          resultyo = G * cellmass * dy * InvDist3 * hill_cut;
-          atomicAdd(&(forcesxo[k]), resultxo);
-          atomicAdd(&(forcesyo[k]), resultyo);
-        }
-      }
+    if (Rmed[i] < a){
+        fxi[i*nsec + j] = G * cellmass * dx * InvDist3 * hill_cut;
+        fyi[i*nsec + j] = G * cellmass * dy * InvDist3 * hill_cut;
+    }
+    else{
+      fxo[i*nsec + j] = G * cellmass * dx * InvDist3 * hill_cut;
+      fyo[i*nsec + j] = G * cellmass * dy * InvDist3 * hill_cut;
     }
   }
+}
+
 
 
 __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity,
