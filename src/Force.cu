@@ -104,6 +104,11 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
   int k;
 
   globalforce = force->GlobalForce;
+  
+  gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(float)));
+  gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(float)));
+  gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(float)));
+  gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(float)));
 
   for (k = 0; k < dimfxy; k++) {
     ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,

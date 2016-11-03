@@ -286,14 +286,13 @@ __host__ int main (int argc, char *argv[])
 
   MultiplyPolarGridbyConstant(Dens);
 
-  for (int i = 0; i <= 1000; i++){
+  for (int i = 0; i <= 500; i++){
     InnerOutputCounter++;
 
     if (InnerOutputCounter == 1){
       InnerOutputCounter = 0;
       WriteBigPlanetSystemFile (sys, TimeStep);
       UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
-      exit(1);
     }
 
     if (NINTERM * (TimeStep = (i / NINTERM)) == i){
@@ -644,11 +643,6 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMalloc(&fxo_d, NRAD*NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc(&fyi_d, NRAD*NSEC*sizeof(float)));
   gpuErrchk(cudaMalloc(&fyo_d, NRAD*NSEC*sizeof(float)));
-
-  gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(float)));
-  gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(float)));
-  gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(float)));
-  gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(float)));
 
   /* cudaMalloc FillPolar1DArrays */
   gpuErrchk(cudaMalloc((void**)&Radii_d,           (NRAD+1)*sizeof(float)));

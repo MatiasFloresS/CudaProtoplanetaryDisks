@@ -77,6 +77,7 @@ __host__ void ComputeIndirectTerm ()
   }
 }
 
+
 __host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, PlanetarySystem *sys, float dt)
 {
   int NbPlanets, k;
@@ -100,6 +101,7 @@ __host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, P
     }
   }
 }
+
 
 __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
 {

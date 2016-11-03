@@ -66,12 +66,12 @@ __global__ void Substep3Kernel (float *Dens, float *Qplus, float *viscosity_arra
   __syncthreads();
   if (i == 1 && j == 0)
   {
-    printf("Dens =  %g\n",Dens[i*nsec + j]);
-    printf("Qplus = %g\n",Qplus[i*nsec+j]);
-    printf("TAURR = %g\n",TAURR[i*nsec + j]);
-    printf("TAURP = %g\n",TAURP[i*nsec + j]);
-    printf("TAUPP = %g\n",TAUPP[i*nsec + j]);
-    printf("DivergenceVelocity = %g\n",DivergenceVelocity[i*nsec + j]);
+    //printf("Dens =  %g\n",Dens[i*nsec + j]);
+    //printf("Qplus = %g\n",Qplus[i*nsec+j]);
+    //printf("TAURR = %g\n",TAURR[i*nsec + j]);
+    //printf("TAURP = %g\n",TAURP[i*nsec + j]);
+    //printf("TAUPP = %g\n",TAUPP[i*nsec + j]);
+    //printf("DivergenceVelocity = %g\n",DivergenceVelocity[i*nsec + j]);
   }
 
   if (i==0 && j<nsec){
@@ -516,8 +516,8 @@ __global__ void NonReflectingBoundaryKernel (float *Dens, float *Energy, int i_a
     Vrad_med = -SoundSpeed[i*nsec + j]*(Dens[i*nsec + j]-SigmaMed)/SigmaMed;
     Vrad[i*nsec + j] = 2.0*Vrad_med-Vrad[(i+1)*nsec + j];
     if (j == 0) {
-      printf("vrad = %g\n",Vrad[i*nsec+j] );
-      printf("vrad = %g\n",Vrad[(i+1)*nsec+j] );
+      //printf("vrad = %g\n",Vrad[i*nsec+j] );
+      //printf("vrad = %g\n",Vrad[(i+1)*nsec+j] );
     }
   }
 
@@ -719,10 +719,10 @@ __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DR
     }
     if (i == 1 && j == 0)
     {
-      printf("TAURR = %g\n",TAURR[i*nsec + j]);
-      printf("TAURP = %g\n",TAURP[i*nsec + j]);
-      printf("TAUPP = %g\n",TAUPP[i*nsec + j]);
-      printf("DivergenceVelocity = %g\n",DivergenceVelocity[i*nsec + j]);
+      //printf("TAURR = %g\n",TAURR[i*nsec + j]);
+      //printf("TAURP = %g\n",TAURP[i*nsec + j]);
+      //printf("TAUPP = %g\n",TAUPP[i*nsec + j]);
+      //printf("DivergenceVelocity = %g\n",DivergenceVelocity[i*nsec + j]);
     }
 
    }

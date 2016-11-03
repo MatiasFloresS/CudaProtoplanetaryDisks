@@ -23,7 +23,7 @@ extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
 __host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, float *Vtheta, float step)
 {
-  if(OpenInner) OpenBoundary ();
+  if(OpenInner == YES) OpenBoundary ();
 
   if (NonReflecting == YES){
     if (Adiabatic) ComputeSoundSpeed ();

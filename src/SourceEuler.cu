@@ -279,6 +279,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     if (IsDisk == YES){
       /* Indirect term star's potential computed here */
       DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
+
       /* Gravitational potential from star and planet(s) is computed and stored here */
       FillForcesArrays (sys, Dens, Energy);
 
@@ -297,16 +298,18 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
       if (IsDisk == YES) CorrectVtheta (Vtheta, domega);
       OmegaFrame = OmegaNew;
     }
+    //printf("OmegaFrame%g\n", OmegaFrame);
+
     RotatePsys (sys, OmegaFrame*dt);
 
     /* Now we update gas */
     if (IsDisk == YES){
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
       gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-      gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      //gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       CrashedDens = DetectCrash (Dens);
-      CrashedEnergy = DetectCrash (Energy);
-      if (CrashedDens == YES || CrashedEnergy == YES){
+      //CrashedEnergy = DetectCrash (Energy);
+      if (CrashedDens == YES){//} || CrashedEnergy == YES){
         fprintf(stdout, "\nCrash! at time %d\n", PhysicalTime);
         printf("c");
       }
@@ -314,6 +317,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
         printf(".");
       // if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
+      exit(1);
       ComputePressureField ();
       Substep1 (Dens, Vrad, Vtheta, dt, init);
       Substep2 (dt);
@@ -322,22 +326,6 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
 
       gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-      FILE *f;
-
-      f = fopen("vrad.txt","w");
-      for (int i = 0; i < NRAD*NSEC; i++) {
-        fprintf(f, "%g\n", Vrad[i]);
-      }
-      fclose(f);
-
-      f = fopen("vtheta.txt","w");
-      for (int i = 0; i < NRAD*NSEC; i++) {
-        fprintf(f, "%g\n", Vtheta[i]);
-      }
-      fclose(f);
-
-      exit(1);
-
 
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
 
@@ -578,7 +566,6 @@ __host__ float CircumPlanetaryMass (float *Dens, PlanetarySystem *sys)
   xpl = sys->x[0];
   ypl = sys->y[0];
 
-  printf("%g %g\n", xpl, ypl);
   CircumPlanetaryMassKernel<<<dimGrid2, dimBlock2>>> (Dens_d, Surf_d, CellAbscissa_d, CellOrdinate_d, xpl, ypl, NRAD, NSEC, \
     HillRadius, mdcp0_d);
   gpuErrchk(cudaDeviceSynchronize());

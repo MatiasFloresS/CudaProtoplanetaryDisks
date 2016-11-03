@@ -94,7 +94,7 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
     fprintf(stderr, "Can't write 'bigplanet.dat' file. Aborting.\n");
     exit(1);
   }
-  fprintf (output, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n",
+  fprintf (output, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n",
   TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame, mdcp, exces_mdcp);
   fclose(output);
 }
@@ -106,7 +106,7 @@ __host__ void WritePlanetFile (int TimeStep, int n)
   char name2[256];
   string input;
   input = OUTPUTDIR + "planet";
-  printf("Updating 'planet%d.dat'...\n",n);
+  printf("Updating 'planet%d.dat'... ",n);
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
   sprintf (name2, "%s%d.dat", name, n);
@@ -115,7 +115,7 @@ __host__ void WritePlanetFile (int TimeStep, int n)
     fprintf(stderr, "Can't write 'planet%d,dat' file. Aborting.\n", n);
     exit(1);
   }
-  fprintf (output, "%d\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\t%.15f\n",
+  fprintf (output, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n",
   TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame, mdcp, exces_mdcp);
   fclose(output);
   printf("done\n");
@@ -166,7 +166,7 @@ __host__ void WriteDiskPolar(float *array, char *inputname, int number)
     fprintf(stderr, "Unable to open '%s'\n", name2);
     exit(1);
   }
-  printf("Writting '%s%d.dat'...\n", nameinput, number);
+  printf("Writting '%s%d.dat'... ", nameinput, number);
   fwrite(array, sizeof(float), NRAD*NSEC, dump);
   fclose(dump);
   printf("done\n");
