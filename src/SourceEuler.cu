@@ -263,16 +263,19 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
   dt = DT / gastimestepcfl;
 
   while (dtemp < 0.99999*DT){
+    printf("dtemp = %g\n",dtemp );
     MassTaper = PhysicalTime/(MASSTAPER*2.0*M_PI);
     MassTaper = (MassTaper > 1.0 ? 1.0 : pow(sin(MassTaper*M_PI/2.0), 2.0));
     if(IsDisk == YES){
       if (SloppyCFL == NO){
         gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
         dt = (DT-dtemp)/(float)gastimestepcfl;
+        printf("gast %d\n", gastimestepcfl);
       }
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys);
     }
     dtemp += dt;
+    printf("dt %g\n",dt );
     DiskOnPrimaryAcceleration.x = 0.0;
     DiskOnPrimaryAcceleration.y = 0.0;
     if (Corotating == YES) GetPsysInfo (sys, MARK);
@@ -306,10 +309,10 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     if (IsDisk == YES){
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
       gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-      //gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       CrashedDens = DetectCrash (Dens);
-      //CrashedEnergy = DetectCrash (Energy);
-      if (CrashedDens == YES){//} || CrashedEnergy == YES){
+      CrashedEnergy = DetectCrash (Energy);
+      if (CrashedDens == YES || CrashedEnergy == YES){
         fprintf(stdout, "\nCrash! at time %d\n", PhysicalTime);
         printf("c");
       }
@@ -317,15 +320,14 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
         printf(".");
       // if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
-      exit(1);
       ComputePressureField ();
       Substep1 (Dens, Vrad, Vtheta, dt, init);
       Substep2 (dt);
       ActualiseGasVrad (Vrad, VradNew);
       ActualiseGasVtheta (Vtheta, VthetaNew);
 
-      gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      //gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      //gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
 
@@ -443,13 +445,13 @@ __host__ void Computecudamalloc (float *Energy)
 
   gpuErrchk(cudaMemcpy(SigmaInf_d, SigmaInf,               NRAD*sizeof(float), cudaMemcpyHostToDevice));
 
+  gpuErrchk(cudaMalloc((void**)&Energy_d,   size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&EnergyInt_d,   size_grid*sizeof(float)));
+  gpuErrchk(cudaMemset(Energy_d, 0, size_grid*sizeof(float)));
 
-  if (Adiabatic){
-    gpuErrchk(cudaMalloc((void**)&Energy_d,   size_grid*sizeof(float)));
-    gpuErrchk(cudaMalloc((void**)&EnergyInt_d,   size_grid*sizeof(float)));
-    gpuErrchk(cudaMemset(Energy_d, 0, size_grid*sizeof(float)));
-    gpuErrchk(cudaMemcpy(Energy_d, Energy,             size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  }
+  if (Adiabatic)
+  gpuErrchk(cudaMemcpy(Energy_d, Energy,             size_grid*sizeof(float), cudaMemcpyHostToDevice));
+
 }
 
 __host__ float ConstructSequence (float *u, float *v, int n)

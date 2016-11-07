@@ -736,7 +736,7 @@ __global__ void LRMomentaKernel (float *RadMomP, float *RadMomM, float *ThetaMom
    int i = threadIdx.y + blockDim.y*blockIdx.y;
 
    if (i<nrad && j<nsec){
-     RadMomP[i*nsec + j] = Dens[i*nsec + j] * Vrad[(i)*nsec + j]; // (i+1)*nsec
+     RadMomP[i*nsec + j] = Dens[i*nsec + j] * Vrad[(i+1)*nsec + j]; // (i+1)*nsec
      RadMomM[i*nsec + j] = Dens[i*nsec + j] * Vrad[i*nsec + j];
      /* it is the angular momentum -> ThetaMomP */
      ThetaMomP[i*nsec + j] = Dens[i*nsec + j] * (Vtheta[i*nsec + (j+1)%nsec]+Rmed[i]*OmegaFrame)*Rmed[i];
