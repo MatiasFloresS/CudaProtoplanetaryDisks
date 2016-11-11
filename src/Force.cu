@@ -104,7 +104,7 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
   int k;
 
   globalforce = force->GlobalForce;
-  
+
   gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(float)));
   gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(float)));
   gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(float)));

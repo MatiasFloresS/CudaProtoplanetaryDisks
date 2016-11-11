@@ -28,7 +28,7 @@ extern float *VthetaNew, *EnergyInt, *EnergyNew, *VthetaRes, *TempShift;
 float *SigmaMed, *SigmaInf, *EnergyMed;
 float *fieldsrc, *vt_int, *GLOBAL_bufarray, *CoolingTimeMed, *QplusMed , *viscosity_array;
 float *cs1, *Qplus, *QStar, *Qbase, *cs0, *csnrm1, *csnrm2, *mean_dens, *mean_dens2;
-float *mean_energy, *mean_energy2, *array, *mdcp0, *q0, *PlanetMasses, *q1;
+float *mean_energy, *mean_energy2, *array, *mdcp0;
 float *SG_Accr, *SG_Acct, *GLOBAL_AxiSGAccr;
 
 /* float device arrays */
@@ -41,6 +41,8 @@ float *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Rmed_d, *Dens_d, *fxi_d, *f
 float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *array_d, *mdcp0_d, *axifield_d, *GLOBAL_AxiSGAccr_d;
 
 float mdcp, SGP_tstep, SGP_eps, SGP_rstep, OmegaFrame;
+
+double *q0, *PlanetMasses, *q1;
 
 extern int NRAD, NSEC, Cooling;
 extern int *NoSplitAdvection_d, *Nshift_d;
@@ -272,21 +274,18 @@ __host__ int main (int argc, char *argv[])
   /* Only gas velocities remain to be initialized */
   Initialization (Dens, Vrad, Vtheta, Energy, Label, sys);
 
+
   /* Initial gas_density is used to compute the circumplanetary mass with initial
      density field */
 
-  /* */
-  float mdcp1;
-  mdcp1 = CircumPlanetaryMass (Dens, sys); // es mdcp0, arreglar
-  mdcp = 0;
-  printf("mdcp1 = %g\n",mdcp1 );
+  mdcp = CircumPlanetaryMass (Dens, sys);
 
   EmptyPlanetSystemFile (sys);
   PhysicalTimeInitial = PhysicalTime;
 
   MultiplyPolarGridbyConstant(Dens);
 
-  for (int i = 0; i <= 500; i++){
+  for (int i = 0; i <= NTOT; i++){
     InnerOutputCounter++;
 
     if (InnerOutputCounter == 1){
@@ -454,6 +453,7 @@ __host__ void FreeCuda ()
   cudaFree(CFL_d);
 }
 
+
 __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label)
 {
   /* free FillPolar1DArrays */
@@ -558,6 +558,7 @@ __host__ void FreeArrays (float *Dens, float *Vrad, float *Vtheta, float *Energy
 
 }
 
+
 __host__ void DeviceToHostcudaMemcpy (float *Dens, float *Energy, float *Label, float *Temperature, float *Vrad, float *Vtheta)
 {
   gpuErrchk(cudaMemcpy(Dens, Dens_d,               size_grid*sizeof(float), cudaMemcpyDeviceToHost));
@@ -568,6 +569,7 @@ __host__ void DeviceToHostcudaMemcpy (float *Dens, float *Energy, float *Label, 
   if (Adiabatic)
     gpuErrchk(cudaMemcpy(Energy, Energy_d,           size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 }
+
 
 __host__ void CreateArrays () // ordenar
 {
@@ -602,11 +604,12 @@ __host__ void CreateArrays () // ordenar
   Qbase           = (float *)malloc(size_grid*sizeof(float));
   array           = (float *)malloc(size_grid*sizeof(float));
   mdcp0           = (float *)malloc(size_grid*sizeof(float));
-  q0              = (float *)malloc(400*sizeof(float));
-  q1              = (float *)malloc(400*sizeof(float));
-  PlanetMasses    = (float *)malloc(100*sizeof(float));
+  q0              = (double *)malloc(400*sizeof(double));
+  q1              = (double *)malloc(400*sizeof(double));
+  PlanetMasses    = (double *)malloc(100*sizeof(double));
 
 }
+
 
 __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta) // arreglar
 {

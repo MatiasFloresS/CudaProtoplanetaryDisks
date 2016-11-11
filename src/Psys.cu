@@ -184,9 +184,20 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   h = x*vy-y*vx;
   d = sqrt(x*x+y*y);
 
+  //printf("x %g\n", x);
+  //printf("y %g\n", y);
+  //printf("vx %g\n", vx);
+  //printf("vy %g\n", vy);
+  //printf("a %g\n", x*vy*vy-y*vx*vy);
+  //printf("a %g\n", y*vx*vx-x*vx*vy);
+
+  //printf("b %g\n",-G*m*x/d);
+  //printf("b %g\n",-G*m*y/d);
+
   Ax = x*vy*vy-y*vx*vy -G*m*x/d;
   Ay = y*vx*vx-x*vx*vy -G*m*y/d;
 
+  //printf("Ax = %g, Ay = %g\n", Ax,Ay);
   e = sqrt(Ax*Ax+Ay*Ay)/m;
   a = h*h/G/m/(1.-e*e);
   if (e == 0.0) arg = 1.0;
@@ -207,7 +218,8 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
     vyc =  a*omega*cos(M+PerihelionPA);
   }
 
-  if (e < 1e-8){
+  //printf("e = %g\n",e );
+  if (e < 1e-08){
     xc = x;
     yc = y;
     vxc = vx;
@@ -227,9 +239,11 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
       vy = vyc;
       d2 = sqrt(x*x+y*y);
       d1 = sqrt(Xplanet*Xplanet+Yplanet*Yplanet);
+      //printf("Xplanet = %g, y = %g, x = %g, Yplanet = %g\n", Xplanet,y,x,Yplanet);
       cross = Xplanet*y-x*Yplanet;
       Xplanet = x;
       Yplanet = y;
+      //printf("cross = %g, d1 = %g, d2= %g\n",cross,d1,d2 );
       return asin(cross/(d1*d2));
       break;
     case 2:
@@ -241,7 +255,7 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
 
 
 
-__host__ void RotatePsys (PlanetarySystem *sys, float angle) /* Rotate by angle '-angle' */
+__host__ void RotatePsys (PlanetarySystem *sys, double angle) /* Rotate by angle '-angle' */
 {
   int i, nb;
   double sint, cost, xt, yt;
@@ -257,5 +271,10 @@ __host__ void RotatePsys (PlanetarySystem *sys, float angle) /* Rotate by angle 
     yt = sys->vy[i];
     sys->vx[i] = xt*cost+yt*sint;
     sys->vy[i] = -xt*sint+yt*cost;
+    // printf("x%g\n", sys->x[i]);
+    // printf("y%g\n", sys->y[i]);
+    // printf("vx%g\n", sys->vx[i]);
+    // printf("vy%g\n", sys->vy[i]);
+    // printf("angle %g\n", angle);
   }
 }

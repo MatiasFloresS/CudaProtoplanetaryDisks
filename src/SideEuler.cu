@@ -33,6 +33,8 @@ __host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, f
   if (OuterSourceMass == YES) printf("hola\n" );
 }
 
+
+
 __host__ void NonReflectingBoundary (float *Dens, float *Energy, float *Vrad)
 {
   int i,i_angle, i_angle2;
@@ -64,6 +66,7 @@ __host__ void NonReflectingBoundary (float *Dens, float *Energy, float *Vrad)
 
 }
 
+
 __host__ void ReduceCs ()
 {
   ReduceCsKernel<<<dimGrid, dimBlock>>> (SoundSpeed_d, cs0_d, cs1_d, csnrm1_d, csnrm2_d, NSEC, NRAD);
@@ -75,6 +78,7 @@ __host__ void ReduceCs ()
   csnrm2_r = DeviceReduce(csnrm2_d, NSEC) / NSEC;
 }
 
+
 __host__ void ReduceMean (float *Dens, float *Energy)
 {
   ReduceMeanKernel<<<dimGrid, dimBlock>>>(Dens_d, Energy_d, NSEC, mean_dens_d, mean_energy_d, mean_dens_d2, mean_energy_d2, NRAD);
@@ -85,6 +89,8 @@ __host__ void ReduceMean (float *Dens, float *Energy)
   mean_energy_r  = DeviceReduce(mean_energy_d, NSEC)  / NSEC;
   mean_energy_r2 = DeviceReduce(mean_energy_d2, NSEC) / NSEC;
 }
+
+
 
 __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float *Dens, float *Energy, float step)
 {
@@ -107,11 +113,13 @@ __host__ void EvanescentBoundary (float *Vrad, float *Vtheta, float *Dens, float
 }
 
 
+
 __host__ void OpenBoundary ()
 {
   OpenBoundaryKernel<<<dimGrid, dimBlock>>> (Vrad_d, Dens_d, Energy_d, NSEC, SigmaMed);
   gpuErrchk(cudaDeviceSynchronize());
 }
+
 
 
 __host__ Pair ComputeAccel (Force *force, float *Dens, float x, float y, float rsmoothing, float mass)

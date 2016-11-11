@@ -3,7 +3,7 @@
 extern int NRAD, NSEC, size_grid, RocheSmoothing;
 extern int ForcedCircular, Indirect_Term, SelfGravity, Cooling, CentrifugalBalance;
 
-extern float *SigmaMed, *EnergyMed, *q0, *PlanetMasses, *q1, *Pressure, *SoundSpeed, *Rmed;
+extern float *SigmaMed, *EnergyMed, *Pressure, *SoundSpeed, *Rmed;
 extern float *viscosity_array, *Radii, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
 
 extern float *Potential_d, *Rmed_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
@@ -15,6 +15,7 @@ extern float SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT, PhysicalTime, RELEASEDATE, RE
 extern Pair DiskOnPrimaryAcceleration;
 static Pair IndirectTerm;
 
+extern double *q0, *PlanetMasses, *q1;
 extern dim3 dimGrid2, dimBlock2;
 
 __host__ void InitGasDensity (float *Dens)
@@ -61,9 +62,10 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy
     smooth = smoothing*smoothing;
 
     FillForcesArraysKernel<<<dimGrid2,dimBlock2>>>(Rmed_d, NSEC, NRAD, xplanet, yplanet, smooth,
-      mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm);
+      mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm, k);
     gpuErrchk(cudaDeviceSynchronize());
   }
+
 }
 
 
@@ -108,7 +110,7 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
   int nb, i , k;
   int *feelothers;
   nb = sys->nb;
-  float dtheta, omega, rdot, x, y, r, new_r, vx, vy, theta, denom;
+  double dtheta, omega, rdot, x, y, r, new_r, vx, vy, theta, denom;
 
   if (!ForcedCircular){
     for (k = 0; k < nb; k++){
@@ -123,10 +125,14 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
   }
   for (i = 1-(PhysicalTime >= RELEASEDATE); i < sys->nb; i++) {
     if (!ForcedCircular){
-      sys->x[i] = q1[i];
-      sys->y[i] = q1[i+nb];
+      sys->x[i] =  q1[i];
+      sys->y[i] =  q1[i+nb];
       sys->vx[i] = q1[i+2*nb];
       sys->vy[i] = q1[i+3*nb];
+      // printf("x%d %g\n",i, sys->x[i]);
+      // printf("y%d %g\n", i,sys->y[i]);
+      // printf("vx%d %g\n", i,sys->vx[i]);
+      // printf("vy%d %g\n", i,sys->vy[i]);
     }
     else {
       x = sys->x[i];
@@ -144,6 +150,7 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
     }
   }
   if (PhysicalTime < RELEASEDATE){
+    //printf("entro\n" );
     x = sys->x[0];
     y = sys->y[0];
     r = sqrt(x*x+y*y);

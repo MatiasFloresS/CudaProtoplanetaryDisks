@@ -141,7 +141,7 @@ __global__ void ComputeVelocitiesKernel(float *Vrad, float *Vtheta, float *Dens,
 __global__ void ComputeSpeQtyKernel (float *Label, float *Dens, float *ExtLabel, int nrad, int nsec);
 
 __global__ void FillForcesArraysKernel (float *Rmed, int nsec, int nrad, float xplanet, float yplanet, float smooth,
-  float mplanet, int Indirect_Term, float InvPlanetDistance3, float *Potential, pair IndirectTerm);
+  float mplanet, int Indirect_Term, float InvPlanetDistance3, float *Potential, pair IndirectTerm, int k);
 
 __global__ void CorrectVthetaKernel (float *Vtheta, float domega, float *Rmed, int nrad, int nsec);
 
