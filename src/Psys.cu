@@ -3,7 +3,7 @@
 extern float *Rmed, *Radii, ECCENTRICITY;
 static float Xplanet, Yplanet;
 extern int GuidingCenter;
-float HillRadius;
+double HillRadius;
 
 
 
@@ -136,6 +136,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
     }
   }
   HillRadius = sys->x[0] * pow( sys->mass[0]/3., 1./3.);
+  printf("HillRadius%.10f\n", HillRadius);
   return sys;
 }
 
@@ -149,12 +150,12 @@ __host__ void ListPlanets (PlanetarySystem *sys)
   for (i = 0; i < nb; i++){
     printf ("Planet number %d\n", i);
     printf ("---------------\n");
-    printf ("x = %f\ty = %f\n", sys->x[i],sys->y[i]);
-    printf ("vx = %f\tvy = %f\n", sys->vx[i],sys->vy[i]);
+    printf ("x = %.10f\ty = %.10f\n", sys->x[i],sys->y[i]);
+    printf ("vx = %.10f\tvy = %.10f\n", sys->vx[i],sys->vy[i]);
     if (sys->acc[i] == 0.0)
       printf ("Non-accreting.\n");
     else
-      printf ("accretion time = %f\n", 1.0/(sys->acc[i]));
+      printf ("accretion time = %.10f\n", 1.0/(sys->acc[i]));
     if (sys->FeelDisk[i] == YES)
       printf ("Feels the disk potential\n");
     else
@@ -169,7 +170,7 @@ __host__ void ListPlanets (PlanetarySystem *sys)
 
 
 
-__host__ float GetPsysInfo (PlanetarySystem *sys, int action)
+__host__ double GetPsysInfo (PlanetarySystem *sys, int action)
 {
 
   double d1, d2, cross;
@@ -210,6 +211,7 @@ __host__ float GetPsysInfo (PlanetarySystem *sys, int action)
   M = E-e*sin(E);
   PerihelionPA=atan2(Ay,Ax);
   omega = sqrt(m/a/a/a);
+  //printf("omega %.10f\n", omega);
 
   if (GuidingCenter){
     xc = a*cos(M+PerihelionPA);

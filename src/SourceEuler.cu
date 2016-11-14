@@ -91,7 +91,7 @@ __host__ void FillPolar1DArrays ()
       for (i = 0; i <= NRAD; i++){
         /* Usamos doubles para calcular los valores de los arrays, luego
            los pasamos a float */
-        Radii2[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX / RMIN));
+        Radii2[i] = RMIN*exp((double)i/(double)NRAD*log((double)RMAX/(double)RMIN));
         Radii[i] = Radii2[i];
       }
     }
@@ -115,19 +115,20 @@ __host__ void FillPolar1DArrays ()
     Rmed2[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]);
     Rmed2[i] = Rmed2[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]);
     Rmed[i] = Rmed2[i];
-    Surf[i] = M_PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC;
-    invRmed[i] = 1.0/Rmed2[i];
+    printf("Rmed %.10f\n", Rmed[i]);
+    Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(double)NSEC;
+    invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]);
-    invRinf[i] = 1.0/Radii2[i];
+    invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
+    invRinf[i] = 1.0/Rinf[i];
   }
   //printf("sumaSurf = %g\n", numero);
 
-  Rinf[NRAD] = Radii2[NRAD];
+  Rinf[NRAD] = Radii[NRAD];
 
   for (i = 1; i < NRAD; i++) {
-    invdiffRmed[i] = 1.0/(Rmed2[i]-Rmed2[i-1]);
-    powRmed[i] = pow(Rmed2[i],-2.5+SIGMASLOPE);
+    invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
+    powRmed[i] = pow(Rmed[i],-2.5+SIGMASLOPE);
   }
 
   /* string to char OutputName */
@@ -140,7 +141,7 @@ __host__ void FillPolar1DArrays ()
     exit (1);
   }
   for (i = 0; i <= NRAD; i++){
-    fprintf (output, "%f\n", Radii[i]);
+    fprintf (output, "%.10f\n", Radii[i]);
   }
   fclose (output);
   if (input != NULL) fclose (input);
@@ -184,7 +185,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
   PlanetarySystem *sys, int initialization)
 {
   float dt, dtemp =0.0;
-  float OmegaNew, domega;
+  double OmegaNew, domega;
   int gastimestepcfl = 1;
   CrashedDens = 0;
   CrashedEnergy = 0;
@@ -239,7 +240,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
 
     /* Below we correct vtheta, planet's position and velocities if we work in a frame non-centered on the star */
     if (Corotating == YES){
-      OmegaNew = GetPsysInfo(sys, GET);
+      OmegaNew = GetPsysInfo(sys, GET) / dt;
       //printf("omeganew%g\n", OmegaNew );
       domega = OmegaNew - OmegaFrame;
       //printf("OmegaFrame %g\n", OmegaFrame);

@@ -156,6 +156,15 @@ __host__ void InitComputeAccel ()
   InitComputeAccelKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Rmed_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
 
+  gpuErrchk(cudaMemcpy(CellAbscissa, CellAbscissa_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
+  FILE *f;
+  f = fopen("abs.txt", "w");
+  for (int i = 0; i < size_grid; i++) {
+    fprintf(f, "%.10f\n", CellAbscissa[i]);
+  }
+  fclose(f);
+
 }
 
 

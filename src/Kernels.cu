@@ -26,7 +26,7 @@ __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, fl
     vt2 = Vtheta[i*nsec + j] + Vtheta[(i-1)*nsec + j] + Vtheta[i*nsec + (j+1)%nsec] + Vtheta[(i-1)*nsec + (j+1)%nsec];
     vt2 = vt2/4.0+Rinf[i]*OmegaFrame;
     vt2 = vt2*vt2;
-    VradInt[i*nsec + j] = dt*(-gradp - gradphi + vt2*invRinf[i]);
+    VradInt[i*nsec + j] = Vrad[i*nsec + j] + dt*(-gradp - gradphi + vt2*invRinf[i]);
     // if (i == 1 && j == 0) printf("i %d= var =%g\n",i,VradInt[i*nsec + j] );
     // if (i == 2 && j == 0) printf("i %d= var = %g\n",i,VradInt[i*nsec + j] );
     //
@@ -166,6 +166,7 @@ __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
+
 
   if (i<nrad && j<nsec){
     CellAbscissa[i*nsec+j] = Rmed[i] * cosf((2.0*M_PI*(float)j)/(float)nsec);

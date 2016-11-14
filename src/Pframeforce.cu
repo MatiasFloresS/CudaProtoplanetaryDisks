@@ -26,6 +26,7 @@ __host__ void InitGasDensity (float *Dens)
     for (j = 0; j < NSEC; j++){
       Dens[j+i*NSEC] = SigmaMed[i];
     }
+    printf("Dens[]%.10f\n", Dens[i*NSEC]);
   }
 }
 
