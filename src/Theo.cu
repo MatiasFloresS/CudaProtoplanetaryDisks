@@ -2,14 +2,15 @@
 
 extern int NRAD;
 
-extern float *Rmed, *Rinf, *QplusMed, *SigmaMed, *SigmaInf, *EnergyMed, *CoolingTimeMed, *QplusMed;
+extern float *QplusMed, *SigmaMed, *SigmaInf, *EnergyMed, *CoolingTimeMed, *QplusMed;
+extern double *Rinf, *Rmed;
 
 extern float CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, ADIABATICINDEX;
 extern float ScalingFactor, ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
 
 
 /* Surface density */
-__host__ float Sigma(float r)
+__host__ float Sigma(double r)
 {
   float cavity = 1.0;
   if (r < CAVITYRADIUS) cavity = 1.0/CAVITYRATIO;
@@ -33,7 +34,7 @@ __host__ void FillSigma ()
 
 
 /* Thermal energy */
-__host__ float Energy(float r)
+__host__ float Energy(double r)
 {
   float energy0;
   if (ADIABATICINDEX == 1.0){
@@ -58,7 +59,7 @@ __host__ void FillEnergy ()
 
 
 
-__host__ float CoolingTime(float r)
+__host__ float CoolingTime(double r)
 {
   float ct0;
   ct0 = COOLINGTIME0*pow(r,2.0+2.0*FLARINGINDEX);
@@ -75,7 +76,7 @@ __host__ void FillQplus()
   for (int i = 0; i < NRAD; i++) QplusMed[i] = Qplusinit(Rmed[i]);
 }
 
-__host__ float Qplusinit(float r)
+__host__ float Qplusinit(double r)
 {
   float qp0, viscosity;
   viscosity = FViscosity(r);

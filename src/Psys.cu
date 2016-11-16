@@ -1,9 +1,10 @@
 #include "Main.cuh"
 
-extern float *Rmed, *Radii, ECCENTRICITY;
-static float Xplanet, Yplanet;
+extern float *Radii, ECCENTRICITY;
+static double Xplanet, Yplanet;
 extern int GuidingCenter;
 double HillRadius;
+extern double *Rmed;
 
 
 
@@ -136,7 +137,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
     }
   }
   HillRadius = sys->x[0] * pow( sys->mass[0]/3., 1./3.);
-  printf("HillRadius%.10f\n", HillRadius);
+  //printf("HillRadius%.10f\n", HillRadius);
   return sys;
 }
 
@@ -204,8 +205,10 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
   if (e == 0.0) arg = 1.0;
   else arg = (1.0-d/a)/e;
 
-  if (fabs(arg) >= 1.0) E = M_PI*(1.-arg/fabs(arg))/2.;
-  else E = acos((1.0-d/a)/e);
+  if (fabs(arg) >= 1.0)
+    E = M_PI*(1.-arg/fabs(arg))/2.;
+  else
+    E = acos((1.0-d/a)/e);
 
   if ((x*y*(vy*vy-vx*vx)+vx*vy*(x*x-y*y)) < 0) E= -E;
   M = E-e*sin(E);
@@ -213,14 +216,14 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
   omega = sqrt(m/a/a/a);
   //printf("omega %.10f\n", omega);
 
-  if (GuidingCenter){
+  if (GuidingCenter == YES){
     xc = a*cos(M+PerihelionPA);
     yc = a*sin(M+PerihelionPA);
     vxc = -a*omega*sin(M+PerihelionPA);
     vyc =  a*omega*cos(M+PerihelionPA);
   }
 
-  //printf("e = %g\n",e );
+  //printf("e = %.10f\n",e );
   if (e < 1e-08){
     xc = x;
     yc = y;
@@ -232,6 +235,8 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
     case 1:
       Xplanet = xc;
       Yplanet = yc;
+      //printf("Xplanet %.10f\n", Xplanet);
+      //printf("Yplanet %.10f\n", Yplanet);
       return 0.;
       break;
     case 0:
@@ -239,12 +244,16 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
       y = yc;
       vx = vxc;
       vy = vyc;
+      //printf("xxxxxxx %.10f\n", x);
       d2 = sqrt(x*x+y*y);
       d1 = sqrt(Xplanet*Xplanet+Yplanet*Yplanet);
       //printf("Xplanet = %g, y = %g, x = %g, Yplanet = %g\n", Xplanet,y,x,Yplanet);
       cross = Xplanet*y-x*Yplanet;
       Xplanet = x;
       Yplanet = y;
+      //printf("Xplanet %.10f\n", Xplanet);
+      //printf("Yplanet %.10f\n", Yplanet);
+      //printf("asin %.10f\n", asin(cross/(d1*d2)));
       //printf("cross = %g, d1 = %g, d2= %g\n",cross,d1,d2 );
       return asin(cross/(d1*d2));
       break;
@@ -273,10 +282,10 @@ __host__ void RotatePsys (PlanetarySystem *sys, double angle) /* Rotate by angle
     yt = sys->vy[i];
     sys->vx[i] = xt*cost+yt*sint;
     sys->vy[i] = -xt*sint+yt*cost;
-    // printf("x%g\n", sys->x[i]);
-    // printf("y%g\n", sys->y[i]);
-    // printf("vx%g\n", sys->vx[i]);
-    // printf("vy%g\n", sys->vy[i]);
-    // printf("angle %g\n", angle);
+    /*printf("x%.10f\n", sys->x[i]);
+    printf("y%.10f\n", sys->y[i]);
+    printf("vx%.10f\n", sys->vx[i]);
+    printf("vy%.10f\n", sys->vy[i]);
+    printf("angle %.10f\n", angle);*/
   }
 }

@@ -5,10 +5,11 @@ extern string OUTPUTDIR;
 extern int NSEC, NRAD, NTOT, NINTERM, IsDisk, AdvecteLabel;
 extern int Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, Write_Density, Write_Velocity;
 
-extern float RMAX, mdcp, exces_mdcp, OmegaFrame, PhysicalTime, LostMass;
-extern float *Temperature, *Qplus, *DivergenceVelocity;
+extern float RMAX, mdcp, exces_mdcp, PhysicalTime, LostMass;
+extern float *Temperature, *Qplus, *DivergenceVelocity, mdcp1;
 
 static double Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
+extern double OmegaFrame;
 
 __host__ void WriteDim ()
 {
@@ -95,7 +96,7 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
     exit(1);
   }
   fprintf (output, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n",
-  TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame, mdcp, exces_mdcp);
+  TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, LostMass, PhysicalTime, OmegaFrame, mdcp1, exces_mdcp);
   fclose(output);
 }
 

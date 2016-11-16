@@ -1,7 +1,7 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC;
-extern float *Rinf, *Rsup;
+extern double *Rinf, *Rsup;
 
 __host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
 {
@@ -14,7 +14,7 @@ __host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float
 
   for (int k = 0; k < sys->nb; k++) {
     if (sys->acc[k] > 1e-10){ // case acc positive
-      printf("entro\n");
+      //printf("entro\n");
       dMplanet = dPxPlanet = dPyPlanet = 0.0;
       /* Hereafter: initialization of W. Kley's parameters */
       facc = dt*(sys->acc[k]);

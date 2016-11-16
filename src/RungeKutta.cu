@@ -5,7 +5,7 @@ static double Dist[100];
 
 extern int Indirect_Term;
 
-__host__ void RungeKutta (double *q0, float timestep, double *PlanetMasses, double *q1, int nb, int *feelothers)
+__host__ void RungeKutta (double *q0, double timestep, double *PlanetMasses, double *q1, int nb, int *feelothers)
 {
   for (int i = 0; i < 4*nb; i++){
     k1[i] = k2[i] = k3[i] = k4[i] = k5[i] = k6[i] = 0;
@@ -24,10 +24,11 @@ __host__ void RungeKutta (double *q0, float timestep, double *PlanetMasses, doub
   DerivMotionRK5 (q1, PlanetMasses, k6, nb, timestep, feelothers);
   for (int i = 0; i < 4*nb; i++){
     q1[i] = q0[i]+37.0/378.0*k1[i]+250.0/621.0*k3[i]+125.0/594.0*k4[i]+512.0/1771.0*k6[i];
+    //printf("q1 %.10f\n",q1[i] );
   }
 }
 
-__host__ void DerivMotionRK5 (double *q_init, double *PlanetMasses, double *deriv, int nb, float dt, int *feelothers)
+__host__ void DerivMotionRK5 (double *q_init, double *PlanetMasses, double *deriv, int nb, double dt, int *feelothers)
 {
   double *x, *y, *vx, *vy, dist;
   double *derivx, *derivy, *derivvx, *derivvy;
@@ -49,12 +50,12 @@ __host__ void DerivMotionRK5 (double *q_init, double *PlanetMasses, double *deri
     derivy[i] = vy[i];
     derivvx[i] = -G*1.0/Dist[i]/Dist[i]/Dist[i]*x[i];
     derivvy[i] = -G*1.0/Dist[i]/Dist[i]/Dist[i]*y[i];
-    // printf("derivx %g\n", derivx[i]);
-    // printf("derivy %g\n", derivy[i]);
-    // printf("derivvx %g\n", derivvx[i]);
-    // printf("derivvy %g\n", derivvy[i]);
+    /*printf("derivx %.10f\n", derivx[i]);
+    printf("derivy %.10f\n", derivy[i]);
+    printf("derivvx %.10f\n", derivvx[i]);
+    printf("derivvy %.10f\n", derivvy[i]);*/
     for (j = 0; j < nb; j++){
-      if (Indirect_Term){
+      if (Indirect_Term == YES){
         derivvx[i] -= G*PlanetMasses[j]/Dist[j]/Dist[j]/Dist[j]*x[j];
         derivvy[i] -= G*PlanetMasses[j]/Dist[j]/Dist[j]/Dist[j]*y[j];
       }

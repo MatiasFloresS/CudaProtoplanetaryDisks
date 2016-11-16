@@ -3,19 +3,19 @@
 extern int NRAD, NSEC, size_grid, RocheSmoothing;
 extern int ForcedCircular, Indirect_Term, SelfGravity, Cooling, CentrifugalBalance;
 
-extern float *SigmaMed, *EnergyMed, *Pressure, *SoundSpeed, *Rmed;
+extern float *SigmaMed, *EnergyMed, *Pressure, *SoundSpeed, *Potential;
 extern float *viscosity_array, *Radii, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
 
-extern float *Potential_d, *Rmed_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
-extern float *viscosity_array_d, *vt_cent_d, *Vtheta_d, *SigmaInf_d, *Rinf_d;
+extern float *Potential_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
+extern float *viscosity_array_d, *vt_cent_d, *Vtheta_d, *SigmaInf_d;
 
-extern float ROCHESMOOTHING, MassTaper, ViscosityAlpha, OmegaFrame, ASPECTRATIO, FLARINGINDEX;
+extern float ROCHESMOOTHING, MassTaper, ViscosityAlpha, ASPECTRATIO, FLARINGINDEX;
 extern float SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT, PhysicalTime, RELEASEDATE, RELEASERADIUS;
 
 extern Pair DiskOnPrimaryAcceleration;
 static Pair IndirectTerm;
 
-extern double *q0, *PlanetMasses, *q1;
+extern double *q0, *PlanetMasses, *q1, OmegaFrame, *Rinf_d, *Rmed, *Rmed_d;
 extern dim3 dimGrid2, dimBlock2;
 
 __host__ void InitGasDensity (float *Dens)
@@ -26,7 +26,7 @@ __host__ void InitGasDensity (float *Dens)
     for (j = 0; j < NSEC; j++){
       Dens[j+i*NSEC] = SigmaMed[i];
     }
-    printf("Dens[]%.10f\n", Dens[i*NSEC]);
+    //printf("Dens[]%.10f\n", Dens[i*NSEC]);
   }
 }
 
@@ -43,7 +43,7 @@ __host__ void InitGasEnergy (float *Energy)
 __host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy)
 {
   int NbPlanets, k;
-  float xplanet, yplanet, mplanet, PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
+  double xplanet, yplanet, mplanet, PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
   NbPlanets = sys->nb;
 
   /* Indirect term star on gas here */
@@ -55,6 +55,7 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy
     xplanet = sys->x[k];
     yplanet = sys->y[k];
     mplanet = sys->mass[k]*MassTaper;
+    //printf("MASSSSSSSSSSSS%.10f\n", MassTaper );
     PlanetDistance = sqrt(xplanet*xplanet+yplanet*yplanet);
     InvPlanetDistance3 = 1.0/PlanetDistance/PlanetDistance/PlanetDistance;
     RRoche = PlanetDistance*pow((1.0/3.0*mplanet),1.0/3.0);
@@ -62,10 +63,25 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy
     else smoothing = Compute_smoothing (PlanetDistance);
     smooth = smoothing*smoothing;
 
+    // printf("xplanet %.10f\n", xplanet);
+    // printf("yplanet %.10f\n", yplanet);
+    // printf("smooth %.10f\n", smooth);
+    // printf("mplanet %.10f\n", mplanet);
+    // printf("InvPlanetDistance3 %.10f\n", InvPlanetDistance3);
+
     FillForcesArraysKernel<<<dimGrid2,dimBlock2>>>(Rmed_d, NSEC, NRAD, xplanet, yplanet, smooth,
       mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm, k);
     gpuErrchk(cudaDeviceSynchronize());
+    //exit(1);
   }
+
+  /*gpuErrchk(cudaMemcpy(Potential, Potential_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
+  FILE *f;
+  f = fopen("Potential.txt", "w");
+  for (int i = 0; i < size_grid; i++) {
+    fprintf(f, "%.10f\n",Potential[i] );
+  }*/
 
 }
 
@@ -84,7 +100,7 @@ __host__ void ComputeIndirectTerm ()
 __host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, PlanetarySystem *sys, float dt)
 {
   int NbPlanets, k;
-  float m, x, y, r, smoothing;
+  double m, x, y, r, smoothing;
   Pair gamma;
   NbPlanets = sys->nb;
 
@@ -103,10 +119,12 @@ __host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, P
       sys->vy[k] += dt * IndirectTerm.y;
     }
   }
+
+
 }
 
 
-__host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
+__host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
 {
   int nb, i , k;
   int *feelothers;
@@ -130,10 +148,10 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
       sys->y[i] =  q1[i+nb];
       sys->vx[i] = q1[i+2*nb];
       sys->vy[i] = q1[i+3*nb];
-      // printf("x%d %g\n",i, sys->x[i]);
-      // printf("y%d %g\n", i,sys->y[i]);
-      // printf("vx%d %g\n", i,sys->vx[i]);
-      // printf("vy%d %g\n", i,sys->vy[i]);
+      /*printf("x%d %.10f\n",i, sys->x[i]);
+      printf("y%d %.10f\n", i,sys->y[i]);
+      printf("vx%d %.10f\n", i,sys->vx[i]);
+      printf("vy%d %.10f\n", i,sys->vy[i]);*/
     }
     else {
       x = sys->x[i];
@@ -243,6 +261,23 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
   }
 
   InitVelocities(Vrad, Vtheta);
+
+/*
+  gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
+  FILE *f;
+  f = fopen("vr.txt", "w");
+  for (int i = 0; i < size_grid; i++) {
+    fprintf(f, "%.10f\n", Vrad[i]);
+  }
+  fclose(f);
+
+  f = fopen("vt.txt", "w");
+  for (int i = 0; i < size_grid; i++) {
+    fprintf(f, "%.10f\n", Vtheta[i]);
+  }
+  fclose(f);*/
 }
 
 

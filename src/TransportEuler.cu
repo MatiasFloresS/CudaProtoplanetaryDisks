@@ -4,9 +4,11 @@ extern int NRAD, NSEC, size_grid, AdvecteLabel, OpenInner, Adiabatic, FastTransp
 
 extern float OmegaFrame;
 
-extern float *Dens_d, *Vrad_d, *Rmed_d, *Vtheta_d, *Label_d, *invdiffRmed_d, *QStar_d, *Qbase_d;
-extern float *DensInt_d, *DensStar_d, *Rinf_d, *Rsup_d, *invRmed_d, *Vtheta_d, *Surf_d, *array_d;
+extern float *Dens_d, *Vrad_d,  *Vtheta_d, *Label_d, *QStar_d, *Qbase_d;
+extern float *DensInt_d, *DensStar_d, *Vtheta_d, *Surf_d, *array_d;
 extern float *DensStar, *QStar, *Qbase, *DensInt;
+
+extern double *invdiffRmed_d, *Rinf_d, *Rmed_d, *invRmed_d, *Rsup_d;
 
 extern dim3 dimGrid2, dimBlock2, dimBlock, dimGrid4;
 

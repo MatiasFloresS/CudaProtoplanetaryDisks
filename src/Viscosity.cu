@@ -5,12 +5,15 @@ extern int NSEC, size_grid, NRAD;
 extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
 extern float VISCOSITY, ViscosityAlpha, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
 
-extern float *SoundSpeed_d, *Vrad_d, *Vtheta_d, *invdiffRsup_d, *Rinf_d, *invdiffRmed_d, *Dens_d;
-extern float *viscosity_array_d,  *invRinf_d, *VthetaInt_d, *VradInt_d, *Rsup_d, *invRmed_d, *Rmed_d;
-extern float *invdiffRsup_d, *Vradial_d, *Vazimutal_d;
+extern float *SoundSpeed_d, *Vrad_d, *Vtheta_d,  *Dens_d;
+extern float *viscosity_array_d,  *VthetaInt_d, *VradInt_d;
+extern float *Vradial_d, *Vazimutal_d;
 
-extern float *SoundSpeed, *Rmed, *GLOBAL_bufarray, *Rsup, *invRmed, *viscosity_array, *VradInt;
+extern float *SoundSpeed,  *GLOBAL_bufarray, *Rsup,  *viscosity_array, *VradInt;
 extern float *VthetaInt;
+
+extern double *invdiffRmed_d, *Rinf_d, *invRinf_d, *invRmed_d, *Rmed_d, *invRmed, *Rmed;
+extern double *invdiffRsup_d, *Rsup_d;
 
 float *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP;
 float *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
@@ -26,7 +29,7 @@ __host__ void UpdateVelocitiesWithViscosity(float *VradInt, float *VthetaInt, fl
 }
 
 
-__host__ float FViscosity(float r)
+__host__ float FViscosity(double r)
 {
   float viscosity, rmin, rmax, scale;
   int i = 0;
@@ -60,6 +63,21 @@ __host__ void ComputeViscousTerms (float *Vradial, float *Vazimutal, float *Dens
     DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
     viscosity_array_d, TAURP_d, invRinf_d);
   gpuErrchk(cudaDeviceSynchronize());
+
+
+  gpuErrchk(cudaMemcpy(DRR, DRR_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+
+
+  FILE *f;
+  f = fopen("DRR.txt","w");
+  for (int i = 0; i < (NRAD+1)*NSEC; i++) {
+    fprintf(f, "%.10f\n", DRR[i]);
+  }
+
+  fclose(f);
+
+
+
 }
 
 __host__ void InitViscosity ()

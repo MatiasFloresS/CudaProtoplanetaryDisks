@@ -3,14 +3,14 @@
 extern int OpenInner, NSEC, size_grid, NonReflecting, Adiabatic, NRAD;
 extern int Evanescent, SelfGravity, ExcludeHill, dimfxy, OuterSourceMass;
 
-extern float *SigmaMed, *Rmed, *SoundSpeed, *Rinf, *EnergyMed, *mean_dens, *mean_energy;
+extern float *SigmaMed, *SoundSpeed, *EnergyMed, *mean_dens, *mean_energy;
 extern float *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *viscosity_array;
 
-extern float ADIABATICINDEX, FLARINGINDEX, OmegaFrame, SIGMASLOPE, ASPECTRATIO;
+extern float ADIABATICINDEX, FLARINGINDEX, SIGMASLOPE, ASPECTRATIO;
 extern float TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS, PhysicalTime, PhysicalTimeInitial;
 extern float LAMBDADOUBLING;
 
-extern float *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *Rmed_d, *mean_dens_d, *mean_energy_d;
+extern float *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *mean_dens_d, *mean_energy_d;
 extern float *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array_d;
 extern float *Vtheta_d, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d, *VthetaInt_d;
 
@@ -19,6 +19,7 @@ csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
 
 extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
+extern double OmegaFrame, *Rinf, *Rmed, *Rmed_d;
 
 
 __host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, float *Vtheta, float step)
@@ -134,6 +135,8 @@ __host__ Pair ComputeAccel (Force *force, float *Dens, float x, float y, float r
     acceleration.x = force->fx_inner+force->fx_outer;
     acceleration.y = force->fx_inner+force->fy_outer;
   }
+  printf("acceleration.x %.25f\n", acceleration.x);
+  printf("acceleration.y %.25f\n", acceleration.y);
   return acceleration;
 }
 
@@ -155,7 +158,7 @@ __host__ void InitComputeAccel ()
 
   InitComputeAccelKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Rmed_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
-
+/*
   gpuErrchk(cudaMemcpy(CellAbscissa, CellAbscissa_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 
   FILE *f;
@@ -163,7 +166,7 @@ __host__ void InitComputeAccel ()
   for (int i = 0; i < size_grid; i++) {
     fprintf(f, "%.10f\n", CellAbscissa[i]);
   }
-  fclose(f);
+  fclose(f);*/
 
 }
 

@@ -7,10 +7,12 @@ extern cufftComplex *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
 
 extern int NSEC, NRAD, size_grid;
 
-extern float *Vrad_d, *Vtheta_d, *Rmed_d, *invdiffRmed_d, *Rinf_d, *Dens_d, *Radii_d;
+extern float *Vrad_d, *Vtheta_d, *Dens_d, *Radii_d;
 extern float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimutal_d;
-extern float *VthetaInt_d, *VradInt_d, *Rmed, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
+extern float *VthetaInt_d, *VradInt_d, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
 extern float *GLOBAL_AxiSGAccr, *Radii;
+
+extern double *invdiffRmed_d, *Rinf_d, *Rmed, *Rmed_d;
 
 extern float SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
 

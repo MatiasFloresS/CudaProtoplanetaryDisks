@@ -30,8 +30,8 @@ typedef struct force Force;
 
 
 struct pair {
-  float x;
-  float y;
+  double x;
+  double y;
 };
 
 typedef struct pair Pair;

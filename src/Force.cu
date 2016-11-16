@@ -5,10 +5,12 @@ extern string OUTPUTDIR;
 extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
 
 extern float *CellAbscissa, *CellOrdinate, *Surf, *forcesxi, *forcesyi, *forcesxo;
-extern float *forcesyo, *Rmed;
+extern float *forcesyo;
 
-extern float *Rmed_d, *Dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d;
+extern float *Dens_d, *CellAbscissa_d, *CellOrdinate_d, *Surf_d;
 extern float *fxi_d, *fxo_d, *fyi_d, *fyo_d;
+
+extern double *Rmed, *Rmed_d;
 
 extern int RocheSmoothing, size_grid, NRAD, NSEC, SelfGravity;
 
@@ -18,7 +20,7 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
   float PhysicalTime, int dimfxy)
 {
   FILE *out;
-  float x, y, r, m, vx, vy, smoothing, a, rh;
+  double x, y, r, m, vx, vy, smoothing, a, rh;
   float *globalforce;
   char filename[500];
   char filename2[500];
