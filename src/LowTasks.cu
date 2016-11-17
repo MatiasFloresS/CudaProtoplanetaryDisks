@@ -1,17 +1,17 @@
 #include "Main.cuh"
 
-extern float *Dens_d, ScalingFactor;
+extern double *Dens_d, ScalingFactor;
 extern int NRAD, NSEC, size_grid;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void MultiplyPolarGridbyConstant (float *Dens)
+__host__ void MultiplyPolarGridbyConstant (double *Dens)
 {
   MultiplyPolarGridbyConstantKernel<<<dimGrid2, dimBlock2>>>(Dens_d, NRAD, NSEC, ScalingFactor);
   gpuErrchk(cudaDeviceSynchronize());
 
 /*
-  gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 
   FILE *f;
 

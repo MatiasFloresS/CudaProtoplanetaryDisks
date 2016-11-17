@@ -7,20 +7,20 @@ extern cufftComplex *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
 
 extern int NSEC, NRAD, size_grid;
 
-extern float *Vrad_d, *Vtheta_d, *Dens_d, *Radii_d;
-extern float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimutal_d;
-extern float *VthetaInt_d, *VradInt_d, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
-extern float *GLOBAL_AxiSGAccr, *Radii;
+extern double *Vrad_d, *Vtheta_d, *Dens_d, *Radii_d;
+extern double *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimutal_d;
+extern double *VthetaInt_d, *VradInt_d, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
+extern double *GLOBAL_AxiSGAccr, *Radii;
 
 extern double *invdiffRmed_d, *Rinf_d, *Rmed, *Rmed_d;
 
-extern float SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
+extern double SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
 
 extern cufftHandle planf, planb;
 
-float *Kr_aux, *Kt_aux;
+double *Kr_aux, *Kt_aux;
 
-__host__ void compute_selfgravity (float *Dens, float DeltaT, int SGUpdate, int initialization)
+__host__ void compute_selfgravity (double *Dens, double DeltaT, int SGUpdate, int initialization)
 {
   /* We compute Kernel */
   if (initialization)
@@ -52,8 +52,8 @@ __host__ void compute_kernel ()
   int i,j;
   /* Si se elige la opcion SelfGravity se crean los arreglos para calcular
      los Kernels Kr, Kt */
-  Kr_aux      = (float *)malloc(2*size_grid*sizeof(float));
-  Kt_aux      = (float *)malloc(2*size_grid*sizeof(float));
+  Kr_aux      = (double *)malloc(2*size_grid*sizeof(double));
+  Kt_aux      = (double *)malloc(2*size_grid*sizeof(double));
 
   /* Aca calculo los kernels Kr y Kt en CPU ya que son constantes */
   for (i = 0; i < 2*NRAD; i++){
@@ -71,13 +71,13 @@ __host__ void compute_kernel ()
       Kt = sin(theta);
       Kt *= pow(base, -1.5);
 
-      Kr_aux[i*NSEC+j] = (float) Kr;
-      Kt_aux[i*NSEC+j] = (float) Kt;
+      Kr_aux[i*NSEC+j] = (double) Kr;
+      Kt_aux[i*NSEC+j] = (double) Kt;
     }
   }
 
-  gpuErrchk(cudaMemcpy(Kr_aux_d, Kr_aux, 2*size_grid*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Kt_aux_d, Kt_aux, 2*size_grid*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Kr_aux_d, Kr_aux, 2*size_grid*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Kt_aux_d, Kt_aux, 2*size_grid*sizeof(double), cudaMemcpyHostToDevice));
 }
 
 
@@ -105,7 +105,7 @@ __host__ void compute_sgacc ()
   gpuErrchk(cudaDeviceSynchronize());
 }
 
-__host__ void update_sgvelocity (float DeltaT)
+__host__ void update_sgvelocity (double DeltaT)
 {
   Update_sgvelocityKernel <<<dimGrid2, dimBlock2>>>(Vradial_d, Vazimutal_d, SG_Accr_d, SG_Acct_d, Rinf_d, Rmed_d,
     invdiffRmed_d, DeltaT , NRAD,  NSEC);
@@ -168,9 +168,9 @@ __host__ void Init_planetarysys_withSG (PlanetarySystem *sys)
 {
   /*  !SGZeroMode case */
   Make1Dprofile (1);
-  gpuErrchk(cudaMemcpy(GLOBAL_AxiSGAccr, axifield_d, NRAD*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(GLOBAL_AxiSGAccr, axifield_d, NRAD*sizeof(double), cudaMemcpyDeviceToHost));
 
-  float r, dist, ri, rip1, dr, sgacc;
+  double r, dist, ri, rip1, dr, sgacc;
   int ipl, k;
 
   /* Planetary system initialization in self-gravity cases:

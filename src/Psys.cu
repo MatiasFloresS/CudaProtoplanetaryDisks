@@ -1,6 +1,6 @@
 #include "Main.cuh"
 
-extern float *Radii, ECCENTRICITY;
+extern double *Radii, ECCENTRICITY;
 static double Xplanet, Yplanet;
 extern int GuidingCenter;
 double HillRadius;

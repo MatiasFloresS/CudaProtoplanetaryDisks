@@ -3,14 +3,14 @@
 extern int NRAD, NSEC;
 extern double *Rinf, *Rsup;
 
-__host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
+__host__ void AccreteOntoPlanets (double *Dens, double *Vrad, double *Vtheta, double dt, PlanetarySystem *sys)
 {
 
-  float RRoche, Rplanet, distance;
+  double RRoche, Rplanet, distance;
   int i_min, i_max, j_min, j_max, angle;
-  float facc, facc1, facc2, frac1, frac2; /* We adopt the same notations as W. Kley*/
+  double facc, facc1, facc2, frac1, frac2; /* We adopt the same notations as W. Kley*/
   double Xplanet, Yplanet, Mplanet, VXplanet, VYplanet, PxPlanet, PyPlanet;
-  float dMplanet, dPxPlanet, dPyPlanet;
+  double dMplanet, dPxPlanet, dPyPlanet;
 
   for (int k = 0; k < sys->nb; k++) {
     if (sys->acc[k] > 1e-10){ // case acc positive
@@ -36,8 +36,8 @@ __host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float
       while ((Rsup[i_min] < Rplanet-RRoche) && (i_min < NRAD)) i_min++;
       while ((Rinf[i_max] > Rplanet+RRoche) && (i_max > 0)) i_max--;
       angle = atan2(Yplanet, Xplanet);
-      j_min = (int)((float)NSEC/2.0/M_PI*(angle - 2.0*RRoche/Rplanet));
-      j_max = (int)((float)NSEC/2.0/M_PI*(angle + 2.0*RRoche/Rplanet));
+      j_min = (int)((double)NSEC/2.0/M_PI*(angle - 2.0*RRoche/Rplanet));
+      j_max = (int)((double)NSEC/2.0/M_PI*(angle + 2.0*RRoche/Rplanet));
       PxPlanet = Mplanet*VXplanet;
       PyPlanet = Mplanet*VYplanet;
 
