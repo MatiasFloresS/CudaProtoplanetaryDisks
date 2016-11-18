@@ -69,19 +69,19 @@ __host__ void FillPolar1DArrays ()
 
   /* Creo los arreglos de FillPolar1DArrays */
   Radii       = (double *)malloc((NRAD+1)*sizeof(double));
-  Radii2       = (double *)malloc((NRAD+1)*sizeof(double));
-  Rmed2       = (double *)malloc(NRAD*sizeof(double));
-  Rinf        = (double *)malloc(NRAD*sizeof(double));
-  Rmed        = (double *)malloc(NRAD*sizeof(double));
-  Rsup        = (double *)malloc(NRAD*sizeof(double));
-  Surf        = (double *)malloc(NRAD*sizeof(double));
-  invRinf     = (double *)malloc(NRAD*sizeof(double));
-  invSurf     = (double *)malloc(NRAD*sizeof(double));
-  invRmed     = (double *)malloc(NRAD*sizeof(double));
-  invdiffRsup = (double *)malloc(NRAD*sizeof(double));
-  invdiffRmed = (double *)malloc(NRAD*sizeof(double));
-  vt_cent     = (double *)malloc(NRAD*sizeof(double));
-  powRmed     = (double *)malloc(NRAD*sizeof(double));
+  //Radii2       = (double *)malloc((NRAD+1)*sizeof(double));
+  Rmed2       = (double *)malloc((NRAD+1)*sizeof(double));
+  Rinf        = (double *)malloc((NRAD+1)*sizeof(double));
+  Rmed        = (double *)malloc((NRAD+1)*sizeof(double));
+  Rsup        = (double *)malloc((NRAD+1)*sizeof(double));
+  Surf        = (double *)malloc((NRAD+1)*sizeof(double));
+  invRinf     = (double *)malloc((NRAD+1)*sizeof(double));
+  invSurf     = (double *)malloc((NRAD+1)*sizeof(double));
+  invRmed     = (double *)malloc((NRAD+1)*sizeof(double));
+  invdiffRsup = (double *)malloc((NRAD+1)*sizeof(double));
+  invdiffRmed = (double *)malloc((NRAD+1)*sizeof(double));
+  vt_cent     = (double *)malloc((NRAD+1)*sizeof(double));
+  powRmed     = (double *)malloc((NRAD+1)*sizeof(double));
   DT2D     = (double *)malloc(size_grid*sizeof(double));
 
   char InputCharName[100];
@@ -97,8 +97,7 @@ __host__ void FillPolar1DArrays ()
       for (i = 0; i <= NRAD; i++){
         /* Usamos doubles para calcular los valores de los arrays, luego
            los pasamos a double */
-        Radii2[i] = RMIN*exp((double)i/(double)NRAD*log((double)RMAX/(double)RMIN));
-        Radii[i] = Radii2[i];
+        Radii[i] = RMIN*exp((double)i/(double)NRAD*log((double)RMAX/(double)RMIN));
       }
     }
     else {
@@ -109,33 +108,27 @@ __host__ void FillPolar1DArrays ()
   else {
     printf("Reading 'radii.dat' file.\n");
     for (i = 0; i <= NRAD; i++){
-      fscanf (input, "%f", &temporary);
+      fscanf (input, "%g", &temporary);
       Radii[i] = (double)temporary;
     }
   }
 
-  double numero=0;
   for (i = 0; i < NRAD; i++){
-    Rinf[i] = Radii2[i];
-    Rsup[i] = Radii2[i+1];
-    Rmed2[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]);
-    Rmed2[i] = Rmed2[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]);
-    Rmed[i] = Rmed2[i];
-    //printf("Rmed %.10f\n", Rmed[i]);
-    //printf("Rmed2 %.10f\n", Rmed2[i]);
+    Rinf[i] = Radii[i];
+    Rsup[i] = Radii[i+1];
+    Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
+    Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
     Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(double)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    //printf("invSurf%.15g\n", invSurf[i]);
     invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
     invRinf[i] = 1.0/Rinf[i];
   }
-  //printf("sumaSurf = %g\n", numero);
 
-  Rinf[NRAD] = Radii2[NRAD];
+  Rinf[NRAD] = Radii[NRAD];
 
   for (i = 1; i < NRAD; i++) {
-    invdiffRmed[i] = (double)1.0/(double)(Rmed2[i]-Rmed2[i-1]);
+    invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
     powRmed[i] = pow(Rmed[i],-2.5+SIGMASLOPE);
   }
 
@@ -212,28 +205,19 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
   }
 
   dt = DT / gastimestepcfl;
-  //printf("dt %.10f\n", dt);
 
   while (dtemp < 0.999999999*DT){
     MassTaper = PhysicalTime/(MASSTAPER*2.0*M_PI);
     MassTaper = (MassTaper > 1.0 ? 1.0 : pow(sin(MassTaper*M_PI/2.0), 2.0));
-    //printf("dtemp = %.10f\n",dtemp );
-    //printf("MassTaper = %g\n",MassTaper );
-
     if(IsDisk == YES){
       if (SloppyCFL == NO){
-        //printf("DT-dtemp = %.10f\n",DT-dtemp );
         gastimestepcfl = 1;
         gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
         dt = (DT-dtemp)/(double)gastimestepcfl;
-        //printf("gastimestepcfl %d\n", gastimestepcfl);
-        //printf("dt %.15f\n", dt);
       }
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys); // si existe acrecion entra
     }
-    //printf("dt %g\n",dt );
     dtemp += dt;
-    //printf("dtemp %.10f\n", dtemp);
     DiskOnPrimaryAcceleration.x = 0.0;
     DiskOnPrimaryAcceleration.y = 0.0;
     if (Corotating == YES) GetPsysInfo (sys, MARK);
@@ -257,14 +241,10 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
     /* Below we correct vtheta, planet's position and velocities if we work in a frame non-centered on the star */
     if (Corotating == YES){
       OmegaNew = GetPsysInfo(sys, GET) / dt;
-      //printf("omeganew %.10f\n", OmegaNew );
       domega = OmegaNew - OmegaFrame;
-      //printf("OmegaFrame  %.10f\n", OmegaFrame);
-      //printf("domega  %.15f\n", domega);
       if (IsDisk == YES) CorrectVtheta (Vtheta, domega);
       OmegaFrame = OmegaNew;
     }
-    //printf("OmegaFrame %.10f\n", OmegaFrame);
     RotatePsys (sys, OmegaFrame*dt);
 
     /* Now we update gas */
@@ -280,50 +260,34 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
       }
       else
         printf(".");
-      // if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
-/*
-      gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      //if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
 
-      FILE *f;
-      f = fopen("vradnew.txt","w");
-      for (int i = 0; i < NRAD*NSEC; i++) {
-        fprintf(f, "%.20f\n", Vrad[i]);
-      }
-      fclose(f);
+      gpuErrchk(cudaMemcpy(Vrad, Vrad_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      printf("%.35g\n", Vrad[384 + 1]);
+      printf("%.35g\n", Vtheta[384 + 1]);
 
-      f = fopen("vthetanew.txt","w");
-      for (int i = 0; i < NRAD*NSEC; i++) {
-        fprintf(f, "%.20f\n", Vtheta[i]);
-      }
-      fclose(f);
-
-      exit(1);*/
       ComputePressureField ();
       Substep1 (Dens, Vrad, Vtheta, dt, init);
       Substep2 (dt);
+
+      gpuErrchk(cudaMemcpy(Vrad, VradInt_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(Vtheta, VthetaInt_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      printf("%.35g\n", Vrad[384 + 1]);
+      printf("%.35g\n", Vtheta[384 + 1]);
+
       ActualiseGasVrad (Vrad, VradNew);
       ActualiseGasVtheta (Vtheta, VthetaNew);
 
-      // gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      // gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      //
-      //
-      // FILE *f;
-      // f = fopen("vradnew.txt","w");
-      // for (int i = 0; i < NRAD*NSEC; i++) {
-      //   fprintf(f, "%.20f\n", Vrad[i]);
-      // }
-      // fclose(f);
-      //
-      // f = fopen("vthetanew.txt","w");
-      // for (int i = 0; i < NRAD*NSEC; i++) {
-      //   fprintf(f, "%.20f\n", Vtheta[i]);
-      // }
-      // fclose(f);
-      //
-      // exit(1);
+      gpuErrchk(cudaMemcpy(Vrad, Vrad_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+
+
+      printf("%.35g\n", Vrad[384 + 1]);
+      printf("%.35g\n", Vtheta[384 + 1]);
+
+      //exit(1);
 
 
       //ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
@@ -347,9 +311,6 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
 
       mdcp1 = CircumPlanetaryMass (Dens, sys);
       exces_mdcp = mdcp1 - mdcp;
-
-      //printf("%g - %g \n",mdcp1, mdcp );
-      //printf("exces_mdcp %g \n",exces_mdcp);
     }
     init = init + 1;
 
@@ -369,26 +330,6 @@ __host__ void Substep1 (double *Dens, double *Vrad, double *Vtheta, double dt, i
     invRinf_d, Vrad_d, VthetaInt_d, Vtheta_d, Rmed_d,  dt, NRAD, NSEC, OmegaFrame, ZMPlus,
     IMPOSEDDISKDRIFT, SIGMASLOPE, powRmed_d);
   gpuErrchk(cudaDeviceSynchronize());
-  //exit(1);
-
-  gpuErrchk(cudaMemcpy(VradInt, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(VthetaInt, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-
-  FILE *f;
-  f = fopen("Vradint.txt","w");
-  for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-    fprintf(f, "%.20f\n", VradInt[i]);
-  }
-
-  fclose(f);
-
-  f = fopen("Vthetaint.txt","w");
-  for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-    fprintf(f, "%.20f\n", VthetaInt[i]);
-  }
-  fclose(f);
-  exit(1);
 
   if (SelfGravity){
     selfgravityupdate = YES;
@@ -411,28 +352,12 @@ __host__ void Substep1 (double *Dens, double *Vrad, double *Vtheta, double dt, i
   UpdateVelocitiesWithViscosity(VradInt, VthetaInt, Dens, dt);
 
 
-  gpuErrchk(cudaMemcpy(VradInt, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(VthetaInt, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+  //gpuErrchk(cudaMemcpy(VradInt, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+  //gpuErrchk(cudaMemcpy(VthetaInt, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 
 
   if (!Evanescent)
     ApplySubKeplerianBoundary(VthetaInt);
-
-/*
-      FILE *f;
-      f = fopen("Vradint.txt","w");
-      for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-        fprintf(f, "%.15f\n", VradInt[i]);
-      }
-
-      fclose(f);
-
-      f = fopen("Vthetaint.txt","w");
-      for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-        fprintf(f, "%.15f\n", VthetaInt[i]);
-      }
-      fclose(f);
-      exit(1);*/
 }
 
 
@@ -549,16 +474,6 @@ __host__ void ComputePressureField ()
   ComputePressureFieldKernel<<<dimGrid2, dimBlock2>>>(SoundSpeed_d, Dens_d, Pressure_d, Adiabatic, NRAD,
     NSEC, ADIABATICINDEX, Energy_d);
   gpuErrchk(cudaDeviceSynchronize());
-
-  // gpuErrchk(cudaMemcpy(Pressure, Pressure_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  //
-  // FILE *f;
-  // f = fopen("press.txt", "w");
-  // for (int i = 0; i < size_grid; i++) {
-  //   fprintf(f, "%.10f\n", Pressure[i]);
-  // }
-  // fclose(f);
-
 }
 
 
@@ -568,15 +483,6 @@ __host__ void ComputeSoundSpeed ()
     Adiabatic, ADIABATICINDEX, FLARINGINDEX, ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS,
     TRANSITIONRATIO, PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
   gpuErrchk(cudaDeviceSynchronize());
-
-  // gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  //
-  // FILE *f;
-  // f = fopen("cs.txt", "w");
-  // for (int i = 0; i < size_grid; i++) {
-  //   fprintf(f, "%.10f\n", SoundSpeed[i]);
-  // }
-  // fclose(f);
 }
 
 
@@ -585,15 +491,6 @@ __host__ void ComputeTemperatureField ()
   ComputeTemperatureFieldKernel<<<dimGrid2, dimBlock2>>>(Dens_d, Temperature_d, Pressure_d, Energy_d,
     ADIABATICINDEX, Adiabatic, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
-
-  // gpuErrchk(cudaMemcpy(Temperature, Temperature_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  //
-  // FILE *f;
-  // f = fopen("temp.txt", "w");
-  // for (int i = 0; i < size_grid; i++) {
-  //   fprintf(f, "%.10f\n", Temperature[i]);
-  // }
-  // fclose(f);
 }
 
 
@@ -629,10 +526,9 @@ __host__ void Substep1cudamalloc (double *Vrad, double *Vtheta)
 
 __host__ int ConditionCFL (double *Vrad, double *Vtheta , double DeltaT)
 {
-  gpuErrchk(cudaMemset(Vmoy_d, 0, NRAD*sizeof(double)));
+  //gpuErrchk(cudaMemset(Vmoy_d, 0, NRAD*sizeof(double)));
   ConditionCFLKernel1D<<<dimGrid4, dimBlock>>>(Rsup_d, Rinf_d, Rmed_d, NRAD, NSEC, Vtheta_d, Vmoy_d);
   gpuErrchk(cudaDeviceSynchronize());
-
 
   gpuErrchk(cudaMemset(DT2D_d, 0, NRAD*NSEC*sizeof(double)));
   gpuErrchk(cudaMemset(DT1D_d, 0, NRAD*sizeof(double)));

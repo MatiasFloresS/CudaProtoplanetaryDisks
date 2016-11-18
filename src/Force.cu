@@ -107,12 +107,14 @@ __host__ void ComputeForce (Force *force, double *Dens, double x, double y, doub
 
   globalforce = force->GlobalForce;
 
-  gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(double)));
-  gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(double)));
-  gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(double)));
-  gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(double)));
 
   for (k = 0; k < dimfxy; k++) {
+
+    gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(double)));
+    gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(double)));
+    gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(double)));
+    gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(double)));
+
     ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
       NSEC, NRAD, a, Rmed_d, dimfxy, rh, fxi_d, fxo_d, fyi_d, fyo_d, k);
     gpuErrchk(cudaDeviceSynchronize());
@@ -132,6 +134,7 @@ __host__ void ComputeForce (Force *force, double *Dens, double x, double y, doub
   force->fy_outer = globalforce[3*dimfxy];
   force->fy_ex_outer = globalforce[4*dimfxy-1];
   force->GlobalForce = globalforce;
+
 }
 
 __host__ double Compute_smoothing(double r)

@@ -63,21 +63,6 @@ __host__ void ComputeViscousTerms (double *Vradial, double *Vazimutal, double *D
     DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
     viscosity_array_d, TAURP_d, invRinf_d);
   gpuErrchk(cudaDeviceSynchronize());
-
-
-/*  gpuErrchk(cudaMemcpy(DRR, DRR_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-
-  FILE *f;
-  f = fopen("DRR.txt","w");
-  for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-    fprintf(f, "%.10f\n", DRR[i]);
-  }
-
-  fclose(f);
-
-
-*/
 }
 
 __host__ void InitViscosity ()

@@ -14,7 +14,6 @@ __host__ void AccreteOntoPlanets (double *Dens, double *Vrad, double *Vtheta, do
 
   for (int k = 0; k < sys->nb; k++) {
     if (sys->acc[k] > 1e-10){ // case acc positive
-      //printf("entro\n");
       dMplanet = dPxPlanet = dPyPlanet = 0.0;
       /* Hereafter: initialization of W. Kley's parameters */
       facc = dt*(sys->acc[k]);

@@ -26,7 +26,6 @@ __host__ void InitGasDensity (double *Dens)
     for (j = 0; j < NSEC; j++){
       Dens[j+i*NSEC] = SigmaMed[i];
     }
-    //printf("Dens[]%.10f\n", Dens[i*NSEC]);
   }
 }
 
@@ -55,7 +54,6 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Ener
     xplanet = sys->x[k];
     yplanet = sys->y[k];
     mplanet = sys->mass[k]*MassTaper;
-    //printf("MASSSSSSSSSSSS%.10f\n", MassTaper );
     PlanetDistance = sqrt(xplanet*xplanet+yplanet*yplanet);
     InvPlanetDistance3 = 1.0/PlanetDistance/PlanetDistance/PlanetDistance;
     RRoche = PlanetDistance*pow((1.0/3.0*mplanet),1.0/3.0);
@@ -63,26 +61,10 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Ener
     else smoothing = Compute_smoothing (PlanetDistance);
     smooth = smoothing*smoothing;
 
-    printf("xplanet %.25f\n", xplanet);
-    printf("yplanet %.25f\n", yplanet);
-    printf("smooth %.25f\n", smooth);
-    printf("mplanet %.25f\n", mplanet);
-    printf("InvPlanetDistance3 %.25f\n", InvPlanetDistance3);
-
     FillForcesArraysKernel<<<dimGrid2,dimBlock2>>>(Rmed_d, NSEC, NRAD, xplanet, yplanet, smooth,
       mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm, k);
     gpuErrchk(cudaDeviceSynchronize());
-    //exit(1);
   }
-
-  /*gpuErrchk(cudaMemcpy(Potential, Potential_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-  FILE *f;
-  f = fopen("Potential.txt", "w");
-  for (int i = 0; i < size_grid; i++) {
-    fprintf(f, "%.10f\n",Potential[i] );
-  }*/
-
 }
 
 
@@ -148,10 +130,6 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
       sys->y[i] =  q1[i+nb];
       sys->vx[i] = q1[i+2*nb];
       sys->vy[i] = q1[i+3*nb];
-      /*printf("x%d %.10f\n",i, sys->x[i]);
-      printf("y%d %.10f\n", i,sys->y[i]);
-      printf("vx%d %.10f\n", i,sys->vx[i]);
-      printf("vy%d %.10f\n", i,sys->vy[i]);*/
     }
     else {
       x = sys->x[i];
@@ -169,7 +147,6 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
     }
   }
   if (PhysicalTime < RELEASEDATE){
-    //printf("entro\n" );
     x = sys->x[0];
     y = sys->y[0];
     r = sqrt(x*x+y*y);
@@ -261,23 +238,6 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
   }
 
   InitVelocities(Vrad, Vtheta);
-
-/*
-  gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-  FILE *f;
-  f = fopen("vr.txt", "w");
-  for (int i = 0; i < size_grid; i++) {
-    fprintf(f, "%.10f\n", Vrad[i]);
-  }
-  fclose(f);
-
-  f = fopen("vt.txt", "w");
-  for (int i = 0; i < size_grid; i++) {
-    fprintf(f, "%.10f\n", Vtheta[i]);
-  }
-  fclose(f);*/
 }
 
 

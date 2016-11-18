@@ -101,7 +101,7 @@ __host__ void ReadVariables(char *filename)
 {
     char      nm[300], s[350], stringval[290];
     char      *s1;
-    double     temp;
+    float     temp;
     double     valuef;
     int       i, valuei, success;
     FILE      *input;
@@ -115,7 +115,7 @@ __host__ void ReadVariables(char *filename)
       success = sscanf(s, "%s ", nm);
       if ((nm[0] != '#') && (success == 1)){  /* # begins a comment line */
         s1 = s + strlen(nm);
-        sscanf(s1 + strspn(s1, "\t :=>_"), "%g", &temp);
+        sscanf(s1 + strspn(s1, "\t :=>_"), "%f", &temp);
         sscanf(s1 + strspn(s1, "\t :=>_"), "%289s ", stringval);
         valuef = (double) temp;
         valuei = (int) temp;

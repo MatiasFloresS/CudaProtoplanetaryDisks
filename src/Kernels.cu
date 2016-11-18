@@ -16,56 +16,41 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
-  double gradp, gradphi, vt2, supp_torque, dxtheta, invdxtheta;
-  double valor;
-  double valor2;
-  double valor3;
+  double gradp, gradphi, vt2, valor, valor2, valor3, supp_torque, dxtheta, invdxtheta;
 
   // i=1->nrad , j=0->nsec
   if (i > 0 && i<nrad && j<nsec){
     gradp = (Pressure[i*nsec + j] - Pressure[(i-1)*nsec + j])*2.0/(Dens[i*nsec + j] + Dens[(i-1)*nsec + j])*invdiffRmed[i];
     gradphi = (Potential[i*nsec + j]-Potential[(i-1)*nsec + j])*invdiffRmed[i];
     vt2 = Vtheta[i*nsec + j] + Vtheta[i*nsec + (j+1)%nsec] + Vtheta[(i-1)*nsec + j] + Vtheta[(i-1)*nsec + (j+1)%nsec];
-    vt2 = vt2/4.0+Rinf[i]*OmegaFrame;
+    vt2 = vt2/4.0  +OmegaFrame*Rinf[i];
     vt2 = vt2*vt2;
     valor = -gradp-gradphi;
     valor2 = vt2*invRinf[i];
-    valor3 = valor + valor2;
-    //valor = Vrad[i*nsec + j] + valor;
-    VradInt[i*nsec + j] = (double)-gradp-(double)gradphi+ (double)vt2*(double)invRinf[i];
-    if (i == 1 && j == 0)
-    {
-      printf("gradp %.30g\n", -gradp);
-      printf("gradphi %.30g\n", -gradphi);
-      printf("gradp+gradphi %.30g\n", -gradp-gradphi);
-      printf("vt2 %.30g\n", vt2*invRinf[i]);
-      printf("invdiffRmed %.30g\n", invdiffRmed[i]);
-      printf("VradInt %.30g\n", VradInt[i*nsec+j]);
-      printf("Vrad %.30g\n", Vrad[i*nsec+j]);
-      printf("suma %.30g\n", (-gradp - gradphi + vt2*invRinf[i]));
-      printf("dt %.30g\n", dt);
-      printf("valor %.30g\n", valor3);
-    }
-    __syncthreads();
-    if (i == 2&& j == 0)
-    {
-      printf("gradp %.30g\n", -gradp);
-      printf("gradphi %.30g\n", -gradphi);
-      printf("gradp+gradphi %.30g\n", -gradp-gradphi);
-      printf("vt2 %.30g\n", vt2*invRinf[i]);
-      printf("invdiffRmed %.30g\n", invdiffRmed[i]);
-      printf("VradInt %.30g\n", VradInt[i*nsec+j]);
-      printf("Vrad %.30g\n", Vrad[i*nsec+j]);
-      printf("suma %.30g\n", (-gradp - gradphi + vt2*invRinf[i]));
-      printf("dt %.30g\n", dt);
-      printf("valor %.30g\n", valor3);
-    }
-  }
+    valor3 = (double)valor + (double)valor2;
 
+
+      double a = -gradp-gradphi;
+      double b = vt2*invRinf[i];
+      double c = a + b;
+      //printf("bbbbbbbbbb %.35g\n", b);
+      //printf("cccccccccc %.35g\n", c);
+      VradInt[i*nsec + j] = Vrad[i*nsec + j] + dt*c;
+
+
+
+
+    if ( i == 1 && j == 1) {
+      printf("b %.35g\n",b );
+    printf("vradint   %.35g\n", c);}
+
+  }
+  __syncthreads();
 
   // i=0->nrad ,   j=0->nsec
   if (i<nrad && j<nsec){
-    supp_torque = IMPOSEDDISKDRIFT*0.5*pow(Rmed[i], -2.5+SIGMASLOPE);
+
+    supp_torque = IMPOSEDDISKDRIFT*0.5*pow((double)Rmed[i], -2.5+SIGMASLOPE);
     dxtheta = 2.0*M_PI/(double)nsec*Rmed[i];
     invdxtheta = 1.0/dxtheta;
 
@@ -101,15 +86,6 @@ __global__ void Substep3Kernel (double *Dens, double *Qplus, double *viscosity_a
 
   }
   __syncthreads();
-  if (i == 1 && j == 0)
-  {
-    //printf("Dens =  %g\n",Dens[i*nsec + j]);
-    //printf("Qplus = %g\n",Qplus[i*nsec+j]);
-    //printf("TAURR = %g\n",TAURR[i*nsec + j]);
-    //printf("TAURP = %g\n",TAURP[i*nsec + j]);
-    //printf("TAUPP = %g\n",TAUPP[i*nsec + j]);
-    //printf("DivergenceVelocity = %g\n",DivergenceVelocity[i*nsec + j]);
-  }
 
   if (i==0 && j<nsec){
     /* We calculate the heating source term Qplus for i=0 */
@@ -175,24 +151,6 @@ __global__ void UpdateVelocitiesKernel (double *VthetaInt, double *VradInt, doub
     VradInt[i*nsec +j] += DeltaT*invRinf[i]*((Rmed[i]*TAURR[i*nsec +j]- Rmed[i-1]*TAURR[(i-1)*nsec + j])*invdiffRmed[i] + \
     (TAURP[i*nsec + (j+1)%nsec] -TAURP[i*nsec + j])*invdphi - 0.5*(TAUPP[i*nsec +j] + TAUPP[(i-1)*nsec + j]))/ \
     (0.5*(Dens[i*nsec +j] + Dens[(i-1)*nsec + j]));
-
-    /*if (i == 1 && j == 0)
-    {
-      printf("%.10f\n", DeltaT);
-      printf("%.10f\n", invRinf[i]);
-      printf("%.10f\n", TAURR[i*nsec + j]);
-      printf("%.10f\n", TAURR[(i-1)*nsec + j]);
-      printf("%.10f\n", TAURP[i*nsec + (j+1)%nsec]);
-      printf("%.10f\n", TAURP[i*nsec + j]);
-      printf("%.10f\n", TAUPP[i*nsec +j]);
-      printf("%.10f\n", TAUPP[(i-1)*nsec + j]);
-      printf("%.10f\n", Dens[i*nsec +j] + Dens[(i-1)*nsec + j]);
-      printf("%.10f\n",  DeltaT*invRinf[i]*((Rmed[i]*TAURR[i*nsec +j]- Rmed[i-1]*TAURR[(i-1)*nsec + j])*invdiffRmed[i] + \
-      (TAURP[i*nsec + (j+1)%nsec] -TAURP[i*nsec + j])*1.0/(2.0*M_PI/nsec) - 0.5*(TAUPP[i*nsec +j] + TAUPP[(i-1)*nsec + j]))/ \
-      (0.5*(Dens[i*nsec +j] + Dens[(i-1)*nsec + j])));
-      printf("vr final %.10f\n", VradInt[i*nsec + j]);
-    }
-    if ( i == 2 && j == 0) printf("vr final2 %.10f\n", VradInt[i*nsec + j]);*/
   }
 }
 
@@ -489,6 +447,7 @@ __global__ void Substep2Kernel (double *Dens, double *VradInt, double *VthetaInt
 
     VthetaNew[i*nsec + j] = VthetaInt[i*nsec + j] - dt*2.0/(Dens[i*nsec + j] + Dens[i*nsec + ((j-1)+nsec)%nsec])* \
       (TemperInt[i*nsec + j] - TemperInt[i*nsec + ((j-1)+nsec)%nsec])* invdxtheta;
+
   }
 
 
@@ -584,10 +543,6 @@ __global__ void NonReflectingBoundaryKernel (double *Dens, double *Energy, int i
 
     Vrad_med = -SoundSpeed[i*nsec + j]*(Dens[i*nsec + j]-SigmaMed)/SigmaMed;
     Vrad[i*nsec + j] = 2.0*Vrad_med-Vrad[(i+1)*nsec + j];
-    if (j == 0) {
-      //printf("vrad = %g\n",Vrad[i*nsec+j] );
-      //printf("vrad = %g\n",Vrad[(i+1)*nsec+j] );
-    }
   }
 
   i = nrad-1;
@@ -689,11 +644,10 @@ __global__ void InitGasVelocitiesKernel (double *viscosity_array, int nsec, int 
 
       if (!SelfGravity){
         omega = sqrt(G*1.0/r/r/r);
-        Vtheta[i*nsec + j] = omega*r*sqrt(1.0-pow((double)ASPECTRATIO,2.0)*pow(r,2.0*FLARINGINDEX)* \
+        Vtheta[i*nsec + j] = omega*r*sqrt(1.0-pow((double)ASPECTRATIO,2.0)*pow((double)r,2.0*FLARINGINDEX)* \
         (1.+SIGMASLOPE-2.0*FLARINGINDEX));
       }
       Vtheta[i*nsec + j] -= OmegaFrame*r;
-      //if (i == 1 && j == 1) printf("%.10g\n", OmegaFrame);
 
       if (CentrifugalBalance) Vtheta[i*nsec + j] = vt_cent[i];
 
@@ -767,14 +721,6 @@ __global__ void ViscousTermsKernel (double *Vradial, double *Vazimutal , double 
      onethird = 1.0/3.0;
 
      DRR[i*nsec + j] = (Vradial[(i+1)*nsec + j] - Vradial[i*nsec + j])*invdiffRsup[i];
-
-    // if ( i == 1 && j == 0) printf("drr %.10f\n", -0.0000575267/invdiffRsup[i]);
-
-     //if ( i == 1 && j == 0) printf("vradial %.10f\n", Vradial[(i+1)*nsec+j] - Vradial[i*nsec+j]);
-
-    //  if (i == 1 && j == 0) printf("vradial %g\n", Vradial[(i+1)*nsec + j]);
-    //  if (i == 1 && j == 0) printf("vradial %g\n", Vradial[(i)*nsec + j]);
-    //  if (i == 1 && j == 0) printf("vradial %g\n", Vradial[(i+1)*nsec + j] - Vradial[(i)*nsec + j]);
      DPP[i*nsec + j] = (Vazimutal[i*nsec + (j+1)%nsec] - Vazimutal[i*nsec + j])*invdphi*invRmed[i]+0.5* \
        (Vradial[(i+1)*nsec + j]+Vradial[i*nsec + j])*invRmed[i];
 
@@ -794,20 +740,10 @@ __global__ void ViscousTermsKernel (double *Vradial, double *Vazimutal , double 
 
      if (i > 0){
       TAURP[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + \
-      dens[(i-1)*nsec + ((j-1)+nsec)%nsec] + dens[i*nsec + ((j-1)+nsec)%nsec])* \
+      dens[i*nsec + ((j-1)+nsec)%nsec] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
       viscosity_array[i]*DRP[i*nsec + j];
-    }
-    if (i == 1 && j == 0)
-    {
-      //printf("TAURR = %g\n",TAURR[i*nsec + j]);
-      //printf("TAURP = %g\n",TAURP[i*nsec + j]);
-      //printf("TAUPP = %g\n",TAUPP[i*nsec + j]);
-      //printf("DivergenceVelocity = %g\n",DivergenceVelocity[i*nsec + j]);
-      //printf("Drr = %g\n",DRR[i*nsec + j]);
-      //printf("DRP = %g\n",DRP[i*nsec + j]);
-      //printf("DPP = %g\n",DPP[i*nsec + j]);
-    }
 
+    }
    }
  }
 
@@ -824,15 +760,6 @@ __global__ void LRMomentaKernel (double *RadMomP, double *RadMomM, double *Theta
      /* it is the angular momentum -> ThetaMomP */
      ThetaMomP[i*nsec + j] = Dens[i*nsec + j] * (Vtheta[i*nsec + (j+1)%nsec]+Rmed[i]*OmegaFrame)*Rmed[i];
      ThetaMomM[i*nsec + j] = Dens[i*nsec + j] * (Vtheta[i*nsec + j]+Rmed[i]*OmegaFrame)*Rmed[i];
-
-
-     if ( i == 50 && j == 300)
-     {
-       printf("RadMomP%.20f\n", RadMomP[i*nsec + j]);
-       printf("RadMomM%.20f\n", RadMomM[i*nsec + j]);
-       printf("ThetaMomP%.20f\n", ThetaMomP[i*nsec + j]);
-       printf("ThetaMomM%.20f\n", ThetaMomM[i*nsec + j]);
-     }
    }
  }
 
@@ -873,14 +800,6 @@ __global__ void StarRadKernel (double *Qbase2, double *Vrad, double *QStar, doub
     else
       QStar[i*nsec + j] = Qbase2[i*nsec + j]-(Rmed[i+1]-Rmed[i]+Vrad[i*nsec + j]*dt)*0.5*dq[j*nrad + i];
 
-    if ( i == 50 && j == 300)
-    {
-      printf("QSSS %.20f\n", QStar[i*nsec + j]);
-      printf("Vrad %.20f\n", Vrad[i*nsec + j]);
-      printf("coso %.20f\n", (Rmed[i]-Rmed[i-1]-Vrad[i*nsec + j]*dt)*0.5*dq[j*nrad + i-1]);
-      printf("coso2 %.20f\n", Qbase2[(i-1)*nsec + j]);
-
-    }
   }
   __syncthreads();
   if (i == 0 && j<nsec)
@@ -993,8 +912,8 @@ __global__ void Azimutalvelocity_withSGKernel (double *Vtheta, double *Rmed, dou
   if (i<nrad && j<nsec){
     invr = 1./Rmed[i];
     omegakep = sqrt(G*1.0*invr*invr*invr);
-    omega = sqrt(omegakep*omegakep* (1.0 - (1.+SIGMASLOPE-2.0*FLARINGINDEX)*pow(ASPECTRATIO,2.0)* \
-      pow(Rmed[i],2.0*FLARINGINDEX)) - invr*GLOBAL_bufarray[i]);
+    omega = sqrt(omegakep*omegakep* (1.0 - (1.+SIGMASLOPE-2.0*FLARINGINDEX)*pow((double)ASPECTRATIO,2.0)* \
+      pow((double)Rmed[i],2.0*FLARINGINDEX)) - invr*GLOBAL_bufarray[i]);
 
     Vtheta[i*nsec + j] = Rmed[i]*omega;
   }
@@ -1039,14 +958,14 @@ __global__ void EvanescentBoundaryKernel(double *Rmed, double *Vrad, double *Vth
         if(!SelfGravity){
           AspectRatio = AspectRatioDevice(Rmed[i], ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO,
             PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
-          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*pow(AspectRatio,2.0) * \
-          pow(Rmed[i],2.0*FLARINGINDEX)));
+          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*pow((double)AspectRatio,2.0) * \
+          pow((double)Rmed[i],2.0*FLARINGINDEX)));
         }
         if (SelfGravity){
           AspectRatio = AspectRatioDevice(Rmed[i], ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO,
             PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
-          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*pow(AspectRatio,2.0) * \
-          pow(Rmed[i],2.0*FLARINGINDEX)) - Rmed[i]*GLOBAL_bufarray[i]);
+          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*pow((double)AspectRatio,2.0) * \
+          pow((double)Rmed[i],2.0*FLARINGINDEX)) - Rmed[i]*GLOBAL_bufarray[i]);
         }
         /* this could be refined if CentrifugalBalance is used... */
         vtheta0 -= Rmed[i]*OmegaFrame;
@@ -1066,11 +985,11 @@ __global__ void EvanescentBoundaryKernel(double *Rmed, double *Vrad, double *Vth
 
 __global__ void DivisePolarGridKernel (double *Qbase, double *DensInt, double *Work, int nrad, int nsec)
 {
-  int i = threadIdx.x + blockDim.x*blockIdx.x;
-  int j = threadIdx.y + blockDim.y*blockIdx.y;
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<=nsec && j<nrad)
-    Work[i*nrad + j] = Qbase[i*nrad + j]/(DensInt[i*nrad + j] + 1e-20);
+  if (i<=nrad && j<nsec)
+    Work[i*nsec + j] = Qbase[i*nsec + j]/(DensInt[i*nsec + j] + 1e-20);
 }
 
 
@@ -1083,20 +1002,14 @@ __global__ void VanLeerRadialKernel (double *Rinf, double *Rsup, double *QRStar,
   double varq, dtheta;
 
   if (i<nrad && j<nsec){
-    dtheta = 2.0*M_PI/double(nsec);
+    dtheta = 2.0*M_PI/(double)nsec;
     varq = dt*dtheta*Rinf[i]*QRStar[i*nsec + j]* DensStar[i*nsec + j]*Vrad[i*nsec + j];
     varq -= dt*dtheta*Rsup[i]*QRStar[(i+1)*nsec + j]* DensStar[(i+1)*nsec + j]*Vrad[(i+1)*nsec + j];
     Qbase[i*nsec + j] += varq*invSurf[i];
-    if ( i == 1 && j == 1)
-    {
-      //printf("Qbase %.15f\n", Qbase[i*nsec + j]);
-      //printf("invSurf%.15f\n", invSurf[i]);
-    }
+
     if (i==0 && OpenInner)
-    {
       LostByDisk[j] = varq;
-      //printf("OpenInner%d\n", OpenInner);
-    }
+
   }
 }
 
@@ -1111,13 +1024,12 @@ __global__ void VanLeerThetaKernel (double *Rsup, double *Rinf, double *Surf, do
 
   if (i<nrad && j<nsec){
     if ((UniformTransport == NO) || (NoSplitAdvection[i] == NO)){
+      if (i == 0 && j == 0) printf("NO %d\n",NO );
       dxrad = (Rsup[i]-Rinf[i])*dt;
       invsurf = 1.0/Surf[i];
       varq = dxrad*QRStar[i*nsec + j]*DensStar[i*nsec + j]*Vtheta[i*nsec + j];
       varq -= dxrad*QRStar[i*nsec + (j+1)%nsec]*DensStar[i*nsec + (j+1)%nsec]*Vtheta[i*nsec + (j+1)%nsec];
       Qbase[i*nsec + j] += varq*invsurf;
-      /*if ( i == 1 && j == 1)
-        printf("qbase %.15f\n",Qbase[i*nsec+j] );*/
     }
   }
 }
@@ -1134,7 +1046,6 @@ __global__ void ComputeAverageThetaVelocitiesKernel(double *Vtheta, double *VMed
       moy += Vtheta[i*nsec + j];
 
     VMed[i] = moy/(double)nsec;
-    //if (i == 1) printf("VMed [i]%.15f\n", VMed[i]);
   }
 }
 
@@ -1146,7 +1057,6 @@ __global__ void ComputeResidualsKernel (double *VthetaRes, double *VMed, int nse
 
   if (i<nrad && j<nsec)
     VthetaRes[i*nsec + j] = Vtheta[i*nsec + j]-VMed[i];
-    //if ( i == 1 && j == 1) printf("VthetaRes%.15f\n", VthetaRes[i*nsec+j]);
 }
 
 
@@ -1172,12 +1082,6 @@ __global__ void ComputeConstantResidualKernel (double *VMed, double *invRmed, lo
     Nshift[i] = (long)nitemp;
 
     Vtheta[i*nsec + j] = (Ntilde-Nround)*Rmed[i]*invdt*2.0*M_PI/(double)nsec;
-  /*  if ( i == 1 && j == 1)
-    {
-      printf("Ntilde %.15f\n", Ntilde);
-      printf("Nround %.15f\n", Nround);
-      printf("Vtheta %.15f\n", Vtheta[i*nsec+j]);
-    }*/
     if (maxfrac < 0.5){
       NoSplitAdvection[i] = YES;
       VthetaRes[i*nsec + j] += Vtheta[i*nsec + j];
@@ -1186,10 +1090,6 @@ __global__ void ComputeConstantResidualKernel (double *VMed, double *invRmed, lo
     else{
       NoSplitAdvection[i] = NO;
     }
-
-
-
-    //if(i == 1 && j == 1) printf("Vtheta %.15f\n",Vtheta[i*nsec+ j] );
   }
 }
 
@@ -1235,17 +1135,13 @@ __global__ void AdvectSHIFTKernel (double *array, double *TempShift, int nsec, i
   if (i<nrad && j<nsec){
     ji = j-Nshift[i];
     while (ji < 0 ) ji += nsec;
-    while (ji >= nsec) ji -= nsec;//modji = ji%nsec;
+    while (ji >= nsec) ji -= nsec;
 
     TempShift[i*nsec + j] = array[i*nsec + ji];
     __syncthreads();
 
     array[i*nsec + j] = TempShift[i*nsec + j];
 
-    if (i == 50 && j == 300)
-    {
-      printf("shift %.20f\n", array[i*nsec+j]);
-    }
   }
 }
 
@@ -1266,15 +1162,6 @@ __global__ void ComputeVelocitiesKernel (double *Vrad, double *Vtheta, double *D
     Vtheta[i*nsec + j] = (ThetaMomP[i*nsec + ((j-1)+nsec)%nsec] + ThetaMomM[i*nsec + j])/(Dens[i*nsec + j] +
       Dens[i*nsec + ((j-1)+nsec)%nsec] + 1e-15)/Rmed[i] - Rmed[i]*OmegaFrame;
       /* It was the angular momentum */
-
-
-      // if ( i == 50 && j == 300)
-      // {
-      //   printf("ThetaMomP%.15f\n", ThetaMomP[i*nsec+j]);
-      //   printf("ThetaMomM%.15f\n", ThetaMomM[i*nsec+j]);
-      //   printf("RadMomP%.15f\n", RadMomP[i*nsec+j]);
-      //   printf("RadMomM%.15f\n", RadMomM[i*nsec+j]);
-      // }
   }
 }
 
@@ -1311,11 +1198,6 @@ __global__ void FillForcesArraysKernel (double *Rmed, int nsec, int nrad, double
     if (Indirect_Term == YES)
       pot += G*mplanet*InvPlanetDistance3*(x*xplanet+y*yplanet); /* Indirect term from planet */
     Potential[i*nsec + j] += pot;
-    if ( i == 2 && j == 0)
-    {
-      //printf("Potencialllll %f\n", Potential[i*nsec+j]);
-
-    }
 
     __syncthreads();
 
@@ -1324,36 +1206,6 @@ __global__ void FillForcesArraysKernel (double *Rmed, int nsec, int nrad, double
      pot = -G*1.0*InvDistance; /* Direct term from star */
      //pot -=  IndirectTerm.x*x + IndirectTerm.y*y; /* Indirect term from star */
      Potential[i*nsec + j] += pot;
-
-     if ( i == 2 && j == 0)
-     {
-       printf("Potencialllll2 %.30f\n", Potential[i*nsec+j]);
-     }
-
-     if ( i == 1 && j == 0)
-     {
-       printf("Potencialllll1 %.30f\n", Potential[i*nsec+j]);
-     }
-
-     if ( i == 0 && j == 0)
-     {
-       printf("Potencialllll0 %.30f\n", Potential[i*nsec+j]);
-     }
-
-     if ( i == 3 && j == 0)
-     {
-       //printf("Potencialllll3 %f\n", Potential[i*nsec+j]);
-     }
-
-     if ( i == 4 && j == 0)
-     {
-       //printf("Potencialllll4 %f\n", Potential[i*nsec+j]);
-     }
-
-     if ( i == 5 && j == 0)
-     {
-       //printf("Potencialllll5 %f\n", Potential[i*nsec+j]);
-     }
     }
   }
 }
@@ -1382,6 +1234,8 @@ __global__ void ConditionCFLKernel1D (double *Rsup, double *Rinf, double *Rmed, 
       Vmoy[i] += Vtheta[i*nsec + j];
 
     Vmoy[i] /= (double)nsec;
+
+    //printf("%d , %.35g\n", i , Vmoy[i]);
   }
 }
 
@@ -1414,19 +1268,6 @@ __global__ void ConditionCFLKernel2D1 (double *Rsup, double *Rinf, double *Rmed,
     invdt4*= 4.0*CVNR*CVNR;
     dt = CFLSECURITY/sqrt(invdt1*invdt1+invdt2*invdt2+invdt3*invdt3+invdt4*invdt4);
     DT2D[i*nsec + j] = dt; // array nrad*nsec size dt
-
-    /*if ( i == 1 && j == 0)
-    {
-      printf("invdt1 %.10f\n", invdt1);
-      printf("invdt2 %.10f\n", invdt2);
-      printf("invdt3 %.10f\n", invdt3);
-      printf("invdt4 %.10f\n", invdt4);
-      printf("invdt4 %.10f\n", max2(dvr/dxrad, dvt/dxtheta));
-      printf("dvr/dxrad %.10f\n", dvr/dxrad);
-      printf("dvt/dxtheta %.10f\n", dvt/dxtheta);
-    }*/
-
-    //if ( dt == 0) printf("%d %d\n",i,j );
   }
 }
 
@@ -1456,7 +1297,6 @@ __global__ void ConditionCFLKernel2D2 (double *newDT, double *DT2D, double *DT1D
       for (k = 2; k < nrad; k++)
         if (newDT[k] < newdt) newdt = newDT[k]; // min dt
 
-      //printf("el dt mejor %g\n", newdt);
       for (k = 0; k < nrad-1; k++) {
         if (DT1D[k] < newdt)
           newdt = DT1D[k];
@@ -1464,9 +1304,8 @@ __global__ void ConditionCFLKernel2D2 (double *newDT, double *DT2D, double *DT1D
 
       if (DeltaT < newdt)
         newdt = DeltaT;
-      //printf("DeltaT%.10f\n", DeltaT);
-      //printf("newdt%.15f\n", newdt);
       CFL[0] = (int)(ceil(DeltaT/newdt));
+      printf("%.35g\n", newdt);
     }
   }
 }

@@ -93,11 +93,8 @@ __host__ void ActualiseGasDens(double *DensInt, double *Dens)
   gpuErrchk(cudaMemcpy(DensInt_d, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
 
-  gpuErrchk(cudaMemcpy(Dens, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  gpuErrchk(cudaMemcpy(DensInt, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-  /*printf("rho %.15f\n", Dens[NSEC+1]);
-  printf("rhoi %.15f\n", DensInt[NSEC+1]);*/
+  //gpuErrchk(cudaMemcpy(Dens, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+  //gpuErrchk(cudaMemcpy(DensInt, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 }
 
 

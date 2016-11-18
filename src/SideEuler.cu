@@ -48,12 +48,10 @@ __host__ void NonReflectingBoundary (double *Dens, double *Energy, double *Vrad)
   dangle *= (Rmed[i] - Rmed[i-1]);
   i_angle = (int)(dangle/2.0/M_PI*(double)NSEC+.5);
 
-  //printf("%d\n", i_angle);
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
   dangle2 *= (Rmed[i]-Rmed[i-1]);
   i_angle2 = (int)(dangle2/2.0/M_PI*(double)NSEC+.5);
-  //printf("%d\n", i_angle2);
 
   NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(Dens_d, Energy_d, i_angle, NSEC, Vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
@@ -135,8 +133,6 @@ __host__ Pair ComputeAccel (Force *force, double *Dens, double x, double y, doub
     acceleration.x = force->fx_inner+force->fx_outer;
     acceleration.y = force->fx_inner+force->fy_outer;
   }
-  //printf("acceleration.x %.25f\n", acceleration.x);
-  //printf("acceleration.y %.25f\n", acceleration.y);
   return acceleration;
 }
 
@@ -159,16 +155,6 @@ __host__ void InitComputeAccel ()
 
   InitComputeAccelKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Rmed_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
-/*
-  gpuErrchk(cudaMemcpy(CellAbscissa, CellAbscissa_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-  FILE *f;
-  f = fopen("abs.txt", "w");
-  for (int i = 0; i < size_grid; i++) {
-    fprintf(f, "%.10f\n", CellAbscissa[i]);
-  }
-  fclose(f);*/
-
 }
 
 
@@ -177,8 +163,8 @@ __host__ void InitComputeAccelDevice()
 {
   gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(double)));
-  gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(double), cudaMemcpyHostToDevice));
+  //gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(double), cudaMemcpyHostToDevice));
+  //gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(double), cudaMemcpyHostToDevice));
 }
 
 
@@ -202,8 +188,6 @@ __host__ void ApplySubKeplerianBoundary(double *VthetaInt)
       pow(AspectRatioHost(Rmed[NRAD-1]), 2.0)*pow(Rmed[NRAD-1], 2.0*FLARINGINDEX)));
   }
 
-  //printf("VKepIn %.10f\n", VKepIn);
-  //printf("VKepOut %.10f\n", VKepOut);
 
   ApplySubKeplerianBoundaryKernel<<<dimGrid, dimBlock>>>(VthetaInt_d, Rmed_d, OmegaFrame, NSEC, NRAD,
     VKepIn, VKepOut);

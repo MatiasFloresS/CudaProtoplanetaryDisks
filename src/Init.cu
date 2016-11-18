@@ -24,15 +24,4 @@ __host__ void InitLabel (double *Label, PlanetarySystem *sys)
 
   InitLabelKernel<<<dimGrid2, dimBlock2>>>(Label_d, xp, yp, rhill, Rmed_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
-
-/*
-  gpuErrchk(cudaMemcpy(Label, Label_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-  FILE *f;
-
-  f = fopen("label.txt","w");
-
-  for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-    fprintf(f, "%.10f\n", Label[i]);
-  }
-  fclose(f);*/
 }
