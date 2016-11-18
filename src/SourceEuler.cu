@@ -126,7 +126,7 @@ __host__ void FillPolar1DArrays ()
     Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(double)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    printf("invSurf%.15g\n", invSurf[i]);
+    //printf("invSurf%.15g\n", invSurf[i]);
     invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
     invRinf[i] = 1.0/Rinf[i];
   }
@@ -149,7 +149,7 @@ __host__ void FillPolar1DArrays ()
     exit (1);
   }
   for (i = 0; i <= NRAD; i++){
-    fprintf (output, "%.10f\n", Radii[i]);
+    fprintf (output, "%.30f\n", Radii[i]);
   }
   fclose (output);
   if (input != NULL) fclose (input);
@@ -214,7 +214,7 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
   dt = DT / gastimestepcfl;
   //printf("dt %.10f\n", dt);
 
-  while (dtemp < 0.9999999999*DT){
+  while (dtemp < 0.999999999*DT){
     MassTaper = PhysicalTime/(MASSTAPER*2.0*M_PI);
     MassTaper = (MassTaper > 1.0 ? 1.0 : pow(sin(MassTaper*M_PI/2.0), 2.0));
     //printf("dtemp = %.10f\n",dtemp );
@@ -281,31 +281,49 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
       else
         printf(".");
       // if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
+/*
+      gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 
+
+      FILE *f;
+      f = fopen("vradnew.txt","w");
+      for (int i = 0; i < NRAD*NSEC; i++) {
+        fprintf(f, "%.20f\n", Vrad[i]);
+      }
+      fclose(f);
+
+      f = fopen("vthetanew.txt","w");
+      for (int i = 0; i < NRAD*NSEC; i++) {
+        fprintf(f, "%.20f\n", Vtheta[i]);
+      }
+      fclose(f);
+
+      exit(1);*/
       ComputePressureField ();
       Substep1 (Dens, Vrad, Vtheta, dt, init);
       Substep2 (dt);
       ActualiseGasVrad (Vrad, VradNew);
       ActualiseGasVtheta (Vtheta, VthetaNew);
 
-      //gpuErrchk(cudaMemcpy(Vrad_d, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-      //gpuErrchk(cudaMemcpy(Vtheta_d, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-
-
-      /*FILE *f;
-      f = fopen("vradnew.txt","w");
-      for (int i = 0; i < NRAD*NSEC; i++) {
-        fprintf(f, "%.15f\n", Vrad[i]);
-      }
-      fclose(f);
-
-      f = fopen("vthetanew.txt","w");
-      for (int i = 0; i < NRAD*NSEC; i++) {
-        fprintf(f, "%.15f\n", Vtheta[i]);
-      }
-      fclose(f);
-
-      exit(1);*/
+      // gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      // gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      //
+      //
+      // FILE *f;
+      // f = fopen("vradnew.txt","w");
+      // for (int i = 0; i < NRAD*NSEC; i++) {
+      //   fprintf(f, "%.20f\n", Vrad[i]);
+      // }
+      // fclose(f);
+      //
+      // f = fopen("vthetanew.txt","w");
+      // for (int i = 0; i < NRAD*NSEC; i++) {
+      //   fprintf(f, "%.20f\n", Vtheta[i]);
+      // }
+      // fclose(f);
+      //
+      // exit(1);
 
 
       //ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
@@ -321,6 +339,8 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
 
         ActualiseGasEnergy (Energy, EnergyNew);
       }
+
+
       Transport (Dens, Vrad, Vtheta, Energy, Label, dt);
       //ApplyBoundaryCondition(Dens, Energy, Vrad, Vtheta, dt);
       ComputeTemperatureField ();
@@ -351,24 +371,24 @@ __host__ void Substep1 (double *Dens, double *Vrad, double *Vtheta, double dt, i
   gpuErrchk(cudaDeviceSynchronize());
   //exit(1);
 
-  /*gpuErrchk(cudaMemcpy(VradInt, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(VradInt, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(VthetaInt, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 
 
   FILE *f;
   f = fopen("Vradint.txt","w");
   for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-    fprintf(f, "%.15f\n", VradInt[i]);
+    fprintf(f, "%.20f\n", VradInt[i]);
   }
 
   fclose(f);
 
   f = fopen("Vthetaint.txt","w");
   for (int i = 0; i < (NRAD+1)*NSEC; i++) {
-    fprintf(f, "%.15f\n", VthetaInt[i]);
+    fprintf(f, "%.20f\n", VthetaInt[i]);
   }
   fclose(f);
-  exit(1);*/
+  exit(1);
 
   if (SelfGravity){
     selfgravityupdate = YES;

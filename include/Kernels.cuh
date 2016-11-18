@@ -122,18 +122,18 @@ __global__ void  VanLeerRadialKernel (double *Rinf, double *Rsup, double *QRStar
 
 __global__ void ComputeAverageThetaVelocitiesKernel(double *Vtheta, double *VMed, int nsec, int nrad);
 
-__global__ void ComputeResidualsKernel (double *VthetaRes, double *VMed, int nsec, int nrad);
+__global__ void ComputeResidualsKernel (double *VthetaRes, double *VMed, int nsec, int nrad, double *Vtheta);
 
-__global__ void ComputeConstantResidualKernel (double *VMed, double *invRmed, int *Nshift, int *NoSplitAdvection,
+__global__ void ComputeConstantResidualKernel (double *VMed, double *invRmed, long *Nshift, int *NoSplitAdvection,
   int nsec, int nrad, double dt, double *Vtheta, double *VthetaRes, double *Rmed, int FastTransport);
 
-__global__ void StarThetaKernel (double *Qbase, double *Rmed, double *Vtheta, double *QStar, int nrad, int nsec,
+__global__ void StarThetaKernel (double *Qbase, double *Rmed, double *Vazimutal, double *QStar, int nrad, int nsec,
   double *dq, double dt);
 
 __global__ void VanLeerThetaKernel (double *Rsup, double *Rinf, double *Surf, double dt, int nrad, int nsec,
   int UniformTransport, int *NoSplitAdvection, double *QRStar, double *DensStar, double *Vtheta, double *Qbase);
 
-__global__ void AdvectSHIFTKernel(double *array, double *TempShift, int nsec, int nrad, int *Nshift);
+__global__ void AdvectSHIFTKernel(double *array, double *TempShift, int nsec, int nrad, long *Nshift);
 
 __global__ void ComputeVelocitiesKernel(double *Vrad, double *Vtheta, double *Dens, double *Rmed, double *ThetaMomP,
   double *ThetaMomM, double *RadMomP, double *RadMomM, int nrad, int nsec, double OmegaFrame);

@@ -49,7 +49,8 @@ double OmegaFrame, *invdiffRmed_d, *invRinf_d, *invRmed_d, *Rmed_d, *Rsup_d, *in
 double *q0, *PlanetMasses, *q1;
 
 extern int NRAD, NSEC, Cooling;
-extern int *NoSplitAdvection_d, *Nshift_d;
+extern int *NoSplitAdvection_d;
+extern long *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
 int blocksize2D = 16;
@@ -298,7 +299,7 @@ __host__ int main (int argc, char *argv[])
   //printf("PhysicalTimeInitial%.10f\n", PhysicalTimeInitial);
 
 
-  for (int i = 0; i <= 221; i++){
+  for (int i = 0; i <= NTOT; i++){
     InnerOutputCounter++;
 
     if (InnerOutputCounter == 1){
@@ -307,19 +308,19 @@ __host__ int main (int argc, char *argv[])
       UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
     }
 
-    if (20 * (TimeStep = (i / 20)) == i){
+    if (NINTERM * (TimeStep = (i / NINTERM)) == i){
       /* Outputs are done here */
       TimeToWrite = YES;
       DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
       SendOutput (TimeStep, Dens, Vrad, Vtheta, Energy, Label);
       WritePlanetSystemFile (sys, TimeStep);
 
-      if ( i == 20)
+      /*if ( i == NINTERM)
       {
         gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
         gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 
-        /*FILE *f;
+        FILE *f;
         f = fopen("VR.txt","w");
         for (int i = 0; i < NRAD*NSEC; i++) {
           fprintf(f, "%.15f\n", Vrad[i]);
@@ -330,9 +331,9 @@ __host__ int main (int argc, char *argv[])
         for (int i = 0; i < NRAD*NSEC; i++) {
           fprintf(f, "%.15f\n", Vtheta[i]);
         }
-        fclose(f);*/
+        fclose(f);
         //exit(1);
-      }
+      }*/
 
     }
     else TimeToWrite = NO;

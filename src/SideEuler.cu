@@ -142,7 +142,7 @@ __host__ Pair ComputeAccel (Force *force, double *Dens, double x, double y, doub
 
 
 
-__host__ void DivisePolarGrid (double *Qbase, double *DensInt, double *Work)
+__host__ void DivisePolarGrid (double *Qbase_d, double *DensInt_d, double *Work_d)
 {
   DivisePolarGridKernel<<<dimGrid2, dimBlock2>>> (Qbase_d, DensInt_d, Work_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());

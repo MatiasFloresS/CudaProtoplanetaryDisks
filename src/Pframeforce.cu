@@ -63,11 +63,11 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Ener
     else smoothing = Compute_smoothing (PlanetDistance);
     smooth = smoothing*smoothing;
 
-    // printf("xplanet %.10f\n", xplanet);
-    // printf("yplanet %.10f\n", yplanet);
-    // printf("smooth %.10f\n", smooth);
-    // printf("mplanet %.10f\n", mplanet);
-    // printf("InvPlanetDistance3 %.10f\n", InvPlanetDistance3);
+    printf("xplanet %.25f\n", xplanet);
+    printf("yplanet %.25f\n", yplanet);
+    printf("smooth %.25f\n", smooth);
+    printf("mplanet %.25f\n", mplanet);
+    printf("InvPlanetDistance3 %.25f\n", InvPlanetDistance3);
 
     FillForcesArraysKernel<<<dimGrid2,dimBlock2>>>(Rmed_d, NSEC, NRAD, xplanet, yplanet, smooth,
       mplanet, Indirect_Term, InvPlanetDistance3, Potential_d, IndirectTerm, k);
@@ -262,20 +262,20 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
 
   InitVelocities(Vrad, Vtheta);
 
-
+/*
   gpuErrchk(cudaMemcpy(Vrad, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 
-  /*FILE *f;
+  FILE *f;
   f = fopen("vr.txt", "w");
   for (int i = 0; i < size_grid; i++) {
-    fprintf(f, "%.15f\n", Vrad[i]);
+    fprintf(f, "%.10f\n", Vrad[i]);
   }
   fclose(f);
 
   f = fopen("vt.txt", "w");
   for (int i = 0; i < size_grid; i++) {
-    fprintf(f, "%.15f\n", Vtheta[i]);
+    fprintf(f, "%.10f\n", Vtheta[i]);
   }
   fclose(f);*/
 }

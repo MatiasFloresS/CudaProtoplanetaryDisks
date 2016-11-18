@@ -8,7 +8,7 @@ __host__ void Cscudamalloc ();
 __host__ void Meancudamalloc ();
 __host__ void OpenBoundary ();
 __host__ Pair ComputeAccel (Force *force, double *Dens, double x, double y, double rsmoothing, double mass);
-__host__ void DivisePolarGrid (double *Qbase, double *DensInt, double *Work);
+__host__ void DivisePolarGrid (double *Qbase_d, double *DensInt_d, double *Work_d);
 __host__ void InitComputeAccel ();
 __host__ void InitComputeAccelDevice ();
 __host__ void CorrectVtheta (double *Vtheta, double domega);

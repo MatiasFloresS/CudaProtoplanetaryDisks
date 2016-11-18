@@ -2,7 +2,7 @@ __host__ void Transport (double *Dens, double *Vrad, double *Vtheta, double *Ene
 __host__ void OneWindRad (double *Dens, double *Vrad, double *Energy, double dt);
 __host__ void ComputeLRMomenta ();
 __host__ void ComputeExtQty ();
-__host__ void ActualiseGasDens (double *DensInt, double *Dens);
+__host__ void ActualiseGasDens(double *DensInt, double *Dens);
 __host__ void ComputeStarRad(double *Qbase2, double *Vrad, double *QStar, double dt);
 __host__ double VanLeerRadial (double *Vrad, double *Qbase, double dt, int ReturnLost);
 __host__ void InitTransportDevice ();
@@ -11,9 +11,9 @@ __host__ void OneWindTheta (double *Dens, double *Vtheta, double *Energy, double
 __host__ void ComputeAverageThetaVelocities (double *Vtheta, double dt);
 __host__ void ComputeResiduals (double *Vtheta, double dt);
 __host__ void ComputeConstantResidual (double *Vtheta, double dt);
-__host__ void QuantitiesAdvection (double *Dens, double *Vazimutal, double *Energy, double dt);
-__host__ void ComputeStarTheta (double *Qbase, double *Vtheta, double *QStar, double dt);
+__host__ void QuantitiesAdvection (double *Dens, double *Vazimutal_d, double *Energy, double dt, int option);
+__host__ void ComputeStarTheta (double *Qbase_d, double *Vazimutal_d, double *QStar_d, double dt);
 __host__ void VanLeerTheta (double *Vrad, double *Qbase, double dt);
 __host__ void AdvectSHIFT (double *array);
-__host__ void ComputeVelocities(double *Dens, double *Label, double *ExtLabel);
+__host__ void ComputeVelocities(double *Dens, double *Vrad, double *Vtheta);
 __host__ void ComputeSpeQty (double *Dens, double *labe, double *ExtLabel);
