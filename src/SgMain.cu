@@ -63,7 +63,7 @@ __host__ void compute_kernel ()
       u = -log(Radii[2*NRAD-i]/Radii[0]);
 
     for (j = 0; j < NSEC; j++){
-      theta = 2.0*M_PI*(double)j  / (double)NSEC;
+      theta = 2.0*PI*(double)j  / (double)NSEC;
       Kr = 1.0 + SGP_eps*SGP_eps - cos(theta)*exp(-u);
       base = SGP_eps*SGP_eps*exp(u) + 2.0*(cosh(u) - cos(theta)) ;
       Kr *= pow(base , -1.5);

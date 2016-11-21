@@ -20,7 +20,7 @@ extern double SGP_eps, TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
 extern double LAMBDADOUBLING, PhysicalTimeInitial, mdcp;
 
 extern double *GLOBAL_bufarray, *vt_int, *SigmaInf, *CoolingTimeMed, *QplusMed , *viscosity_array;
-extern double *SG_Accr, *array, *Qplus, *SigmaMed, *QplusMed, *EnergyMed, *CellOrdinate, *CellAbscissa;
+extern double *SG_Accr, *array, *Qplus, *SigmaMed,  *EnergyMed, *CellOrdinate, *CellAbscissa;
 
 extern double *Dens_d, *SG_Accr_d, *SG_Acct_d, *GLOBAL_bufarray_d, *array_d;
 extern double *Qplus_d, *EnergyInt_d, *EnergyNew_d, *VradNew_d, *Potential_d;
@@ -69,8 +69,6 @@ __host__ void FillPolar1DArrays ()
 
   /* Creo los arreglos de FillPolar1DArrays */
   Radii       = (double *)malloc((NRAD+1)*sizeof(double));
-  //Radii2       = (double *)malloc((NRAD+1)*sizeof(double));
-  Rmed2       = (double *)malloc((NRAD+1)*sizeof(double));
   Rinf        = (double *)malloc((NRAD+1)*sizeof(double));
   Rmed        = (double *)malloc((NRAD+1)*sizeof(double));
   Rsup        = (double *)malloc((NRAD+1)*sizeof(double));
@@ -82,7 +80,7 @@ __host__ void FillPolar1DArrays ()
   invdiffRmed = (double *)malloc((NRAD+1)*sizeof(double));
   vt_cent     = (double *)malloc((NRAD+1)*sizeof(double));
   powRmed     = (double *)malloc((NRAD+1)*sizeof(double));
-  DT2D     = (double *)malloc(size_grid*sizeof(double));
+  DT2D     = (double *)malloc(NRAD*NSEC*sizeof(double));
 
   char InputCharName[100];
   char OutputCharName[100];
@@ -97,18 +95,18 @@ __host__ void FillPolar1DArrays ()
       for (i = 0; i <= NRAD; i++){
         /* Usamos doubles para calcular los valores de los arrays, luego
            los pasamos a double */
-        Radii[i] = RMIN*exp((double)i/(double)NRAD*log((double)RMAX/(double)RMIN));
+        Radii[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX/RMIN));
       }
     }
     else {
       for (i = 0; i <= NRAD; i++)
-        Radii[i] = RMIN+drrsep*i;
+        Radii[i] = RMIN+drrsep*(double)i;
     }
   }
   else {
     printf("Reading 'radii.dat' file.\n");
     for (i = 0; i <= NRAD; i++){
-      fscanf (input, "%g", &temporary);
+      fscanf (input, "%f", &temporary);
       Radii[i] = (double)temporary;
     }
   }
@@ -118,7 +116,7 @@ __host__ void FillPolar1DArrays ()
     Rsup[i] = Radii[i+1];
     Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
     Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
-    Surf[i] = M_PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(double)NSEC;
+    Surf[i] = PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(double)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
     invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
@@ -127,8 +125,9 @@ __host__ void FillPolar1DArrays ()
 
   Rinf[NRAD] = Radii[NRAD];
 
-  for (i = 1; i < NRAD; i++) {
-    invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
+  for (i = 0; i < NRAD; i++) {
+    if (i > 0 )invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
+
     powRmed[i] = pow(Rmed[i],-2.5+SIGMASLOPE);
   }
 
@@ -263,33 +262,12 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
       //if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
 
-      gpuErrchk(cudaMemcpy(Vrad, Vrad_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      printf("%.35g\n", Vrad[384 + 1]);
-      printf("%.35g\n", Vtheta[384 + 1]);
-
       ComputePressureField ();
       Substep1 (Dens, Vrad, Vtheta, dt, init);
-      Substep2 (dt);
-
-      gpuErrchk(cudaMemcpy(Vrad, VradInt_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      gpuErrchk(cudaMemcpy(Vtheta, VthetaInt_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      printf("%.35g\n", Vrad[384 + 1]);
-      printf("%.35g\n", Vtheta[384 + 1]);
+      //Substep2 (dt);
 
       ActualiseGasVrad (Vrad, VradNew);
       ActualiseGasVtheta (Vtheta, VthetaNew);
-
-      gpuErrchk(cudaMemcpy(Vrad, Vrad_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-      gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d,     size_grid*sizeof(double), cudaMemcpyDeviceToHost));
-
-
-      printf("%.35g\n", Vrad[384 + 1]);
-      printf("%.35g\n", Vtheta[384 + 1]);
-
-      //exit(1);
-
-
       //ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
 
       if (Adiabatic){
@@ -305,7 +283,7 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
       }
 
 
-      Transport (Dens, Vrad, Vtheta, Energy, Label, dt);
+      //Transport (Dens, Vrad, Vtheta, Energy, Label, dt);
       //ApplyBoundaryCondition(Dens, Energy, Vrad, Vtheta, dt);
       ComputeTemperatureField ();
 
@@ -386,8 +364,8 @@ __host__ void Substep3 (double *Dens, double dt)
 __host__ void Computecudamalloc (double *Energy)
 {
 
-  CoolingTimeMed  = (double *)malloc(size_grid*sizeof(double));
-  QplusMed        = (double *)malloc(size_grid*sizeof(double));
+  CoolingTimeMed  = (double *)malloc((NRAD+1)*sizeof(double));
+  QplusMed        = (double *)malloc((NRAD+1)*sizeof(double));
   viscosity_array = (double *)malloc((NRAD+1)*sizeof(double));
 
   gpuErrchk(cudaMalloc((void**)&TemperInt_d,   size_grid*sizeof(double)));
@@ -415,11 +393,11 @@ __host__ void Computecudamalloc (double *Energy)
   gpuErrchk(cudaMemset(VthetaInt_d, 0, size_grid*sizeof(double)));
 
 
-  gpuErrchk(cudaMalloc((void**)&SigmaInf_d,        NRAD*sizeof(double)));
+  gpuErrchk(cudaMalloc((void**)&SigmaInf_d,        (NRAD+1)*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&vt_cent_d,         (NRAD+1)*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&viscosity_array_d, (NRAD+1)*sizeof(double)));
 
-  gpuErrchk(cudaMemcpy(SigmaInf_d, SigmaInf,               NRAD*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(SigmaInf_d, SigmaInf,               (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
 
   gpuErrchk(cudaMalloc((void**)&Energy_d,   size_grid*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&EnergyInt_d,   size_grid*sizeof(double)));
@@ -496,7 +474,7 @@ __host__ void ComputeTemperatureField ()
 
 __host__ void ActualiseGasVtheta (double *Vtheta, double *VthetaNew)
 {
-  gpuErrchk(cudaMemcpy(Vtheta_d, VthetaNew_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
+  gpuErrchk(cudaMemcpy(Vtheta_d, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -517,10 +495,10 @@ __host__ void ActualiseGasEnergy (double *Energy, double *EnergyNew)
 
 __host__ void Substep1cudamalloc (double *Vrad, double *Vtheta)
 {
-  gpuErrchk(cudaMemcpy(EnergyMed_d, EnergyMed,           NRAD*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed,             NRAD*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(QplusMed_d, QplusMed,             NRAD*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(CoolingTimeMed_d, CoolingTimeMed, NRAD*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(EnergyMed_d, EnergyMed,           (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed,             (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(QplusMed_d, QplusMed,             (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(CoolingTimeMed_d, CoolingTimeMed, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
 }
 
 

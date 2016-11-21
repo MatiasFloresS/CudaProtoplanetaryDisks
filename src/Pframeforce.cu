@@ -180,6 +180,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     Initialization of azimutal velocity with exact centrifugal balance */
 
   if (CentrifugalBalance){
+    printf("centrifiugal\n" );
     /* vt_int \equiv Romega = grad(P)/sigma + \partial(phi)/\partial(r) - acc_sg_radial
     ./bin/fargoGPU  -b in/template.par */
 
@@ -245,6 +246,8 @@ __host__ void InitVelocities (double *Vrad, double *Vtheta)
 {
   gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+
+  printf("OmegaFrame %.15g\n", OmegaFrame);
 
   InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(viscosity_array_d, NSEC, NRAD, SelfGravity, Rmed_d,
   ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,

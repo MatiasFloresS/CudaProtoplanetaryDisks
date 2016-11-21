@@ -5,7 +5,7 @@ extern int NRAD, NSEC, size_grid, AdvecteLabel, OpenInner, Adiabatic, FastTransp
 extern double OmegaFrame;
 
 extern double *Dens_d, *Vrad_d,  *Vtheta_d, *Label_d, *QStar_d, *Qbase_d, *Qbase2_d;
-extern double *DensInt_d, *DensStar_d, *Vtheta_d, *Surf_d, *array_d;
+extern double *DensInt_d, *DensStar_d, *Surf_d, *array_d;
 extern double *DensStar, *QStar, *Qbase, *DensInt;
 
 extern double *invdiffRmed_d, *Rinf_d, *Rmed_d, *invRmed_d, *Rsup_d, *invSurf_d, *Vazimutal_d;

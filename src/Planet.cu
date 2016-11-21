@@ -35,8 +35,8 @@ __host__ void AccreteOntoPlanets (double *Dens, double *Vrad, double *Vtheta, do
       while ((Rsup[i_min] < Rplanet-RRoche) && (i_min < NRAD)) i_min++;
       while ((Rinf[i_max] > Rplanet+RRoche) && (i_max > 0)) i_max--;
       angle = atan2(Yplanet, Xplanet);
-      j_min = (int)((double)NSEC/2.0/M_PI*(angle - 2.0*RRoche/Rplanet));
-      j_max = (int)((double)NSEC/2.0/M_PI*(angle + 2.0*RRoche/Rplanet));
+      j_min = (int)((double)NSEC/2.0/PI*(angle - 2.0*RRoche/Rplanet));
+      j_max = (int)((double)NSEC/2.0/PI*(angle + 2.0*RRoche/Rplanet));
       PxPlanet = Mplanet*VXplanet;
       PyPlanet = Mplanet*VYplanet;
 

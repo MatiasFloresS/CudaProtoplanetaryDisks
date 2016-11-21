@@ -241,7 +241,7 @@ __host__ void PrintUsage (char *execname)
 
 __host__ double TellNbOrbits (double time)
 {
-  return time/2.0/M_PI*sqrt(G*1.0/1.0/1.0/1.0);
+  return time/2.0/PI*sqrt(G*1.0/1.0/1.0/1.0);
 }
 
 
@@ -263,11 +263,11 @@ __host__ void TellEverything()
   printf ("Aspect Ratio          : %g\n", ASPECTRATIO);
   printf ("VKep at inner edge    : %.3g\n", sqrt(G*1.0*(1.-0.0)/RMIN));
   printf ("VKep at outer edge    : %.3g\n", sqrt(G*1.0/RMAX));
-  temp=2.0*M_PI*SIGMA0/(2.0-SIGMASLOPE)*(pow(RMAX,2.0-SIGMASLOPE) - pow(RMIN,2.0-SIGMASLOPE));	/* correct this and what follows... */
+  temp=2.0*PI*SIGMA0/(2.0-SIGMASLOPE)*(pow(RMAX,2.0-SIGMASLOPE) - pow(RMIN,2.0-SIGMASLOPE));	/* correct this and what follows... */
   printf ("Initial Disk Mass             : %g\n", temp);
-  temp=2.0*M_PI*SIGMA0/(2.0-SIGMASLOPE)*(1.0 - pow(RMIN,2.0-SIGMASLOPE));
+  temp=2.0*PI*SIGMA0/(2.0-SIGMASLOPE)*(1.0 - pow(RMIN,2.0-SIGMASLOPE));
   printf ("Initial Mass inner to r=1.0  : %g \n", temp);
-  temp=2.0*M_PI*SIGMA0/(2.0-SIGMASLOPE)*(pow(RMAX,2.0-SIGMASLOPE) - 1.0);
+  temp=2.0*PI*SIGMA0/(2.0-SIGMASLOPE)*(pow(RMAX,2.0-SIGMASLOPE) - 1.0);
   printf ("Initial Mass outer to r=1.0  : %g \n", temp);
   printf ("Travelling time for acoustic density waves :\n");
   temp = 2.0/3.0/ASPECTRATIO*(pow(RMAX,1.5)-pow(RMIN,1.5));
@@ -276,9 +276,9 @@ __host__ void TellEverything()
   printf (" * From r=1.0 to Rmax: %.2g = %.2f orbits ~ %.1f outputs\n", temp, TellNbOrbits(temp), TellNbOutputs(temp));
   temp = 2.0/3.0/ASPECTRATIO*(pow(1.0,1.5)-pow(RMIN,1.5));
   printf (" * From r=1.0 to Rmin: %.2g = %.2f orbits ~ %.1f outputs\n", temp, TellNbOrbits(temp), TellNbOutputs(temp));
-  temp = 2.0*M_PI*sqrt(RMIN*RMIN*RMIN/G/1.0);
+  temp = 2.0*PI*sqrt(RMIN*RMIN*RMIN/G/1.0);
   printf ("Orbital time at Rmin  : %.3g ~ %.2f outputs\n", temp, TellNbOutputs(temp));
-  temp = 2.0*M_PI*sqrt(RMAX*RMAX*RMAX/G/1.0);
+  temp = 2.0*PI*sqrt(RMAX*RMAX*RMAX/G/1.0);
   printf ("Orbital time at Rmax  : %.3g ~ %.2f outputs\n", temp, TellNbOutputs(temp));
   printf ("Sound speed :\n");
   printf (" * At unit radius     : %.3g\n", ASPECTRATIO*sqrt(G*1.0));

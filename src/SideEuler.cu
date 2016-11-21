@@ -46,12 +46,12 @@ __host__ void NonReflectingBoundary (double *Dens, double *Energy, double *Vrad)
   i = 1;
   dangle = (pow(Rinf[i],-1.5)-1.0)/(.5*(cs0_r+cs1_r));
   dangle *= (Rmed[i] - Rmed[i-1]);
-  i_angle = (int)(dangle/2.0/M_PI*(double)NSEC+.5);
+  i_angle = (int)(dangle/2.0/PI*(double)NSEC+.5);
 
   i = NRAD-1;
   dangle2 = (pow(Rinf[i-1],-1.5)-1.0)/(.5*(csnrm1_r+csnrm2_r));
   dangle2 *= (Rmed[i]-Rmed[i-1]);
-  i_angle2 = (int)(dangle2/2.0/M_PI*(double)NSEC+.5);
+  i_angle2 = (int)(dangle2/2.0/PI*(double)NSEC+.5);
 
   NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(Dens_d, Energy_d, i_angle, NSEC, Vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
@@ -95,8 +95,8 @@ __host__ void EvanescentBoundary (double *Vrad, double *Vtheta, double *Dens, do
 {
   double Tin, Tout, DRMIN, DRMAX;
   /* Orbital period at inner and outer boundary */
-  Tin = 2.0*M_PI*pow(Rmed[0],3./2);;
-  Tout = 2.0*M_PI*pow(Rmed[NRAD-1],3./2);
+  Tin = 2.0*PI*pow(Rmed[0],3./2);;
+  Tout = 2.0*PI*pow(Rmed[NRAD-1],3./2);
   /* DRMIN AND DRMAX are global Radii boundaries of killing wave zones */
   DRMIN = Rmed[0]*1.25;
   DRMAX = Rmed[NRAD-1]*0.84;

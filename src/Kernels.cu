@@ -33,16 +33,7 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
       double a = -gradp-gradphi;
       double b = vt2*invRinf[i];
       double c = a + b;
-      //printf("bbbbbbbbbb %.35g\n", b);
-      //printf("cccccccccc %.35g\n", c);
       VradInt[i*nsec + j] = Vrad[i*nsec + j] + dt*c;
-
-
-
-
-    if ( i == 1 && j == 1) {
-      printf("b %.35g\n",b );
-    printf("vradint   %.35g\n", c);}
 
   }
   __syncthreads();
@@ -50,8 +41,8 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
   // i=0->nrad ,   j=0->nsec
   if (i<nrad && j<nsec){
 
-    supp_torque = IMPOSEDDISKDRIFT*0.5*pow((double)Rmed[i], -2.5+SIGMASLOPE);
-    dxtheta = 2.0*M_PI/(double)nsec*Rmed[i];
+    supp_torque = IMPOSEDDISKDRIFT*0.5*pow(Rmed[i], -2.5+SIGMASLOPE);
+    dxtheta = 2.0*PI/(double)nsec*Rmed[i];
     invdxtheta = 1.0/dxtheta;
 
     gradp = (Pressure[i*nsec + j] - Pressure[i*nsec + ((j-1)+nsec)%nsec])*2.0/(Dens[i*nsec +j] +Dens[i*nsec + ((j-1)+nsec)%nsec]) \
@@ -163,8 +154,8 @@ __global__ void InitComputeAccelKernel (double *CellAbscissa, double *CellOrdina
 
 
   if (i<nrad && j<nsec){
-    CellAbscissa[i*nsec+j] = Rmed[i] * cos((2.0*M_PI*(double)j)/(double)nsec);
-    CellOrdinate[i*nsec+j] = Rmed[i] * sin((2.0*M_PI*(double)j)/(double)nsec);
+    CellAbscissa[i*nsec+j] = Rmed[i] * cos((2.0*PI*(double)j)/(double)nsec);
+    CellOrdinate[i*nsec+j] = Rmed[i] * sin((2.0*PI*(double)j)/(double)nsec);
   }
 }
 
@@ -225,7 +216,7 @@ __global__ void InitLabelKernel (double *Label, double xp, double yp, double rhi
 
   if (i<nrad && j<nsec){
     double distance, angle, x, y;
-    angle = (double)j / (double)nsec*2.0*M_PI;
+    angle = (double)j / (double)nsec*2.0*PI;
     x = Rmed[i] * cos(angle);
     y = Rmed[i] * sin(angle);
     distance = sqrt((x - xp) * (x - xp) + (y - yp)*(y -yp));
@@ -442,7 +433,7 @@ __global__ void Substep2Kernel (double *Dens, double *VradInt, double *VthetaInt
   }
 
   if (i<nrad && j<nsec){
-    dxtheta = 2.0*M_PI/(double)nsec*Rmed[i];
+    dxtheta = 2.0*PI/(double)nsec*Rmed[i];
     invdxtheta = 1.0/dxtheta;
 
     VthetaNew[i*nsec + j] = VthetaInt[i*nsec + j] - dt*2.0/(Dens[i*nsec + j] + Dens[i*nsec + ((j-1)+nsec)%nsec])* \
@@ -455,7 +446,7 @@ __global__ void Substep2Kernel (double *Dens, double *VradInt, double *VthetaInt
   /* term for advection of thermal energy polargrid */
   if (Adiabatic){
     if (i>0 && i<nrad && j<nsec){
-      dxtheta = 2.0*M_PI/(double)nsec*Rmed[i];
+      dxtheta = 2.0*PI/(double)nsec*Rmed[i];
       invdxtheta = 1.0/dxtheta;
 
       EnergyInt[i*nsec + j] = Energy[i*nsec + j] - dt*DensInt[i*nsec + j]* \
@@ -630,9 +621,9 @@ __global__ void InitGasVelocitiesKernel (double *viscosity_array, int nsec, int 
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-    double omega, r, ri, algo;
 
     if (i <= nrad && j < nsec){
+      double omega, r, ri, algo, vt, vt2,vt3;
       if (i == nrad){
         r = Rmed[nrad - 1];
         ri = Rinf[nrad - 1];
@@ -644,12 +635,18 @@ __global__ void InitGasVelocitiesKernel (double *viscosity_array, int nsec, int 
 
       if (!SelfGravity){
         omega = sqrt(G*1.0/r/r/r);
-        Vtheta[i*nsec + j] = omega*r*sqrt(1.0-pow((double)ASPECTRATIO,2.0)*pow((double)r,2.0*FLARINGINDEX)* \
+        vt = omega*r*sqrt(1.0-pow(ASPECTRATIO,2.0)*pow(r,2.0*FLARINGINDEX)* \
         (1.+SIGMASLOPE-2.0*FLARINGINDEX));
       }
-      Vtheta[i*nsec + j] -= OmegaFrame*r;
 
-      if (CentrifugalBalance) Vtheta[i*nsec + j] = vt_cent[i];
+      vt2 = OmegaFrame*r;
+      vt3 = vt-vt2;
+
+      __syncthreads();
+
+      Vtheta[i*nsec + j] = vt3;
+
+      //if (CentrifugalBalance) Vtheta[i*nsec + j] = vt_cent[i];
 
       if (i == nrad) Vrad[i*nsec + j] = 0.0;
       else {
@@ -1002,7 +999,7 @@ __global__ void VanLeerRadialKernel (double *Rinf, double *Rsup, double *QRStar,
   double varq, dtheta;
 
   if (i<nrad && j<nsec){
-    dtheta = 2.0*M_PI/(double)nsec;
+    dtheta = 2.0*PI/(double)nsec;
     varq = dt*dtheta*Rinf[i]*QRStar[i*nsec + j]* DensStar[i*nsec + j]*Vrad[i*nsec + j];
     varq -= dt*dtheta*Rsup[i]*QRStar[(i+1)*nsec + j]* DensStar[(i+1)*nsec + j]*Vrad[(i+1)*nsec + j];
     Qbase[i*nsec + j] += varq*invSurf[i];
@@ -1024,7 +1021,6 @@ __global__ void VanLeerThetaKernel (double *Rsup, double *Rinf, double *Surf, do
 
   if (i<nrad && j<nsec){
     if ((UniformTransport == NO) || (NoSplitAdvection[i] == NO)){
-      if (i == 0 && j == 0) printf("NO %d\n",NO );
       dxrad = (Rsup[i]-Rinf[i])*dt;
       invsurf = 1.0/Surf[i];
       varq = dxrad*QRStar[i*nsec + j]*DensStar[i*nsec + j]*Vtheta[i*nsec + j];
@@ -1076,12 +1072,12 @@ __global__ void ComputeConstantResidualKernel (double *VMed, double *invRmed, lo
       maxfrac = 0.0;
 
     invdt = 1.0/dt;
-    Ntilde = VMed[i]*invRmed[i]*dt*(double)nsec/2.0/M_PI;
+    Ntilde = VMed[i]*invRmed[i]*dt*(double)nsec/2.0/PI;
     Nround = floor(Ntilde+0.5);
     nitemp = (long)Nround;
     Nshift[i] = (long)nitemp;
 
-    Vtheta[i*nsec + j] = (Ntilde-Nround)*Rmed[i]*invdt*2.0*M_PI/(double)nsec;
+    Vtheta[i*nsec + j] = (Ntilde-Nround)*Rmed[i]*invdt*2.0*PI/(double)nsec;
     if (maxfrac < 0.5){
       NoSplitAdvection[i] = YES;
       VthetaRes[i*nsec + j] += Vtheta[i*nsec + j];
@@ -1103,7 +1099,7 @@ __global__ void StarThetaKernel (double *Qbase, double *Rmed, double *Vazimutal,
   double dxtheta, ksi, invdxtheta, dqp, dqm;
   if (i<nrad && j<nsec){
     if (i<nrad){
-      dxtheta = 2.0*M_PI/(double)nsec*Rmed[i];
+      dxtheta = 2.0*PI/(double)nsec*Rmed[i];
       invdxtheta = 1.0/dxtheta;
     }
     dqm = (Qbase[i*nsec + j] - Qbase[i*nsec + ((j-1)+nsec)%nsec]);
@@ -1189,7 +1185,7 @@ __global__ void FillForcesArraysKernel (double *Rmed, int nsec, int nrad, double
 
   if (i<nrad && j<nsec){
     InvDistance = 1.0/Rmed[i];
-    angle = (double)j/(double)nsec*2.0*M_PI;
+    angle = (double)j/(double)nsec*2.0*PI;
     x = Rmed[i]*cos(angle);
     y = Rmed[i]*sin(angle);
     distance = (x-xplanet)*(x-xplanet)+(y-yplanet)*(y-yplanet);
@@ -1235,7 +1231,6 @@ __global__ void ConditionCFLKernel1D (double *Rsup, double *Rinf, double *Rmed, 
 
     Vmoy[i] /= (double)nsec;
 
-    //printf("%d , %.35g\n", i , Vmoy[i]);
   }
 }
 
@@ -1251,7 +1246,7 @@ __global__ void ConditionCFLKernel2D1 (double *Rsup, double *Rinf, double *Rmed,
 
   if (i > 0 && i<nrad && j<nsec){
     dxrad = Rsup[i]-Rinf[i];
-    dxtheta = Rmed[i]*2.0*M_PI/(double)nsec;
+    dxtheta = Rmed[i]*2.0*PI/(double)nsec;
     if (FastTransport) Vresidual[i*nsec + j] = Vtheta[i*nsec + j]-Vmoy[i]; /* Fargo algorithm */
     else Vresidual[i*nsec + j] = Vtheta[i*nsec + j];                       /* Standard algorithm */
     //Vresidual[i*nsec + nsec] = Vresidual[i*nsec];
@@ -1288,7 +1283,7 @@ __global__ void ConditionCFLKernel2D2 (double *newDT, double *DT2D, double *DT1D
   }
 
   if (i<nrad-1){
-    dt = 2.0*M_PI*CFLSECURITY/(double)nsec/fabs(Vmoy[i]*invRmed[i]-Vmoy[i+1]*invRmed[i+1]);
+    dt = 2.0*PI*CFLSECURITY/(double)nsec/fabs(Vmoy[i]*invRmed[i]-Vmoy[i+1]*invRmed[i+1]);
     DT1D[i] = dt; // array nrad size dt
     __syncthreads();
 
@@ -1305,7 +1300,6 @@ __global__ void ConditionCFLKernel2D2 (double *newDT, double *DT2D, double *DT1D
       if (DeltaT < newdt)
         newdt = DeltaT;
       CFL[0] = (int)(ceil(DeltaT/newdt));
-      printf("%.35g\n", newdt);
     }
   }
 }

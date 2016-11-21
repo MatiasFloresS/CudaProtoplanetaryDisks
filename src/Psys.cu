@@ -194,7 +194,7 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
   else arg = (1.0-d/a)/e;
 
   if (fabs(arg) >= 1.0)
-    E = M_PI*(1.-arg/fabs(arg))/2.;
+    E = PI*(1.-arg/fabs(arg))/2.;
   else
     E = acos((1.0-d/a)/e);
 
