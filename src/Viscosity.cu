@@ -2,26 +2,26 @@
 
 extern int NSEC, size_grid, NRAD;
 
-extern double TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
-extern double VISCOSITY, ViscosityAlpha, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
+extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
+extern float VISCOSITY, ViscosityAlpha, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
 
-extern double *SoundSpeed_d, *Vrad_d, *Vtheta_d,  *Dens_d;
-extern double *viscosity_array_d,  *VthetaInt_d, *VradInt_d;
-extern double *Vradial_d, *Vazimutal_d;
+extern float *SoundSpeed_d, *Vrad_d, *Vtheta_d,  *Dens_d;
+extern float *viscosity_array_d,  *VthetaInt_d, *VradInt_d;
+extern float *Vradial_d, *Vazimutal_d;
 
-extern double *SoundSpeed,  *GLOBAL_bufarray, *Rsup,  *viscosity_array, *VradInt;
-extern double *VthetaInt;
+extern float *SoundSpeed,  *GLOBAL_bufarray,  *viscosity_array, *VradInt;
+extern float *VthetaInt;
 
 extern double *invdiffRmed_d, *Rinf_d, *invRinf_d, *invRmed_d, *Rmed_d, *invRmed, *Rmed;
-extern double *invdiffRsup_d, *Rsup_d;
+extern double *invdiffRsup_d, *Rsup_d, *Rsup;
 
-double *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP;
-double *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
-double PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
+float *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP;
+float *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
+float PhysicalTime =0.0, PhysicalTimeInitial= 0.0;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateVelocitiesWithViscosity(double *VradInt, double *VthetaInt, double *Dens, double DeltaT)
+__host__ void UpdateVelocitiesWithViscosity(float *VradInt, float *VthetaInt, float *Dens, float DeltaT)
 {
   UpdateVelocitiesKernel<<<dimGrid2, dimBlock2>>>(VthetaInt_d, VradInt_d, invRmed_d, Rmed_d, Rsup_d, Rinf_d,
     invdiffRmed_d, invdiffRsup_d,  Dens_d, invRinf_d, TAURR_d, TAURP_d, TAUPP_d, DeltaT, NRAD, NSEC);
@@ -29,9 +29,9 @@ __host__ void UpdateVelocitiesWithViscosity(double *VradInt, double *VthetaInt, 
 }
 
 
-__host__ double FViscosity(double r)
+__host__ float FViscosity(float r)
 {
-  double viscosity, rmin, rmax, scale;
+  float viscosity, rmin, rmax, scale;
   int i = 0;
   viscosity = VISCOSITY;
   if (ViscosityAlpha){
@@ -48,16 +48,16 @@ __host__ double FViscosity(double r)
   return viscosity;
 }
 
-__host__ void ComputeViscousTerms (double *Vradial, double *Vazimutal, double *Dens)
+__host__ void ComputeViscousTerms (float *Vradial, float *Vazimutal, float *Dens)
 {
 
   if (ViscosityAlpha){
-    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
     Make1Dprofile (1);
   }
 
   for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
-  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
 
   ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vradial_d, Vazimutal_d, DRR_d, DPP_d, DivergenceVelocity_d,
     DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
@@ -67,31 +67,31 @@ __host__ void ComputeViscousTerms (double *Vradial, double *Vazimutal, double *D
 
 __host__ void InitViscosity ()
 {
-  DivergenceVelocity  = (double *)malloc(size_grid*sizeof(double));
-  DRR                 = (double *)malloc(size_grid*sizeof(double));
-  DRP                 = (double *)malloc(size_grid*sizeof(double));
-  DPP                 = (double *)malloc(size_grid*sizeof(double));
-  TAURR               = (double *)malloc(size_grid*sizeof(double));
-  TAURP               = (double *)malloc(size_grid*sizeof(double));
-  TAUPP               = (double *)malloc(size_grid*sizeof(double));
+  DivergenceVelocity  = (float *)malloc(size_grid*sizeof(float));
+  DRR                 = (float *)malloc(size_grid*sizeof(float));
+  DRP                 = (float *)malloc(size_grid*sizeof(float));
+  DPP                 = (float *)malloc(size_grid*sizeof(float));
+  TAURR               = (float *)malloc(size_grid*sizeof(float));
+  TAURP               = (float *)malloc(size_grid*sizeof(float));
+  TAUPP               = (float *)malloc(size_grid*sizeof(float));
   InitViscosityDevice ();
 }
 
 __host__ void InitViscosityDevice ()
 {
-  gpuErrchk(cudaMalloc((void**)&DivergenceVelocity_d, size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&DRR_d,                size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&DRP_d,                size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&DPP_d,                size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&TAURR_d,              size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&TAURP_d,              size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&TAUPP_d,              size_grid*sizeof(double)));
+  gpuErrchk(cudaMalloc((void**)&DivergenceVelocity_d, size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DRR_d,                size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DRP_d,                size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&DPP_d,                size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&TAURR_d,              size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&TAURP_d,              size_grid*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&TAUPP_d,              size_grid*sizeof(float)));
 }
 
 
-__host__ double AspectRatioHost(double r)
+__host__ float AspectRatioHost(float r)
 {
-  double aspectratio, rmin, rmax, scale;
+  float aspectratio, rmin, rmax, scale;
   aspectratio = ASPECTRATIO;
   rmin = TRANSITIONRADIUS-TRANSITIONWIDTH*ASPECTRATIO;
   rmax = TRANSITIONRADIUS+TRANSITIONWIDTH*ASPECTRATIO;

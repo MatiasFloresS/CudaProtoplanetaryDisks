@@ -1,11 +1,11 @@
 #include "Main.cuh"
 
-static double k1[100], k2[100], k3[100], k4[100], k5[100], k6[100];
-static double Dist[100];
+static float k1[100], k2[100], k3[100], k4[100], k5[100], k6[100];
+static float Dist[100];
 
 extern int Indirect_Term;
 
-__host__ void RungeKutta (double *q0, double timestep, double *PlanetMasses, double *q1, int nb, int *feelothers)
+__host__ void RungeKutta (float *q0, float timestep, float *PlanetMasses, float *q1, int nb, int *feelothers)
 {
   for (int i = 0; i < 4*nb; i++){
     k1[i] = k2[i] = k3[i] = k4[i] = k5[i] = k6[i] = 0;
@@ -27,10 +27,10 @@ __host__ void RungeKutta (double *q0, double timestep, double *PlanetMasses, dou
   }
 }
 
-__host__ void DerivMotionRK5 (double *q_init, double *PlanetMasses, double *deriv, int nb, double dt, int *feelothers)
+__host__ void DerivMotionRK5 (float *q_init, float *PlanetMasses, float *deriv, int nb, float dt, int *feelothers)
 {
-  double *x, *y, *vx, *vy, dist;
-  double *derivx, *derivy, *derivvx, *derivvy;
+  float *x, *y, *vx, *vy, dist;
+  float *derivx, *derivy, *derivvx, *derivvy;
   int i,j;
   x = q_init;
   y = x+nb;
@@ -66,7 +66,7 @@ __host__ void DerivMotionRK5 (double *q_init, double *PlanetMasses, double *deri
     deriv[i] *= dt;
 }
 
-__host__ void TranslatePlanetRK5 (double *qold, double c1, double c2, double c3, double c4, double c5, double *qnew, int nb)
+__host__ void TranslatePlanetRK5 (float *qold, float c1, float c2, float c3, float c4, float c5, float *qnew, int nb)
 {
   int i;
   for (i = 0; i < 4*nb; i++){

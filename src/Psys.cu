@@ -1,10 +1,10 @@
 #include "Main.cuh"
 
-extern double *Radii, ECCENTRICITY;
-static double Xplanet, Yplanet;
+extern float *Radii, ECCENTRICITY;
+static float Xplanet, Yplanet;
 extern int GuidingCenter;
-double HillRadius;
-extern double *Rmed;
+float HillRadius;
+extern float *Rmed;
 
 
 
@@ -30,7 +30,8 @@ __host__ int FindNumberOfPlanets (char *filename)
 
 __host__ PlanetarySystem *AllocPlanetSystem (int nb)
 {
-  double *mass, *x, *y, *vx, *vy, *acc;
+  double *mass, *x, *y, *vx, *vy;
+  double *acc;
   int *feeldisk, *feelothers;
   int i;
   PlanetarySystem *sys;
@@ -114,7 +115,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
         while (Rmed[j] < dist) j++;
         dist = Radii[j+1];
       }
-      sys->mass[i] = (double)mass;
+      sys->mass[i] = (float)mass;
       feeldis = feelothers = YES;
       if (tolower(*test1) == 'n') feeldis = NO;
       /*
@@ -124,7 +125,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
       }
       */
       if (tolower(*test2) == 'n') feelothers = NO;
-      sys->x[i] = (double)dist*(1.0+ECCENTRICITY);
+      sys->x[i] = (float)dist*(1.0+ECCENTRICITY);
       sys->y[i] = 0.0;
       sys->vy[i] = sqrt(G*(1.0+mass)/dist)*			\
   	   sqrt((1.0-ECCENTRICITY)/(1.0+ECCENTRICITY));
@@ -244,10 +245,10 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
 
 
 
-__host__ void RotatePsys (PlanetarySystem *sys, double angle) /* Rotate by angle '-angle' */
+__host__ void RotatePsys (PlanetarySystem *sys, float angle) /* Rotate by angle '-angle' */
 {
   int i, nb;
-  double sint, cost, xt, yt;
+  float sint, cost, xt, yt;
   nb = sys->nb;
   sint = sin(angle);
   cost = cos(angle);

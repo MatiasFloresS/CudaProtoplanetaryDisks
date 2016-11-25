@@ -1,1 +1,1 @@
-__host__ void AccreteOntoPlanets (double *Dens, double *Vrad, double *Vtheta, double dt, PlanetarySystem *sys);
+__host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys);

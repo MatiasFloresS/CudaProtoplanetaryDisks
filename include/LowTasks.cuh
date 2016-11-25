@@ -1,1 +1,1 @@
-__host__ void MultiplyPolarGridbyConstant (double *Dens);
+__host__ void MultiplyPolarGridbyConstant (float *Dens);
