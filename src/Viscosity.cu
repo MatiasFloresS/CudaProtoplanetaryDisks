@@ -12,8 +12,8 @@ extern float *Vradial_d, *Vazimutal_d;
 extern float *SoundSpeed,  *GLOBAL_bufarray,  *viscosity_array, *VradInt;
 extern float *VthetaInt;
 
-extern double *invdiffRmed_d, *Rinf_d, *invRinf_d, *invRmed_d, *Rmed_d, *invRmed, *Rmed;
-extern double *invdiffRsup_d, *Rsup_d, *Rsup;
+extern float *invdiffRmed_d, *Rinf_d, *invRinf_d, *invRmed_d, *Rmed_d, *invRmed, *Rmed;
+extern float *invdiffRsup_d, *Rsup_d, *Rsup;
 
 float *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP;
 float *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;

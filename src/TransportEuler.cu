@@ -8,7 +8,7 @@ extern float *Dens_d, *Vrad_d,  *Vtheta_d, *Label_d, *QStar_d, *Qbase_d, *Qbase2
 extern float *DensInt_d, *DensStar_d, *array_d;
 extern float *DensStar, *QStar, *Qbase, *DensInt,  *Vazimutal_d;
 
-extern double *invdiffRmed_d, *Rinf_d, *Rmed_d, *invRmed_d, *Rsup_d, *invSurf_d,  *Surf_d;
+extern float *invdiffRmed_d, *Rinf_d, *Rmed_d, *invRmed_d, *Rsup_d, *invSurf_d,  *Surf_d;
 
 extern dim3 dimGrid2, dimBlock2, dimBlock, dimGrid4;
 
@@ -92,9 +92,6 @@ __host__ void ActualiseGasDens(float *DensInt, float *Dens)
 {
   gpuErrchk(cudaMemcpy(DensInt_d, Dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToDevice));
   gpuErrchk(cudaDeviceSynchronize());
-
-  //gpuErrchk(cudaMemcpy(Dens, Dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
-  //gpuErrchk(cudaMemcpy(DensInt, Dens_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
 }
 
 

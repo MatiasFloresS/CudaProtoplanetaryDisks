@@ -19,7 +19,8 @@ csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
 
 extern dim3 dimGrid, dimBlock, dimBlock2, dimGrid2;
 
-extern double OmegaFrame, *Rinf, *Rmed, *Rmed_d;
+extern double OmegaFrame;
+extern float *Rinf, *Rmed, *Rmed_d;
 
 
 __host__ void ApplyBoundaryCondition (float *Dens, float *Energy, float *Vrad, float *Vtheta, float step)

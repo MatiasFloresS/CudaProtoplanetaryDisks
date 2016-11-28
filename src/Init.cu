@@ -3,7 +3,7 @@
 extern int NRAD, NSEC, size_grid;
 
 extern float *Label_d;
-extern double *Rmed,  *Rmed_d;
+extern float *Rmed,  *Rmed_d;
 
 extern dim3 dimGrid2, dimBlock2;
 

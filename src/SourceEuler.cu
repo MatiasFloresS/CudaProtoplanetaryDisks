@@ -20,14 +20,14 @@ extern float *VthetaInt_d, *powRmed_d, *VthetaNew_d, *SigmaMed_d, *QplusMed_d;
 extern float *CoolingTimeMed_d, *EnergyMed_d, *DensInt_d, *DivergenceVelocity_d, *TAURR_d, *TAURP_d;
 extern float *TAUPP_d, *Vmoy_d, *CellOrdinate_d, *CellAbscissa_d, *mdcp0_d;
 
-extern double *Surf_d;
+extern float *Surf_d;
 
-extern double *invdiffRmed_d, *invRinf_d, *Rmed_d, *invRmed_d, *invdiffRsup_d, *Rsup_d;
+extern float *invdiffRmed_d, *invRinf_d, *Rmed_d, *invRmed_d, *invdiffRsup_d, *Rsup_d;
 
-double *invdiffRmed, *invRinf, *Rinf, *Rinf_d, *invRmed, *Rmed, *invdiffRsup, *Rsup;
+float *invdiffRmed, *invRinf, *Rinf, *Rinf_d, *invRmed, *Rmed, *invdiffRsup, *Rsup;
 
 float *Pressure, *SoundSpeed, *Temperature, *DensStar, *VradInt;
-double *invSurf, *Radii, *Surf, *powRmed,  *vt_cent;
+float *invSurf, *Radii, *Surf, *powRmed,  *vt_cent;
 float *VthetaInt, *DensInt, *VradNew, *VthetaNew, *EnergyInt, *Potential, *EnergyNew, *TemperInt;
 
 float *Vtheta_d, *SigmaInf_d, *Vrad_d, *SoundSpeed_d, *Energy_d, *Pressure_d;
@@ -62,18 +62,18 @@ __host__ void FillPolar1DArrays ()
   OutputName = OUTPUTDIR + "used_rad.dat";
 
   /* Creo los arreglos de FillPolar1DArrays */
-  Radii       = (double *)malloc((NRAD+1)*sizeof(double));
-  Rinf        = (double *)malloc((NRAD+1)*sizeof(double));
-  Rmed        = (double *)malloc((NRAD+1)*sizeof(double));
-  Rsup        = (double *)malloc((NRAD+1)*sizeof(double));
-  Surf        = (double *)malloc((NRAD+1)*sizeof(double));
-  invRinf     = (double *)malloc((NRAD+1)*sizeof(double));
-  invSurf     = (double *)malloc((NRAD+1)*sizeof(double));
-  invRmed     = (double *)malloc((NRAD+1)*sizeof(double));
-  invdiffRsup = (double *)malloc((NRAD+1)*sizeof(double));
-  invdiffRmed = (double *)malloc((NRAD+1)*sizeof(double));
-  vt_cent     = (double *)malloc((NRAD+1)*sizeof(double));
-  powRmed     = (double *)malloc((NRAD+1)*sizeof(double));
+  Radii       = (float *)malloc((NRAD+1)*sizeof(float));
+  Rinf        = (float *)malloc((NRAD+1)*sizeof(float));
+  Rmed        = (float *)malloc((NRAD+1)*sizeof(float));
+  Rsup        = (float *)malloc((NRAD+1)*sizeof(float));
+  Surf        = (float *)malloc((NRAD+1)*sizeof(float));
+  invRinf     = (float *)malloc((NRAD+1)*sizeof(float));
+  invSurf     = (float *)malloc((NRAD+1)*sizeof(float));
+  invRmed     = (float *)malloc((NRAD+1)*sizeof(float));
+  invdiffRsup = (float *)malloc((NRAD+1)*sizeof(float));
+  invdiffRmed = (float *)malloc((NRAD+1)*sizeof(float));
+  vt_cent     = (float *)malloc((NRAD+1)*sizeof(float));
+  powRmed     = (float *)malloc((NRAD+1)*sizeof(float));
   DT2D     = (float *)malloc(NRAD*NSEC*sizeof(float));
 
   char InputCharName[100];
@@ -89,7 +89,7 @@ __host__ void FillPolar1DArrays ()
       for (i = 0; i <= NRAD; i++){
         /* Usamos floats para calcular los valores de los arrays, luego
            los pasamos a float */
-        Radii[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX/RMIN));
+        Radii[i] = RMIN*exp((float)i/(float)NRAD*log(RMAX/RMIN));
       }
     }
     else {
@@ -110,7 +110,7 @@ __host__ void FillPolar1DArrays ()
     Rsup[i] = Radii[i+1];
     Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
     Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
-    Surf[i] = PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(double)NSEC;
+    Surf[i] = PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(float)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
     invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
@@ -206,7 +206,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
       if (SloppyCFL == NO){
         gastimestepcfl = 1;
         gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
-        dt = (DT-dtemp)/(float)gastimestepcfl;
+        dt = (DT-dtemp)/(double)gastimestepcfl;
       }
       //printf("dt %f\n", dt);
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys); // si existe acrecion entra

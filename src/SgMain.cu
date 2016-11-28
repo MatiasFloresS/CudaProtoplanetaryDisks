@@ -12,7 +12,7 @@ extern float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimuta
 extern float *VthetaInt_d, *VradInt_d, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
 extern float *GLOBAL_AxiSGAccr, *Radii;
 
-extern double *invdiffRmed_d, *Rinf_d, *Rmed, *Rmed_d,  *Radii_d;
+extern float *invdiffRmed_d, *Rinf_d, *Rmed, *Rmed_d,  *Radii_d;
 
 extern float SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
 

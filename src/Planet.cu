@@ -1,7 +1,7 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC;
-extern double *Rinf, *Rsup;
+extern float *Rinf, *Rsup;
 
 __host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
 {

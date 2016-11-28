@@ -20,7 +20,7 @@ extern float *Pressure, *CellAbscissa, *CellOrdinate, *Temperature, *vt_cent;
 extern float *SoundSpeed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM;
 extern float *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *dq, *DivergenceVelocity;
 extern float *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *Radii;
-extern double *Surf, *invSurf, *powRmed;
+extern float *Surf, *invSurf, *powRmed;
 extern float *DensStar, *VradInt,  *TemperInt, *Potential, *VthetaInt, *DensInt, *VradNew;
 extern float *VthetaNew, *EnergyInt, *EnergyNew, *VthetaRes, *TempShift;
 
@@ -42,9 +42,11 @@ float *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *array_d, *mdcp0_d, *axifiel
 
 float mdcp, SGP_tstep, SGP_eps, SGP_rstep;
 
-extern double HillRadius, *invdiffRmed, *Rinf_d, *Rinf, *invRinf, *Rmed, *invRmed, *Rsup, *invdiffRsup;
+extern double HillRadius;
+extern float *invdiffRmed, *Rinf_d, *Rinf, *invRinf, *Rmed, *invRmed, *Rsup, *invdiffRsup;
 
-double OmegaFrame, *invdiffRmed_d, *invRinf_d, *invRmed_d, *Rmed_d, *Rsup_d, *invdiffRsup_d;
+double OmegaFrame;
+float *invdiffRmed_d, *invRinf_d, *invRmed_d, *Rmed_d, *Rsup_d, *invdiffRsup_d;
 
 float *q0, *PlanetMasses, *q1;
 
@@ -660,29 +662,29 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(float)));
 
   /* cudaMalloc FillPolar1DArrays */
-  gpuErrchk(cudaMalloc((void**)&Radii_d,           (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&Rmed_d,            (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&Rinf_d,            (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&invRmed_d,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&Rsup_d,            (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&invdiffRmed_d,     (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&invRinf_d,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&powRmed_d,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&invdiffRsup_d,     (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&Surf_d,            (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&invSurf_d,         (NRAD+1)*sizeof(double)));
+  gpuErrchk(cudaMalloc((void**)&Radii_d,           (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Rmed_d,            (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Rinf_d,            (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&invRmed_d,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Rsup_d,            (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&invdiffRmed_d,     (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&invRinf_d,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&powRmed_d,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&invdiffRsup_d,     (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&Surf_d,            (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMalloc((void**)&invSurf_d,         (NRAD+1)*sizeof(float)));
 
-  gpuErrchk(cudaMemset(Radii_d, 0,        (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(Rmed_d, 0,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(Rinf_d, 0,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(invRmed_d, 0,      (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(Rsup_d, 0,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(invdiffRmed_d, 0,  (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(invRinf_d, 0,      (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(powRmed_d, 0,      (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(invdiffRsup_d, 0,  (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(Surf_d, 0,         (NRAD+1)*sizeof(double)));
-  gpuErrchk(cudaMemset(invSurf_d, 0,      (NRAD+1)*sizeof(double)));
+  gpuErrchk(cudaMemset(Radii_d, 0,        (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(Rmed_d, 0,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(Rinf_d, 0,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(invRmed_d, 0,      (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(Rsup_d, 0,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(invdiffRmed_d, 0,  (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(invRinf_d, 0,      (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(powRmed_d, 0,      (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(invdiffRsup_d, 0,  (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(Surf_d, 0,         (NRAD+1)*sizeof(float)));
+  gpuErrchk(cudaMemset(invSurf_d, 0,      (NRAD+1)*sizeof(float)));
 
 
   /* cudaMalloc med */
@@ -767,17 +769,17 @@ __host__ void Cudamalloc (float *Label, float *Dens, float *Vrad, float *Vtheta)
   gpuErrchk(cudaMemset(CFL_d, 0,          sizeof(int)));
 
   /* cudaMemcpy Host to Device */
-  gpuErrchk(cudaMemcpy(Radii_d, Radii,             (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Rmed_d, Rmed,               (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Rinf_d, Rinf,               (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(invRmed_d, invRmed,         (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Rsup_d, Rsup,               (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(invdiffRmed_d, invdiffRmed, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(invRinf_d, invRinf,         (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(powRmed_d, powRmed,         (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(invdiffRsup_d, invdiffRsup, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(Surf_d, Surf,               (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(invSurf_d, invSurf,         (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Radii_d, Radii,             (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Rmed_d, Rmed,               (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Rinf_d, Rinf,               (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(invRmed_d, invRmed,         (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Rsup_d, Rsup,               (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(invdiffRmed_d, invdiffRmed, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(invRinf_d, invRinf,         (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(powRmed_d, powRmed,         (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(invdiffRsup_d, invdiffRsup, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(Surf_d, Surf,               (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(invSurf_d, invSurf,         (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Dens_d, Dens,               size_grid*sizeof(float), cudaMemcpyHostToDevice));
 
 }

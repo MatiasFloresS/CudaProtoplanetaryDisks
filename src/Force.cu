@@ -10,7 +10,7 @@ extern float *forcesyo;
 extern float *Dens_d, *CellAbscissa_d, *CellOrdinate_d;
 extern float *fxi_d, *fxo_d, *fyi_d, *fyo_d;
 
-extern double *Rmed, *Rmed_d, *Surf,  *Surf_d;
+extern float *Rmed, *Rmed_d, *Surf,  *Surf_d;
 
 extern int RocheSmoothing, size_grid, NRAD, NSEC, SelfGravity;
 

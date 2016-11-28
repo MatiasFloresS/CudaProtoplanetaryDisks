@@ -1,3 +1,4 @@
+
 #include "Main.cuh"
 
 extern int NRAD, NSEC, size_grid, RocheSmoothing;
@@ -16,7 +17,8 @@ extern Pair DiskOnPrimaryAcceleration;
 static Pair IndirectTerm;
 
 extern float *q0, *PlanetMasses, *q1;
-extern double *Rinf_d, *Rmed, *Rmed_d,  OmegaFrame, *Radii;
+extern float *Rinf_d, *Rmed, *Rmed_d, *Radii;
+extern double  OmegaFrame;
 extern dim3 dimGrid2, dimBlock2;
 
 __host__ void InitGasDensity (float *Dens)
