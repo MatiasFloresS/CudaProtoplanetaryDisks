@@ -6,9 +6,10 @@ extern int Evanescent, SelfGravity, ExcludeHill, dimfxy, OuterSourceMass;
 extern float *SigmaMed, *SoundSpeed, *EnergyMed, *mean_dens, *mean_energy;
 extern float *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *viscosity_array;
 
-extern float ADIABATICINDEX, FLARINGINDEX, SIGMASLOPE, ASPECTRATIO;
-extern float TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS, PhysicalTime, PhysicalTimeInitial;
-extern float LAMBDADOUBLING;
+extern double ADIABATICINDEX, FLARINGINDEX, SIGMASLOPE, ASPECTRATIO;
+extern double TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
+extern double LAMBDADOUBLING;
+extern float  PhysicalTime, PhysicalTimeInitial;
 
 extern float *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *mean_dens_d, *mean_energy_d;
 extern float *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array_d;
@@ -170,7 +171,7 @@ __host__ void InitComputeAccelDevice()
 
 
 
-__host__ void CorrectVtheta (float *Vtheta, float domega)
+__host__ void CorrectVtheta (float *Vtheta, double domega)
 {
   CorrectVthetaKernel<<<dimGrid2, dimBlock2>>>(Vtheta_d, domega, Rmed_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());

@@ -3,10 +3,10 @@
 extern int NRAD;
 
 extern float *QplusMed, *SigmaMed, *SigmaInf, *EnergyMed, *CoolingTimeMed, *QplusMed;
-extern float *Rinf, *Rmed;
+extern float *Rinf, *Rmed, ScalingFactor;
 
-extern float CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, ADIABATICINDEX;
-extern float ScalingFactor, ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
+extern double CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, ADIABATICINDEX;
+extern double ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
 
 
 /* Surface density */

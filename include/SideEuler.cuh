@@ -11,5 +11,5 @@ __host__ Pair ComputeAccel (Force *force, float *Dens, float x, float y, float r
 __host__ void DivisePolarGrid (float *Qbase_d, float *DensInt_d, float *Work_d);
 __host__ void InitComputeAccel ();
 __host__ void InitComputeAccelDevice ();
-__host__ void CorrectVtheta (float *Vtheta, float domega);
+__host__ void CorrectVtheta (float *Vtheta, double domega);
 __host__ void ApplySubKeplerianBoundary(float *VthetaInt);

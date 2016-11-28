@@ -5,7 +5,10 @@ extern string OUTPUTDIR;
 extern int NSEC, NRAD, NTOT, NINTERM, IsDisk, AdvecteLabel;
 extern int Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, Write_Density, Write_Velocity;
 
-extern float RMAX, mdcp, exces_mdcp, PhysicalTime, LostMass;
+extern float mdcp, exces_mdcp, PhysicalTime, LostMass;
+
+extern double RMAX;
+
 extern float *Temperature, *Qplus, *DivergenceVelocity, mdcp1;
 
 static double Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
@@ -52,6 +55,7 @@ __host__ void EmptyPlanetSystemFile(PlanetarySystem *sys)
   }
 }
 
+
 __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
 {
   int i, n;
@@ -65,6 +69,7 @@ __host__ void WriteBigPlanetSystemFile(PlanetarySystem *sys, int t)
     WriteBigPlanetFile (t, i);
   }
 }
+
 
 __host__ void WritePlanetSystemFile (PlanetarySystem *sys, int TimeStep)
 {
@@ -127,16 +132,16 @@ __host__ void SendOutput (int index, float *Dens, float *Vrad, float *Vtheta, fl
 {
   printf("\n*** OUTPUT %d ***\n", index);
   if (IsDisk == YES){
-    if (Write_Density == YES) WriteDiskPolar(Dens, "gasdens", index);
+    if (Write_Density == YES) WriteDiskPolar(Dens, "dens", index);
     if (Write_Velocity == YES){
-      WriteDiskPolar(Vrad, "gasvrad", index);
-      WriteDiskPolar(Vtheta, "gasvtheta", index);
+      WriteDiskPolar(Vrad, "vrad", index);
+      WriteDiskPolar(Vtheta, "vtheta", index);
     }
-    if (Write_Energy == YES) WriteDiskPolar(Energy, "gasenergy", index);
-    if (Write_Temperature == YES) WriteDiskPolar(Temperature, "gastemperature", index);
-    if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity, "gasdivergence", index);
-    if (Write_Qplus == YES) WriteDiskPolar(Qplus, "gasqplus", index);
-    if (AdvecteLabel == YES) WriteDiskPolar(Label, "gaslabel", index);
+    if (Write_Energy == YES) WriteDiskPolar(Energy, "energy", index);
+    if (Write_Temperature == YES) WriteDiskPolar(Temperature, "temperature", index);
+    if (Write_DivV == YES) WriteDiskPolar(DivergenceVelocity, "divergence", index);
+    if (Write_Qplus == YES) WriteDiskPolar(Qplus, "qplus", index);
+    if (AdvecteLabel == YES) WriteDiskPolar(Label, "label", index);
   }
 }
 

@@ -2,10 +2,9 @@
 
 extern string OUTPUTDIR;
 
-extern float ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
+extern double ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
 
-extern float *CellAbscissa, *CellOrdinate, *forcesxi, *forcesyi, *forcesxo;
-extern float *forcesyo;
+extern float *CellAbscissa, *CellOrdinate, *forcesxi, *forcesyi, *forcesxo, *forcesyo;
 
 extern float *Dens_d, *CellAbscissa_d, *CellOrdinate_d;
 extern float *fxi_d, *fxo_d, *fyi_d, *fyo_d;

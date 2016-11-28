@@ -12,8 +12,9 @@ extern float *TempShift_d, *Vmoy_d, *newDT_d, *DT1D_d, *DT2D_d, *Vresidual_d, *V
 extern float *Vradial_d;
 
 /* extern float values */
-extern float OMEGAFRAME, PhysicalTimeInitial, PhysicalTime;
-extern float THICKNESSSMOOTHING;
+extern double OMEGAFRAME;
+extern float PhysicalTimeInitial, PhysicalTime;
+extern double THICKNESSSMOOTHING;
 
 /* extern float host arrays */
 extern float *Pressure, *CellAbscissa, *CellOrdinate, *Temperature, *vt_cent;
@@ -48,14 +49,14 @@ extern float *invdiffRmed, *Rinf_d, *Rinf, *invRinf, *Rmed, *invRmed, *Rsup, *in
 double OmegaFrame;
 float *invdiffRmed_d, *invRinf_d, *invRmed_d, *Rmed_d, *Rsup_d, *invdiffRsup_d;
 
-float *q0, *PlanetMasses, *q1;
+double *q0, *PlanetMasses, *q1;
 
 extern int NRAD, NSEC, Cooling;
 extern int *NoSplitAdvection_d;
 extern long *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
-int blocksize2D = 16;
+int blocksize2D = 32;
 int blocksize1D = 256;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
@@ -78,7 +79,7 @@ cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *
 __host__ int main (int argc, char *argv[])
 {
   //cudaSetDevice(1); Using gpu nvidia m4000 8 gb
-  cudaSetDevice(0); // Using gpu nvidia m4000 8gb
+  cudaSetDevice(1); // Using gpu nvidia m4000 8gb
 
   float     *Dens;
   float     *Vrad;
@@ -210,9 +211,6 @@ __host__ int main (int argc, char *argv[])
   dim3 dimG4 (nrad2pot/blocksize1D, 1);
   dimGrid4 = dimG4;
 
-
-  /*  hasta aca falta ---------------------------------------> */
-
   if (verbose == YES)
     TellEverything();
   if (disable == YES)
@@ -326,8 +324,11 @@ __host__ int main (int argc, char *argv[])
       cufftDestroy(planf);
       cufftDestroy(planb);
   }
+
 	return EXIT_SUCCESS;
 }
+
+
 
 __host__ void FreeCuda ()
 {
@@ -583,14 +584,15 @@ __host__ void CreateArrays () // ordenar
 {
   CFL   = (int *)malloc(sizeof(int));
 
-  EnergyMed       = (float *)malloc((NRAD+1)*sizeof(float));
-  SigmaMed        = (float *)malloc((NRAD+1)*sizeof(float));
-  SigmaInf        = (float *)malloc((NRAD+1)*sizeof(float));
-  vt_int          = (float *)malloc((NRAD+1)*sizeof(float));
-  GLOBAL_bufarray = (float *)malloc((NRAD+1)*sizeof(float));
-  GLOBAL_AxiSGAccr = (float *)malloc((NRAD+1)*sizeof(float));
-  QplusMed        = (float *)malloc((NRAD+1)*sizeof(float));
-  CoolingTimeMed  = (float *)malloc((NRAD+1)*sizeof(float));
+  EnergyMed         = (float *)malloc((NRAD+1)*sizeof(float));
+  SigmaMed          = (float *)malloc((NRAD+1)*sizeof(float));
+  SigmaInf          = (float *)malloc((NRAD+1)*sizeof(float));
+  vt_int            = (float *)malloc((NRAD+1)*sizeof(float));
+  GLOBAL_bufarray   = (float *)malloc((NRAD+1)*sizeof(float));
+  GLOBAL_AxiSGAccr  = (float *)malloc((NRAD+1)*sizeof(float));
+  QplusMed          = (float *)malloc((NRAD+1)*sizeof(float));
+  CoolingTimeMed    = (float *)malloc((NRAD+1)*sizeof(float));
+  viscosity_array = (float *)malloc((NRAD+1)*sizeof(float));
 
   cs0             = (float *)malloc(NSEC*sizeof(float));
   cs1             = (float *)malloc(NSEC*sizeof(float));
@@ -601,7 +603,6 @@ __host__ void CreateArrays () // ordenar
   mean_energy     = (float *)malloc(NSEC*sizeof(float));
   mean_energy2    = (float *)malloc(NSEC*sizeof(float));
 
-  viscosity_array = (float *)malloc((NRAD+1)*sizeof(float));
 
   if (SelfGravity){
     SG_Accr         = (float *)malloc(size_grid*sizeof(float));
@@ -612,9 +613,9 @@ __host__ void CreateArrays () // ordenar
   Qbase           = (float *)malloc(size_grid*sizeof(float));
   array           = (float *)malloc(size_grid*sizeof(float));
   mdcp0           = (float *)malloc(size_grid*sizeof(float));
-  q0              = (float *)malloc(400*sizeof(float));
-  q1              = (float *)malloc(400*sizeof(float));
-  PlanetMasses    = (float *)malloc(100*sizeof(float));
+  q0              = (double *)malloc(400*sizeof(double));
+  q1              = (double *)malloc(400*sizeof(double));
+  PlanetMasses    = (double *)malloc(100*sizeof(double));
 
 }
 

@@ -36,6 +36,7 @@ RadialSpacing 		LOGARITHM       Zone interfaces evenly spaced
 Ntot			10001		Total number of time steps
 Ninterm	 		20		Time steps between outputs
 DT			0.314159265359	Time step length. 2PI = 1 orbit
+
 OutputDir		out/
 
 SelfGravity	NO     #choose: Yes, Z or No

@@ -10,13 +10,17 @@ extern float *viscosity_array, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
 extern float *Potential_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
 extern float *viscosity_array_d, *vt_cent_d, *Vtheta_d, *SigmaInf_d;
 
-extern float ROCHESMOOTHING, MassTaper, ViscosityAlpha, ASPECTRATIO, FLARINGINDEX;
-extern float SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT, PhysicalTime, RELEASEDATE, RELEASERADIUS;
+extern double ROCHESMOOTHING, ASPECTRATIO, FLARINGINDEX;
+extern double SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT,  RELEASEDATE, RELEASERADIUS;
+extern double VISCOSITY, ALPHAVISCOSITY, CAVITYWIDTH, CAVITYRADIUS, CAVITYRATIO;
+extern double LAMBDADOUBLING;
+
+extern float MassTaper, ViscosityAlpha, PhysicalTime, PhysicalTimeInitial;
 
 extern Pair DiskOnPrimaryAcceleration;
 static Pair IndirectTerm;
 
-extern float *q0, *PlanetMasses, *q1;
+extern double *q0, *PlanetMasses, *q1;
 extern float *Rinf_d, *Rmed, *Rmed_d, *Radii;
 extern double  OmegaFrame;
 extern dim3 dimGrid2, dimBlock2;
@@ -32,6 +36,8 @@ __host__ void InitGasDensity (float *Dens)
   }
 }
 
+
+
 __host__ void InitGasEnergy (float *Energy)
 {
   FillEnergy ();
@@ -41,6 +47,8 @@ __host__ void InitGasEnergy (float *Energy)
     }
   }
 }
+
+
 
 __host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy)
 {
@@ -109,12 +117,12 @@ __host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, P
 }
 
 
-__host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
+__host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
 {
   int nb, i , k;
   int *feelothers;
   nb = sys->nb;
-  float dtheta, omega, rdot, x, y, r, new_r, vx, vy, theta, denom;
+  double dtheta, omega, rdot, x, y, r, new_r, vx, vy, theta, denom;
 
   if (!ForcedCircular){
     for (k = 0; k < nb; k++){
@@ -182,12 +190,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
   /* Pressure is already initialized: cf initeuler in SourceEuler.c ...
     Initialization of azimutal velocity with exact centrifugal balance */
 
-    FILE *rr = fopen("rmedgpu.raw","w");
-    fwrite((void *) Rmed, NRAD, sizeof(float), rr);
-    fclose(rr);
-
   if (CentrifugalBalance){
-    printf("centrifiugal\n" );
     /* vt_int \equiv Romega = grad(P)/sigma + \partial(phi)/\partial(r) - acc_sg_radial
     ./bin/fargoGPU  -b in/template.par */
 
@@ -240,10 +243,7 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
     FillQplus();
   }
 
-  for (i = 0; i <= NRAD; i++){
-    if (i == NRAD) viscosity_array[i] = FViscosity(Rmed[NRAD-1]);
-    else viscosity_array[i] = FViscosity(Rmed[i]);
-  }
+
 
   InitVelocities(Vrad, Vtheta);
 }
@@ -251,14 +251,15 @@ __host__ void InitGasVelocities (float *Vrad, float *Vtheta)
 
 __host__ void InitVelocities (float *Vrad, float *Vtheta)
 {
-  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
+  if (SelfGravity) gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
 
   printf("OmegaFrame %.15g\n", OmegaFrame);
 
-  InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(viscosity_array_d, NSEC, NRAD, SelfGravity, Rmed_d,
+  InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(NSEC, NRAD, SelfGravity, Rmed_d,
   ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,
-  IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame, Rinf_d, vt_cent_d);
+  IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame, Rinf_d, vt_cent_d, VISCOSITY, ALPHAVISCOSITY,
+  CAVITYWIDTH, CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
+
   gpuErrchk(cudaDeviceSynchronize());
 
 }

@@ -245,10 +245,10 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
 
 
 
-__host__ void RotatePsys (PlanetarySystem *sys, float angle) /* Rotate by angle '-angle' */
+__host__ void RotatePsys (PlanetarySystem *sys, double angle) /* Rotate by angle '-angle' */
 {
   int i, nb;
-  float sint, cost, xt, yt;
+  double sint, cost, xt, yt;
   nb = sys->nb;
   sint = sin(angle);
   cost = cos(angle);

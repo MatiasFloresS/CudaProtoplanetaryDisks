@@ -5,14 +5,14 @@ extern int blocksize2, size_grid, NRAD, NSEC;
 extern float *GLOBAL_bufarray;
 extern float *gridfield_d, *GLOBAL_bufarray_d, *axifield_d, *SG_Accr_d, *GLOBAL_AxiSGAccr_d;
 
-extern float ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
-extern float PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING;
+extern double ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS, LAMBDADOUBLING;
+extern float PhysicalTime, PhysicalTimeInitial;
 
 extern dim3 dimGrid, dimBlock, dimGrid4;
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potential,
    float *Rinf, float *invRinf, float *Vrad, float *VthetaInt, float *Vtheta, float *Rmed, float dt,
-   int nrad, int nsec, double OmegaFrame, int ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE)
+   int nrad, int nsec, double OmegaFrame, int ZMPlus, double IMPOSEDDISKDRIFT, double SIGMASLOPE)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -56,7 +56,7 @@ __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, fl
 
 __global__ void Substep3Kernel (float *Dens, float *Qplus, float *viscosity_array, float *TAURR, float *TAURP,float *TAUPP,
   float *DivergenceVelocity, int nrad, int nsec, float *Rmed, int Cooling, float *EnergyNew, float dt, float *EnergyMed,
-  float *SigmaMed, float *CoolingTimeMed, float *Energy, float ADIABATICINDEX, float *QplusMed)
+  float *SigmaMed, float *CoolingTimeMed, float *Energy, double ADIABATICINDEX, float *QplusMed)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -159,8 +159,8 @@ __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate
 
 
 __global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *Dens, float *Rmed, float *Energy, int nsec, int nrad,
-  int Adiabatic, float ADIABATICINDEX, float FLARINGINDEX, float ASPECTRATIO, float TRANSITIONWIDTH,
-  float TRANSITIONRADIUS, float TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, float LAMBDADOUBLING)
+  int Adiabatic, double ADIABATICINDEX, double FLARINGINDEX, double ASPECTRATIO, double TRANSITIONWIDTH,
+  double TRANSITIONRADIUS, double TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -178,7 +178,7 @@ __global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *Dens, float *
 
 
 __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *Dens, float *Pressure, int Adiabatic, int nrad,
-  int nsec, float ADIABATICINDEX, float *Energy) /* LISTO */
+  int nsec, double ADIABATICINDEX, float *Energy) /* LISTO */
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -194,7 +194,7 @@ __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *Dens, floa
 
 
 __global__ void ComputeTemperatureFieldKernel (float *Dens, float *Temperature, float *Pressure, float *Energy,
-  float ADIABATICINDEX, int Adiabatic, int nsec, int nrad) /* LISTO */
+  double ADIABATICINDEX, int Adiabatic, int nsec, int nrad) /* LISTO */
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -227,7 +227,7 @@ __global__ void InitLabelKernel (float *Label, float xp, float yp, float rhill, 
 
 
 __global__ void CircumPlanetaryMassKernel (float *Dens, float *Surf, float *CellAbscissa, float *CellOrdinate,
-  float xpl, float ypl, int nrad, int nsec, float HillRadius, float *mdcp0) /* LISTA */
+  double xpl, double ypl, int nrad, int nsec, double HillRadius, float *mdcp0) /* LISTA */
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -426,6 +426,8 @@ __global__ void Substep2Kernel (float *Dens, float *VradInt, float *VthetaInt, f
   }
 }
 
+
+
 __global__ void kernel(float *Dens, float *VradInt, float *VthetaInt, float *TemperInt, int nrad,
   int nsec, float *invdiffRmed, float *invdiffRsup, float *DensInt, int Adiabatic, float *Rmed,
   float dt, float *VradNew, float *VthetaNew, float *Energy, float *EnergyInt)
@@ -502,6 +504,7 @@ __global__ void ReduceCsKernel (float *SoundSpeed, float *cs0, float *cs1, float
     csnrm1[j] = SoundSpeed[i*nsec +j];
   }
 }
+
 
 
 __global__ void ReduceMeanKernel (float *Dens, float *Energy, int nsec, float *mean_dens, float *mean_energy,
@@ -628,13 +631,15 @@ __host__ void Make1Dprofile (int option)
 
 
 /* LISTO */
-__global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed,
-  float ASPECTRATIO, float FLARINGINDEX, float SIGMASLOPE, int CentrifugalBalance, float *Vrad, float *Vtheta,
-  float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, double OmegaFrame, float *Rinf, float *vt_cent)
+__global__ void InitGasVelocitiesKernel (int nsec, int nrad, int SelfGravity, float *Rmed,
+  double ASPECTRATIO, double FLARINGINDEX, double SIGMASLOPE, int CentrifugalBalance, float *Vrad, float *Vtheta,
+  float ViscosityAlpha, double IMPOSEDDISKDRIFT, double SIGMA0, float *SigmaInf, double OmegaFrame, float *Rinf,
+  float *vt_cent, double VISCOSITY, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS,
+  double CAVITYRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING)
 {
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
-
+    float viscosity;
 
     if (i <= nrad && j < nsec){
       float omega, r, ri;
@@ -648,8 +653,8 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
       }
 
       if (!SelfGravity){
-        omega = sqrtf(G*1.0/r/r/r);
-        Vtheta[i*nsec + j] = omega*r*sqrtf(1.0-powf(ASPECTRATIO,2.0)*powf(r,2.0*FLARINGINDEX)* \
+        omega = sqrt(G*1.0/r/r/r);
+        Vtheta[i*nsec + j] = omega*r*sqrt(1.0-pow((double)ASPECTRATIO,2.0)*pow((double)r,2.0*FLARINGINDEX)* \
         (1.+SIGMASLOPE-2.0*FLARINGINDEX));
       }
 
@@ -658,12 +663,19 @@ __global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int n
 
       //if (CentrifugalBalance) Vtheta[i*nsec + j] = vt_cent[i];
 
+      if (i == nrad) viscosity = FViscosityDevice(r, VISCOSITY, ViscosityAlpha, Rmed, ALPHAVISCOSITY, CAVITYWIDTH,
+        CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
+      else viscosity = FViscosityDevice(r, VISCOSITY, ViscosityAlpha, Rmed, ALPHAVISCOSITY, CAVITYWIDTH,
+        CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
+
+
+
       if (i == nrad) Vrad[i*nsec + j] = 0.0;
       else {
         Vrad[i*nsec + j] = IMPOSEDDISKDRIFT*SIGMA0/SigmaInf[i]/ri;
 
-        if (ViscosityAlpha) Vrad[i*nsec+j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+2.0*FLARINGINDEX+1.0);
-        else Vrad[i*nsec+j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+.5);
+        if (ViscosityAlpha) Vrad[i*nsec+j] -= 3.0*viscosity/r*(-SIGMASLOPE+2.0*FLARINGINDEX+1.0);
+        else Vrad[i*nsec+j] -= 3.0*viscosity/r*(-SIGMASLOPE+.5);
 
       }
 
@@ -716,12 +728,14 @@ __global__ void ComputeForceKernel (float *CellAbscissa, float *CellOrdinate, fl
 
 __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity,
   float *DRP, float *invdiffRsup, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad,
-  int nsec, float *TAURR, float *TAUPP, float *dens, float *viscosity_array, float *TAURP, float *invRinf)
+  int nsec, float *TAURR, float *TAUPP, float *dens, float *TAURP, float *invRinf, float *Rmed, double VISCOSITY,
+  float ViscosityAlpha, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS, double CAVITYRATIO,
+  float PhysicalTime, float PhysicalTimeInitial, double ASPECTRATIO, double LAMBDADOUBLING)
 {
    int j = threadIdx.x + blockDim.x*blockIdx.x;
    int i = threadIdx.y + blockDim.y*blockIdx.y;
 
-   float dphi, invdphi, onethird;
+   float dphi, invdphi, onethird, viscosity;
    if (i<nrad && j<nsec){ /* Drr, Dpp and divV computation */
      dphi = 2.0*M_PI/(float)nsec;
      invdphi = 1.0/dphi;
@@ -742,13 +756,16 @@ __global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DR
    __syncthreads();
 
    if (i<nrad && j<nsec){ /* TAUrr and TAUpp computation */
-     TAURR[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(DRR[i*nsec + j] - onethird*DivergenceVelocity[i*nsec + j]);
-     TAUPP[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity_array[i]*(DPP[i*nsec + j] - onethird*DivergenceVelocity[i*nsec + j]);
+     viscosity = FViscosityDevice(Rmed[i], VISCOSITY, ViscosityAlpha, Rmed, ALPHAVISCOSITY, CAVITYWIDTH,
+       CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
+
+     TAURR[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity*(DRR[i*nsec + j] - onethird*DivergenceVelocity[i*nsec + j]);
+     TAUPP[i*nsec + j] = 2.0*dens[i*nsec + j]*viscosity*(DPP[i*nsec + j] - onethird*DivergenceVelocity[i*nsec + j]);
 
      if (i > 0){
       TAURP[i*nsec + j] = 2.0*0.25*(dens[i*nsec + j] + dens[(i-1)*nsec + j] + \
       dens[i*nsec + ((j-1)+nsec)%nsec] + dens[(i-1)*nsec + ((j-1)+nsec)%nsec])* \
-      viscosity_array[i]*DRP[i*nsec + j];
+      viscosity*DRP[i*nsec + j];
 
     }
    }
@@ -909,8 +926,8 @@ __global__ void Update_sgvelocityKernel (float *Vradial, float *Vazimutal, float
 }
 
 
-__global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
-  float ASPECTRATIO, float *GLOBAL_bufarray, int nrad, int nsec)
+__global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, double FLARINGINDEX, double SIGMASLOPE,
+  double ASPECTRATIO, float *GLOBAL_bufarray, int nrad, int nsec)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -943,9 +960,9 @@ __global__ void CrashKernel (float *array, int nrad, int nsec, int Crash)
 
 __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *Energy, float *Dens,
   float *viscosity_array, float DRMIN, float DRMAX, int nrad, int nsec, float Tin,
-  float Tout, float step, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray, double OmegaFrame,
-  float *SigmaMed, float *EnergyMed, int Adiabatic, int SelfGravity, float ASPECTRATIO, float TRANSITIONWIDTH,
-  float TRANSITIONRADIUS, float TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, float LAMBDADOUBLING)
+  float Tout, float step, double SIGMASLOPE, double FLARINGINDEX, float *GLOBAL_bufarray, double OmegaFrame,
+  float *SigmaMed, float *EnergyMed, int Adiabatic, int SelfGravity, double ASPECTRATIO, double TRANSITIONWIDTH,
+  double TRANSITIONRADIUS, double TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING)
 {
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -992,11 +1009,11 @@ __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta
 
 __global__ void DivisePolarGridKernel (float *Qbase, float *DensInt, float *Work, int nrad, int nsec)
 {
-  int j = threadIdx.x + blockDim.x*blockIdx.x;
-  int i = threadIdx.y + blockDim.y*blockIdx.y;
+  int i = threadIdx.x + blockDim.x*blockIdx.x;
+  int j = threadIdx.y + blockDim.y*blockIdx.y;
 
-  if (i<=nrad && j<nsec)
-    Work[i*nsec + j] = Qbase[i*nsec + j]/(DensInt[i*nsec + j] + 1e-20);
+  if (i<=nsec && j<nrad)
+    Work[i*nrad + j] = Qbase[i*nrad + j]/(DensInt[i*nrad + j] + 1e-20);
 }
 
 
@@ -1215,7 +1232,7 @@ __global__ void FillForcesArraysKernel (float *Rmed, int nsec, int nrad, double 
 }
 
 
-__global__ void CorrectVthetaKernel (float *Vtheta, float domega, float *Rmed, int nrad, int nsec)
+__global__ void CorrectVthetaKernel (float *Vtheta, double domega, float *Rmed, int nrad, int nsec)
 {
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -1328,8 +1345,8 @@ __device__ float min2(float a, float b)
 }
 
 
-__device__ float AspectRatioDevice(float r, float ASPECTRATIO, float TRANSITIONWIDTH, float TRANSITIONRADIUS,
-  float TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, float LAMBDADOUBLING)
+__device__ float AspectRatioDevice(float r, double ASPECTRATIO, double TRANSITIONWIDTH, double TRANSITIONRADIUS,
+  double TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING)
 {
   float aspectratio, rmin, rmax, scale;
   aspectratio = ASPECTRATIO;
@@ -1345,6 +1362,26 @@ __device__ float AspectRatioDevice(float r, float ASPECTRATIO, float TRANSITIONW
   return aspectratio;
 }
 
+__device__ float FViscosityDevice(float r, double VISCOSITY, int ViscosityAlpha, float *Rmed, double ALPHAVISCOSITY,
+  double CAVITYWIDTH, double CAVITYRADIUS, double CAVITYRATIO, float PhysicalTime, float PhysicalTimeInitial,
+  double ASPECTRATIO, double LAMBDADOUBLING)
+{
+  float viscosity, rmin, rmax, scale;
+  int i = 0;
+  viscosity = VISCOSITY;
+  // if (ViscosityAlpha){
+  //   while (Rmed[i] < r) i++;
+  //   viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * powf(r, 1.5);
+  // }
+  rmin = CAVITYRADIUS-CAVITYWIDTH*ASPECTRATIO;
+  rmax = CAVITYRADIUS+CAVITYWIDTH*ASPECTRATIO;
+  scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
+  rmin *= scale;
+  rmax *= scale;
+  if (r < rmin) viscosity *= CAVITYRATIO;
+  if ((r >= rmin) && (r <= rmax)) viscosity *= expf((rmax-r)/(rmax-rmin)*logf(CAVITYRATIO));
+  return viscosity;
+}
 
 
 __global__ void ApplySubKeplerianBoundaryKernel(float *VthetaInt, float *Rmed, double OmegaFrame, int nsec,

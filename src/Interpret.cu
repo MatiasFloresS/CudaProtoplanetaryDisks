@@ -4,13 +4,13 @@ extern char NewOutputdir[1024];
 
 extern int NINTERM, NTOT, NRAD, NSEC, OverridesOutputdir;
 
-extern float RMIN, RMAX, THICKNESSSMOOTHING, ROCHESMOOTHING, ASPECTRATIO;
-extern float VISCOSITY, ALPHAVISCOSITY, SIGMASLOPE, RELEASERADIUS;
-extern float RELEASEDATE, OMEGAFRAME, MASSTAPER, DT, SIGMA0;
-extern float TRANSITIONRATIO, TRANSITIONWIDTH, LAMBDADOUBLING;
-extern float ADIABATICINDEX, COOLINGTIME0, IMPOSEDDISKDRIFT;
-extern float FLARINGINDEX, ECCENTRICITY, CAVITYRADIUS, CAVITYRATIO;
-extern float CAVITYWIDTH, TRANSITIONRADIUS;
+extern double RMIN, RMAX, THICKNESSSMOOTHING, ROCHESMOOTHING, ASPECTRATIO;
+extern double VISCOSITY, ALPHAVISCOSITY, SIGMASLOPE, RELEASERADIUS;
+extern double RELEASEDATE, OMEGAFRAME, MASSTAPER, DT, SIGMA0;
+extern double TRANSITIONRATIO, TRANSITIONWIDTH, LAMBDADOUBLING;
+extern double ADIABATICINDEX, COOLINGTIME0, IMPOSEDDISKDRIFT;
+extern double FLARINGINDEX, ECCENTRICITY, CAVITYRADIUS, CAVITYRATIO;
+extern double CAVITYWIDTH, TRANSITIONRADIUS;
 
 extern string DISK, FRAME, OUTERSOURCEMASS, WRITEDENSITY, WRITEVELOCITY;
 extern string WRITEENERGY, ZMPLUS, WRITETEMPERATURE, WRITEDIVV;
@@ -35,10 +35,10 @@ int       CICPlanet = NO, ForcedCircular = NO;
    Caso contrario toma el valor por defecto del programa */
 __host__ void SearchVariable(char *name, char *stringval)
 {
-  float   temp;
+  double   temp;
   char    *stringval2;
   stringval2 = stringval;
-  sscanf (stringval2, "%f", &temp);
+  sscanf (stringval2, "%lf", &temp);
 
   if (strcmp(name, "DT") == 0) DT = temp;
   if (strcmp(name, "SIGMA0") == 0) SIGMA0 = temp;
@@ -101,8 +101,8 @@ __host__ void ReadVariables(char *filename)
 {
     char      nm[300], s[350], stringval[290];
     char      *s1;
-    float     temp;
-    float     valuef;
+    double     temp;
+    double     valuef;
     int       i, valuei, success;
     FILE      *input;
 
@@ -115,9 +115,9 @@ __host__ void ReadVariables(char *filename)
       success = sscanf(s, "%s ", nm);
       if ((nm[0] != '#') && (success == 1)){  /* # begins a comment line */
         s1 = s + strlen(nm);
-        sscanf(s1 + strspn(s1, "\t :=>_"), "%f", &temp);
+        sscanf(s1 + strspn(s1, "\t :=>_"), "%lf", &temp);
         sscanf(s1 + strspn(s1, "\t :=>_"), "%289s ", stringval);
-        valuef = (float) temp;
+        valuef = (double) temp;
         valuei = (int) temp;
         for (i = 0; i < strlen(nm); i++)
           nm[i] = (char) toupper(nm[i]);

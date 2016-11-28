@@ -2,8 +2,10 @@
 
 extern int NSEC, size_grid, NRAD;
 
-extern float TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
-extern float VISCOSITY, ViscosityAlpha, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
+extern double TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
+extern double VISCOSITY, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
+
+extern float ViscosityAlpha;
 
 extern float *SoundSpeed_d, *Vrad_d, *Vtheta_d,  *Dens_d;
 extern float *viscosity_array_d,  *VthetaInt_d, *VradInt_d;
@@ -56,12 +58,11 @@ __host__ void ComputeViscousTerms (float *Vradial, float *Vazimutal, float *Dens
     Make1Dprofile (1);
   }
 
-  for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
-  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
-
   ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vradial_d, Vazimutal_d, DRR_d, DPP_d, DivergenceVelocity_d,
     DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
-    viscosity_array_d, TAURP_d, invRinf_d);
+    TAURP_d, invRinf_d, Rmed_d, VISCOSITY, ViscosityAlpha, ALPHAVISCOSITY, CAVITYWIDTH, CAVITYRADIUS,
+    CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
+
   gpuErrchk(cudaDeviceSynchronize());
 }
 

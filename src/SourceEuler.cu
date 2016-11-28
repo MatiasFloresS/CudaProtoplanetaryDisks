@@ -6,10 +6,12 @@ extern int CentrifugalBalance, ZMPlus = NO, SloppyCFL, *CFL_d, *CFL;
 
 extern string OUTPUTDIR;
 
-extern float RMAX, RMIN, ADIABATICINDEX, FLARINGINDEX, ASPECTRATIO;
-extern float SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT, PhysicalTime, DT, MASSTAPER;
-extern float SGP_eps, TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
-extern float LAMBDADOUBLING, PhysicalTimeInitial, mdcp;
+extern double RMAX, RMIN, ADIABATICINDEX, FLARINGINDEX, ASPECTRATIO;
+extern double SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT, DT, MASSTAPER;
+extern double TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
+extern double LAMBDADOUBLING;
+
+extern float SGP_eps, PhysicalTime, PhysicalTimeInitial, mdcp;
 
 extern float *GLOBAL_bufarray, *vt_int, *SigmaInf, *CoolingTimeMed, *QplusMed , *viscosity_array;
 extern float *SG_Accr, *array, *Qplus, *SigmaMed,  *EnergyMed, *CellOrdinate, *CellAbscissa;
@@ -55,7 +57,7 @@ __host__ void FillPolar1DArrays ()
   FILE *input, *output;
   int i,j;
   float drrsep, temporary;
-  float *Radii2, *Rmed2;
+  double *Radii2, *Rmed2;
   string InputName, OutputName;
   drrsep = (RMAX-RMIN)/(float)NRAD;
   InputName = OUTPUTDIR + "radii.dat";
@@ -63,6 +65,8 @@ __host__ void FillPolar1DArrays ()
 
   /* Creo los arreglos de FillPolar1DArrays */
   Radii       = (float *)malloc((NRAD+1)*sizeof(float));
+  Radii2       = (double *)malloc((NRAD+1)*sizeof(double));
+  Rmed2       = (double *)malloc((NRAD+1)*sizeof(double));
   Rinf        = (float *)malloc((NRAD+1)*sizeof(float));
   Rmed        = (float *)malloc((NRAD+1)*sizeof(float));
   Rsup        = (float *)malloc((NRAD+1)*sizeof(float));
@@ -89,7 +93,8 @@ __host__ void FillPolar1DArrays ()
       for (i = 0; i <= NRAD; i++){
         /* Usamos floats para calcular los valores de los arrays, luego
            los pasamos a float */
-        Radii[i] = RMIN*exp((float)i/(float)NRAD*log(RMAX/RMIN));
+        Radii2[i] = RMIN*exp((double)i/(double)NRAD*log(RMAX/RMIN));
+        Radii[i] = (float) Radii2[i];
       }
     }
     else {
@@ -106,23 +111,24 @@ __host__ void FillPolar1DArrays ()
   }
 
   for (i = 0; i < NRAD; i++){
-    Rinf[i] = Radii[i];
-    Rsup[i] = Radii[i+1];
-    Rmed[i] = 2.0/3.0*(Rsup[i]*Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]*Rinf[i]);
-    Rmed[i] = Rmed[i] / (Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i]);
-    Surf[i] = PI*(Rsup[i]*Rsup[i]-Rinf[i]*Rinf[i])/(float)NSEC;
+    Rinf[i] = Radii2[i];
+    Rsup[i] = Radii2[i+1];
+    Rmed2[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]);
+    Rmed2[i] = Rmed2[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]);
+    Rmed[i] = (float) Rmed2[i];
+    Surf[i] = PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(float)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    invdiffRsup[i] = 1.0/(Rsup[i]-Rinf[i]);
-    invRinf[i] = 1.0/Rinf[i];
+    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]);
+    invRinf[i] = 1.0/Radii2[i];
   }
 
-  Rinf[NRAD] = Radii[NRAD];
+  Rinf[NRAD] = Radii2[NRAD];
 
   for (i = 0; i < NRAD; i++) {
-    if (i > 0 )invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
+    if (i > 0 )invdiffRmed[i] = 1.0/(Rmed2[i]-Rmed2[i-1]);
 
-    powRmed[i] = pow(Rmed[i],-2.5+SIGMASLOPE);
+    powRmed[i] = pow(Rmed2[i],-2.5+SIGMASLOPE);
   }
 
   /* string to char OutputName */
@@ -208,7 +214,6 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
         gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
         dt = (DT-dtemp)/(double)gastimestepcfl;
       }
-      //printf("dt %f\n", dt);
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys); // si existe acrecion entra
     }
     dtemp += dt;
@@ -244,7 +249,7 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
     /* Now we update gas */
     if (IsDisk == YES){
       //ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
-      gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
+      /*gpuErrchk(cudaMemcpy(Dens, Dens_d,     size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       gpuErrchk(cudaMemcpy(Energy, Energy_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       CrashedDens = DetectCrash (Dens);
       CrashedEnergy = DetectCrash (Energy);
@@ -252,8 +257,8 @@ __host__ void AlgoGas (Force *force, float *Dens, float *Vrad, float *Vtheta, fl
         fprintf(stdout, "\nCrash! at time %d\n", PhysicalTime);
         printf("c");
       }
-      else
-        printf(".");
+      else*/
+      printf(".");
       //if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
 
@@ -508,7 +513,6 @@ __host__ void Substep1cudamalloc (float *Vrad, float *Vtheta)
 
 __host__ int ConditionCFL (float *Vrad, float *Vtheta , float DeltaT)
 {
-  //gpuErrchk(cudaMemset(Vmoy_d, 0, NRAD*sizeof(float)));
   ConditionCFLKernel1D<<<dimGrid4, dimBlock>>>(Rsup_d, Rinf_d, Rmed_d, NRAD, NSEC, Vtheta_d, Vmoy_d);
   gpuErrchk(cudaDeviceSynchronize());
 

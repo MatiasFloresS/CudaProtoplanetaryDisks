@@ -11,7 +11,7 @@ inline void gpuAssert (cudaError_t code, const char *file, int line, bool abort=
 
 __global__ void Substep1Kernel (float *Pressure, float *Dens, float *VradInt, float *invdiffRmed, float *Potencial,
   float *Rinf, float *invRinf, float *Vrad, float *VthetaInt, float *Vtheta, float *Rmed, float dt,
-  int nrad, int nsec, double OmegaFrame, int ZMPlus, float IMPOSEDDISKDRIFT, float SIGMASLOPE);
+  int nrad, int nsec, double OmegaFrame, int ZMPlus, double IMPOSEDDISKDRIFT, double SIGMASLOPE);
 
 __global__ void Substep2Kernel (float *Dens, float *VradInt, float *VthetaInt, float *TemperInt,
   int nrad, int nsec, float *invdiffRmed, float *invdiffRsup, float *DensInt, int Adiabaticc,
@@ -19,7 +19,7 @@ __global__ void Substep2Kernel (float *Dens, float *VradInt, float *VthetaInt, f
 
 __global__ void Substep3Kernel (float *Dens, float *Qplus, float *viscosity_array, float *TAURR, float *TAURP,float *TAUPP,
   float *DivergenceVelocity, int nrad, int nsec, float *Rmed, int Cooling, float *EnergyNew, float dt, float *EnergyMed,
-  float *SigmaMed, float *CoolingTimeMed, float *Energy, float ADIABATICINDEX, float *QplusMed);
+  float *SigmaMed, float *CoolingTimeMed, float *Energy, double ADIABATICINDEX, float *QplusMed);
 
 __global__ void UpdateVelocitiesKernel (float *VthetaInt, float *VradInt, float *invRmed, float *Rmed, float *Rsup,
   float *Rinf, float *invdiffRmed, float *invdiffRsup, float *Dens, float *invRinf, float *TAURR,
@@ -28,19 +28,19 @@ __global__ void UpdateVelocitiesKernel (float *VthetaInt, float *VradInt, float 
 __global__ void InitComputeAccelKernel (float *CellAbscissa, float *CellOrdinate, float *Rmed, int nsec, int nrad);
 
 __global__ void ComputeSoundSpeedKernel (float *SoundSpeed, float *Dens, float *Rmed, float *Energy, int nsec, int nrad,
-  int Adiabatic, float ADIABATICINDEX, float FLARINGINDEX, float ASPECTRATIO, float TRANSITIONWIDTH,
-  float TRANSITIONRADIUS, float TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, float LAMBDADOUBLING);
+  int Adiabatic, double ADIABATICINDEX, double FLARINGINDEX, double ASPECTRATIO, double TRANSITIONWIDTH,
+  double TRANSITIONRADIUS, double TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING);
 
 __global__ void ComputePressureFieldKernel (float *SoundSpeed, float *Dens, float *Pressure, int Adiabaticc, int nrad, int nsec,
-  float ADIABATICINDEX, float *Energy);
+  double ADIABATICINDEX, float *Energy);
 
 __global__ void ComputeTemperatureFieldKernel (float *Dens, float *Temperature, float *Pressure, float *Energy,
-  float ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
+  double ADIABATICINDEX, int Adiabaticc, int nsec, int nrad);
 
 __global__ void InitLabelKernel (float *Label, float xp, float yp, float rhill, float *Rmed, int nrad, int nsec);
 
-__global__ void CircumPlanetaryMassKernel (float *Dens, float *Surf, float *CellAbscissa, float *CellOrdinate, float xpl, float ypl, int nrad,
-  int nsec, float HillRadius, float *mdcp0);
+__global__ void CircumPlanetaryMassKernel (float *Dens, float *Surf, float *CellAbscissa, float *CellOrdinate, double xpl, double ypl, int nrad,
+  int nsec, double HillRadius, float *mdcp0);
 
 __global__ void DeviceReduceKernel (float *g_idata, float *g_odata, unsigned int n);
 
@@ -71,15 +71,19 @@ __global__ void MinusMeanKernel (float *Dens, float *Energy, float SigmaMed, flo
 
 __global__ void Make1DprofileKernel (float *device_out2, float *gridfield, float *axifield, int nsec, int nrad);
 
-__global__ void InitGasVelocitiesKernel (float *viscosity_array, int nsec, int nrad, int SelfGravity, float *Rmed,
-  float ASPECTRATIO, float FLARINGINDEX, float SIGMASLOPE, int CentrifugalBalance, float *Vrad, float *Vtheta,
-  float ViscosityAlpha, float IMPOSEDDISKDRIFT, float SIGMA0, float *SigmaInf, double OmegaFrame, float *Rinf, float *vt_cent);
+__global__ void InitGasVelocitiesKernel (int nsec, int nrad, int SelfGravity, float *Rmed,
+  double ASPECTRATIO, double FLARINGINDEX, double SIGMASLOPE, int CentrifugalBalance, float *Vrad, float *Vtheta,
+  float ViscosityAlpha, double IMPOSEDDISKDRIFT, double SIGMA0, float *SigmaInf, double OmegaFrame, float *Rinf,
+  float *vt_cent, double VISCOSITY, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS,
+  double CAVITYRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING);
 
 __host__ void Make1Dprofile (int option);
 
-__global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity, float *DRP,
-  float *invdiffRsup, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad, int nsec,
-  float *TAURR, float *TAUPP, float *Dens, float *viscosity_array, float *TAURP, float *invRinf);
+__global__ void ViscousTermsKernel (float *Vradial, float *Vazimutal , float *DRR, float *DPP, float *DivergenceVelocity,
+  float *DRP, float *invdiffRsup, float *invRmed, float *Rsup, float *Rinf, float *invdiffRmed, int nrad,
+  int nsec, float *TAURR, float *TAUPP, float *dens, float *TAURP, float *invRinf, float *Rmed, double VISCOSITY,
+  float ViscosityAlpha, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS, double CAVITYRATIO,
+  float PhysicalTime, float PhysicalTimeInitial, double ASPECTRATIO, double LAMBDADOUBLING);
 
 __global__ void LRMomentaKernel (float *RadMomP, float *RadMomM, float *ThetaMomP, float *ThetaMomM, float *Dens,
   float *Vrad, float *Vtheta, int nrad, int nsec, float *Rmed, double OmegaFrame);
@@ -104,16 +108,16 @@ __global__ void Update_sgvelocityKernel (float *Vradial, float *Vazimutal, float
   float *Rmed, float *invdiffRmed, float dt, int nrad, int nsec);
 
 
-__global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, float FLARINGINDEX, float SIGMASLOPE,
-  float ASPECTRATIO, float *GLOBAL_bufarray, int nrad, int nsec);
+__global__ void Azimutalvelocity_withSGKernel (float *Vtheta, float *Rmed, double FLARINGINDEX, double SIGMASLOPE,
+  double ASPECTRATIO, float *GLOBAL_bufarray, int nrad, int nsec);
 
 __global__ void CrashKernel (float *array, int NRAD, int NSEC, int Crash);
 
 __global__ void EvanescentBoundaryKernel(float *Rmed, float *Vrad, float *Vtheta, float *Energy, float *Dens,
   float *viscosity_array, float DRMIN, float DRMAX, int nrad, int nsec, float Tin,
-  float Tout, float step, float SIGMASLOPE, float FLARINGINDEX, float *GLOBAL_bufarray, double OmegaFrame,
-  float *SigmaMed, float *EnergyMed, int Adiabatic, int SelfGravity, float ASPECTRATIO, float TRANSITIONWIDTH,
-  float TRANSITIONRADIUS, float TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, float LAMBDADOUBLING);
+  float Tout, float step, double SIGMASLOPE, double FLARINGINDEX, float *GLOBAL_bufarray, double OmegaFrame,
+  float *SigmaMed, float *EnergyMed, int Adiabatic, int SelfGravity, double ASPECTRATIO, double TRANSITIONWIDTH,
+  double TRANSITIONRADIUS, double TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING);
 
 __global__ void DivisePolarGridKernel (float *Qbase, float *DensInt, float *Work, int nrad, int nsec);
 
@@ -143,7 +147,7 @@ __global__ void ComputeSpeQtyKernel (float *Label, float *Dens, float *ExtLabel,
 __global__ void FillForcesArraysKernel (float *Rmed, int nsec, int nrad, double xplanet, double yplanet, double smooth,
   double mplanet, int Indirect_Term, double InvPlanetDistance3, float *Potential, pair IndirectTerm, int k);
 
-__global__ void CorrectVthetaKernel (float *Vtheta, float domega, float *Rmed, int nrad, int nsec);
+__global__ void CorrectVthetaKernel (float *Vtheta, double domega, float *Rmed, int nrad, int nsec);
 
 __global__ void ConditionCFLKernel1D (float *Rsup, float *Rinf, float *Rmed, int nrad, int nsec,
   float *Vtheta, float *Vmoy);
@@ -152,8 +156,8 @@ __device__ float max2(float a, float b);
 
 __device__ float min2(float a, float b);
 
-__device__ float AspectRatioDevice(float r, float ASPECTRATIO, float TRANSITIONWIDTH, float TRANSITIONRADIUS,
-  float TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, float LAMBDADOUBLING);
+__device__ float AspectRatioDevice(float r, double ASPECTRATIO, double TRANSITIONWIDTH, double TRANSITIONRADIUS,
+  double TRANSITIONRATIO, float PhysicalTime, float PhysicalTimeInitial, double LAMBDADOUBLING);
 
 __global__ void ConditionCFLKernel2D1 (float *Rsup, float *Rinf, float *Rmed, int nsec, int nrad,
   float *Vresidual, float *Vtheta, float *Vmoy, int FastTransport, float *SoundSpeed, float *Vrad,
@@ -170,3 +174,7 @@ __device__ inline void MyAtomicAdd (float *address, float value);
 __global__ void kernel(float *Dens, float *VradInt, float *VthetaInt, float *TemperInt, int nrad,
   int nsec, float *invdiffRmed, float *invdiffRsup, float *DensInt, int Adiabatic, float *Rmed,
   float dt, float *VradNew, float *VthetaNew, float *Energy, float *EnergyInt);
+
+__device__ float FViscosityDevice(float r, double VISCOSITY, int ViscosityAlpha, float *Rmed, double ALPHAVISCOSITY,
+  double CAVITYWIDTH, double CAVITYRADIUS, double CAVITYRATIO, float PhysicalTime, float PhysicalTimeInitial,
+  double ASPECTRATIO, double LAMBDADOUBLING);
