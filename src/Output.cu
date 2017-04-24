@@ -5,11 +5,11 @@ extern string OUTPUTDIR;
 extern int NSEC, NRAD, NTOT, NINTERM, IsDisk, AdvecteLabel;
 extern int Write_Temperature, Write_DivV, Write_Qplus, Write_Energy, Write_Density, Write_Velocity;
 
-extern float mdcp, exces_mdcp, PhysicalTime, LostMass;
+extern double mdcp, exces_mdcp, PhysicalTime, LostMass;
 
 extern double RMAX;
 
-extern float *Temperature, *Qplus, *DivergenceVelocity, mdcp1;
+extern double *Temperature, *Qplus, *DivergenceVelocity, mdcp1;
 
 static double Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 extern double OmegaFrame;
@@ -128,7 +128,7 @@ __host__ void WritePlanetFile (int TimeStep, int n)
 
 }
 
-__host__ void SendOutput (int index, float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label)
+__host__ void SendOutput (int index, double *Dens, double *Vrad, double *Vtheta, double *Energy, double *Label)
 {
   printf("\n*** OUTPUT %d ***\n", index);
   if (IsDisk == YES){
@@ -145,7 +145,7 @@ __host__ void SendOutput (int index, float *Dens, float *Vrad, float *Vtheta, fl
   }
 }
 
-__host__ void WriteDiskPolar(float *array, char *inputname, int number)
+__host__ void WriteDiskPolar(double *array, char *inputname, int number)
 {
   FILE *dump;
   char name[256];
@@ -173,7 +173,7 @@ __host__ void WriteDiskPolar(float *array, char *inputname, int number)
     exit(1);
   }
   printf("Writting '%s%d.raw'... ", nameinput, number);
-  fwrite(array, sizeof(float), NRAD*NSEC, dump);
+  fwrite(array, sizeof(double), NRAD*NSEC, dump);
   fclose(dump);
   printf("done\n");
 }

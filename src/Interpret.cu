@@ -31,7 +31,7 @@ int       Adiabatic = NO, Cooling = NO;
 int       CICPlanet = NO, ForcedCircular = NO;
 
 
-/* Busco la palabra en el archivo, si existe tomo el valor y lo paso a float
+/* Busco la palabra en el archivo, si existe tomo el valor y lo paso a double
    Caso contrario toma el valor por defecto del programa */
 __host__ void SearchVariable(char *name, char *stringval)
 {
@@ -49,21 +49,21 @@ __host__ void SearchVariable(char *name, char *stringval)
   if (strcmp(name, "LABELADVECTION") == 0) LABELADVECTION = stringval;
   if (strcmp(name, "TRANSPORT") == 0) TRANSPORT = stringval;
   if (strcmp(name, "PLANETCONFIG") == 0) PLANETCONFIG = stringval;
-  if (strcmp(name, "MASSTAPER") == 0) MASSTAPER = (float) (temp);
+  if (strcmp(name, "MASSTAPER") == 0) MASSTAPER = (double) (temp);
   if (strcmp(name, "RADIALSPACING") == 0) RADIALSPACING = stringval;
   if (strcmp(name, "NRAD") == 0) NRAD = (int) (temp);
   if (strcmp(name, "NSEC") == 0) NSEC = (int) (temp);
-  if (strcmp(name, "RMIN") == 0) RMIN = (float) (temp);
-  if (strcmp(name, "RMAX") == 0) RMAX = (float) (temp);
-  if (strcmp(name, "THICKNESSSMOOTHING") == 0) THICKNESSSMOOTHING = (float) (temp);
-  if (strcmp(name, "ROCHESMOOTHING") == 0) ROCHESMOOTHING = (float) (temp);
-  if (strcmp(name, "ASPECTRATIO") == 0) ASPECTRATIO = (float) (temp);
-  if (strcmp(name, "VISCOSITY") == 0) VISCOSITY = (float) (temp);
-  if (strcmp(name, "ALPHAVISCOSITY") == 0) ALPHAVISCOSITY = (float) (temp);
-  if (strcmp(name, "SIGMASLOPE") == 0) SIGMASLOPE = (float) (temp);
-  if (strcmp(name, "RELEASERADIUS") == 0) RELEASERADIUS = (float) (temp);
-  if (strcmp(name, "RELEASEDATE") == 0) RELEASEDATE = (float) (temp);
-  if (strcmp(name, "OMEGAFRAME") == 0) OMEGAFRAME = (float) (temp);
+  if (strcmp(name, "RMIN") == 0) RMIN = (double) (temp);
+  if (strcmp(name, "RMAX") == 0) RMAX = (double) (temp);
+  if (strcmp(name, "THICKNESSSMOOTHING") == 0) THICKNESSSMOOTHING = (double) (temp);
+  if (strcmp(name, "ROCHESMOOTHING") == 0) ROCHESMOOTHING = (double) (temp);
+  if (strcmp(name, "ASPECTRATIO") == 0) ASPECTRATIO = (double) (temp);
+  if (strcmp(name, "VISCOSITY") == 0) VISCOSITY = (double) (temp);
+  if (strcmp(name, "ALPHAVISCOSITY") == 0) ALPHAVISCOSITY = (double) (temp);
+  if (strcmp(name, "SIGMASLOPE") == 0) SIGMASLOPE = (double) (temp);
+  if (strcmp(name, "RELEASERADIUS") == 0) RELEASERADIUS = (double) (temp);
+  if (strcmp(name, "RELEASEDATE") == 0) RELEASEDATE = (double) (temp);
+  if (strcmp(name, "OMEGAFRAME") == 0) OMEGAFRAME = (double) (temp);
   if (strcmp(name, "DISK") == 0) DISK = stringval;
   if (strcmp(name, "FRAME") == 0) FRAME = stringval;
   if (strcmp(name, "OUTERSOURCEMASS") == 0) OUTERSOURCEMASS = stringval;
@@ -75,24 +75,24 @@ __host__ void SearchVariable(char *name, char *stringval)
   if (strcmp(name, "WRITEQPLUS") == 0) WRITEQPLUS = stringval;
   if (strcmp(name, "INDIRECTTERM") == 0) INDIRECTTERM = stringval;
   if (strcmp(name, "EXCLUDEHILL") == 0) EXCLUDEHILL = stringval;
-  if (strcmp(name, "IMPOSEDDISKDRIFT") == 0) IMPOSEDDISKDRIFT = (float) (temp);
-  if (strcmp(name, "FLARINGINDEX") == 0) FLARINGINDEX = (float) (temp);
-  if (strcmp(name, "ECCENTRICITY") == 0) ECCENTRICITY = (float) (temp);
-  if (strcmp(name, "CAVITYRADIUS") == 0) CAVITYRADIUS = (float) (temp);
-  if (strcmp(name, "CAVITYRATIO") == 0) CAVITYRATIO = (float) (temp);
-  if (strcmp(name, "CAVITYWIDTH") == 0) CAVITYWIDTH = (float) (temp);
-  if (strcmp(name, "TRANSITIONRADIUS") == 0) TRANSITIONRADIUS = (float) (temp);
-  if (strcmp(name, "TRANSITIONRATIO") == 0) TRANSITIONRATIO = (float) (temp);
-  if (strcmp(name, "TRANSITIONWIDTH") == 0) TRANSITIONWIDTH = (float) (temp);
-  if (strcmp(name, "LAMBDADOUBLING") == 0) LAMBDADOUBLING = (float) (temp);
+  if (strcmp(name, "IMPOSEDDISKDRIFT") == 0) IMPOSEDDISKDRIFT = (double) (temp);
+  if (strcmp(name, "FLARINGINDEX") == 0) FLARINGINDEX = (double) (temp);
+  if (strcmp(name, "ECCENTRICITY") == 0) ECCENTRICITY = (double) (temp);
+  if (strcmp(name, "CAVITYRADIUS") == 0) CAVITYRADIUS = (double) (temp);
+  if (strcmp(name, "CAVITYRATIO") == 0) CAVITYRATIO = (double) (temp);
+  if (strcmp(name, "CAVITYWIDTH") == 0) CAVITYWIDTH = (double) (temp);
+  if (strcmp(name, "TRANSITIONRADIUS") == 0) TRANSITIONRADIUS = (double) (temp);
+  if (strcmp(name, "TRANSITIONRATIO") == 0) TRANSITIONRATIO = (double) (temp);
+  if (strcmp(name, "TRANSITIONWIDTH") == 0) TRANSITIONWIDTH = (double) (temp);
+  if (strcmp(name, "LAMBDADOUBLING") == 0) LAMBDADOUBLING = (double) (temp);
   if (strcmp(name, "SELFGRAVITY") == 0) SELFGRAVITY = stringval;
   if (strcmp(name, "CICPLANET") == 0) CICPLANET = stringval;
   if (strcmp(name, "FORCEDCIRCULAR") == 0) FORCEDCIRCULAR = stringval;
   if (strcmp(name, "ZMPLUS") == 0) ZMPLUS = stringval;
   if (strcmp(name, "ADIABATIC") == 0) ADIABATIC = stringval;
-  if (strcmp(name, "ADIABATICINDEX") == 0) ADIABATICINDEX = (float) (temp);
+  if (strcmp(name, "ADIABATICINDEX") == 0) ADIABATICINDEX = (double) (temp);
   if (strcmp(name, "COOLING") == 0) COOLING = stringval;
-  if (strcmp(name, "COOLINGTIME0") == 0) COOLINGTIME0 = (float) (temp);
+  if (strcmp(name, "COOLINGTIME0") == 0) COOLINGTIME0 = (double) (temp);
 }
 
 
@@ -239,14 +239,14 @@ __host__ void PrintUsage (char *execname)
 
 
 
-__host__ float TellNbOrbits (float time)
+__host__ double TellNbOrbits (double time)
 {
   return time/2.0/PI*sqrt(G*1.0/1.0/1.0/1.0);
 }
 
 
 
-__host__ float TellNbOutputs (float time)
+__host__ double TellNbOutputs (double time)
 {
   return (time/DT/NINTERM);
 }
@@ -255,7 +255,7 @@ __host__ float TellNbOutputs (float time)
 
 __host__ void TellEverything()
 {
-  float temp, nbfileoutput;
+  double temp, nbfileoutput;
   printf ("\nDisc properties:\n");
   printf ("----------------\n");
   printf ("Inner Radius          : %g\n", RMIN);
@@ -293,13 +293,13 @@ __host__ void TellEverything()
   printf ("-------------------\n");
   printf ("Time increment between outputs : %.3f = %.3f orbits\n", NINTERM*DT, TellNbOrbits(NINTERM*DT));
   printf ("At each output #i, the following files are written:\n");
-  printf ("gasdens[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
-  printf ("gasvrad[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
-  printf ("gasvtheta[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
+  printf ("gasdens[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(double)));
+  printf ("gasvrad[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(double)));
+  printf ("gasvtheta[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(double)));
   if (Adiabatic == YES)
-    printf ("gasTemperature[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
+    printf ("gasTemperature[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(double)));
   if (AdvecteLabel == YES)
-    printf ("gaslabel[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(float)));
+    printf ("gaslabel[i].dat : %d bytes\n",(int)(NRAD*NSEC*sizeof(double)));
   printf ("There will be in total %d outputs\n", NTOT/NINTERM);
   printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
   nbfileoutput = 3.0;
@@ -307,8 +307,8 @@ __host__ void TellEverything()
     nbfileoutput += 1.0;
   if (AdvecteLabel == YES)
     nbfileoutput += 1.0;
-  temp =nbfileoutput*NRAD*NSEC*sizeof(float);
-  temp *= (float)NTOT/(float)NINTERM;
+  temp =nbfileoutput*NRAD*NSEC*sizeof(double);
+  temp *= (double)NTOT/(double)NINTERM;
   temp /= 1024.0*1024.0;
   printf ("So the code will produce ~%.2f Mbytes of data\n", temp);
   printf ("Check (eg by issuing a 'df' command) that you have enough disk space,\n");

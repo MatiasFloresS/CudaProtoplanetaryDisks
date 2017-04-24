@@ -1,9 +1,9 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC;
-extern float *Rinf, *Rsup;
+extern double *Rinf, *Rsup;
 
-__host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
+__host__ void AccreteOntoPlanets (double *Dens, double *Vrad, double *Vtheta, double dt, PlanetarySystem *sys)
 {
 
   double RRoche, Rplanet, distance;
@@ -35,8 +35,8 @@ __host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float
       while ((Rsup[i_min] < Rplanet-RRoche) && (i_min < NRAD)) i_min++;
       while ((Rinf[i_max] > Rplanet+RRoche) && (i_max > 0)) i_max--;
       angle = atan2(Yplanet, Xplanet);
-      j_min = (int)((float)NSEC/2.0/PI*(angle - 2.0*RRoche/Rplanet));
-      j_max = (int)((float)NSEC/2.0/PI*(angle + 2.0*RRoche/Rplanet));
+      j_min = (int)((double)NSEC/2.0/PI*(angle - 2.0*RRoche/Rplanet));
+      j_max = (int)((double)NSEC/2.0/PI*(angle + 2.0*RRoche/Rplanet));
       PxPlanet = Mplanet*VXplanet;
       PyPlanet = Mplanet*VYplanet;
 

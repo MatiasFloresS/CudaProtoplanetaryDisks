@@ -1,10 +1,10 @@
 #include "Main.cuh"
 
-extern float *Radii, ECCENTRICITY;
-static float Xplanet, Yplanet;
+extern double *Radii, ECCENTRICITY;
+static double Xplanet, Yplanet;
 extern int GuidingCenter;
-float HillRadius;
-extern float *Rmed;
+double HillRadius;
+extern double *Rmed;
 
 
 
@@ -97,7 +97,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
   char s[512], nm[512], test1[512], test2[512], *s1;
   PlanetarySystem *sys;
   int i=0, j, nb;
-  float mass, dist, accret;
+  double mass, dist, accret;
   int feeldis, feelothers;
   nb = FindNumberOfPlanets(filename);
   printf("%d planet(s) found.\n",nb);
@@ -108,14 +108,14 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
     sscanf(s, "%s ", nm);
     if (isalpha(s[0])){
       s1 = s + strlen(nm);
-      sscanf(s1 + strspn(s1, "\t :=>_"), "%f %f %f %s %s", &dist, &mass, &accret, test1, test2);
+      sscanf(s1 + strspn(s1, "\t :=>_"), "%lf %lf %lf %s %s", &dist, &mass, &accret, test1, test2);
       if (CICPlanet){
         // initialization puts centered-in-cell planets (with excentricity = 0 only)
         j = 0;
         while (Rmed[j] < dist) j++;
         dist = Radii[j+1];
       }
-      sys->mass[i] = (float)mass;
+      sys->mass[i] = (double)mass;
       feeldis = feelothers = YES;
       if (tolower(*test1) == 'n') feeldis = NO;
       /*
@@ -125,7 +125,7 @@ __host__ PlanetarySystem *InitPlanetarySystem (char *filename)
       }
       */
       if (tolower(*test2) == 'n') feelothers = NO;
-      sys->x[i] = (float)dist*(1.0+ECCENTRICITY);
+      sys->x[i] = (double)dist*(1.0+ECCENTRICITY);
       sys->y[i] = 0.0;
       sys->vy[i] = sqrt(G*(1.0+mass)/dist)*			\
   	   sqrt((1.0-ECCENTRICITY)/(1.0+ECCENTRICITY));

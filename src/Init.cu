@@ -2,19 +2,19 @@
 
 extern int NRAD, NSEC, size_grid;
 
-extern float *Label_d;
-extern float *Rmed,  *Rmed_d;
+extern double *Label_d;
+extern double *Rmed,  *Rmed_d;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void Initialization (float *Dens, float *Vrad, float *Vtheta, float *Energy, float *Label, PlanetarySystem *sys)
+__host__ void Initialization (double *Dens, double *Vrad, double *Vtheta, double *Energy, double *Label, PlanetarySystem *sys)
 {
   InitEuler (Vrad, Vtheta, Dens, Energy);
   InitLabel (Label, sys);
   WriteDim();
 }
 
-__host__ void InitLabel (float *Label, PlanetarySystem *sys)
+__host__ void InitLabel (double *Label, PlanetarySystem *sys)
 {
   double xp,yp, rhill, rp;
   xp = sys->x[0];

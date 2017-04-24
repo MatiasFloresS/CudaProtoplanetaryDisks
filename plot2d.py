@@ -122,13 +122,13 @@ def vector_field(vx,vy, **karg):
     ax = gca()
     ax.quiver(X,Y,U,V,scale=5,pivot='midle', **karg)
 
-rho0 =   fromfile(data_dir + "dens/"+ "dens{0:d}.raw".format(0),dtype='float32')         #1D array
+rho0 =   fromfile(data_dir + "dens/"+ "dens{0:d}.raw".format(0),dtype='float64')         #1D array
 #temp0 = fromfile(data_dir + "gasTemperature{0:d}.raw".format(0),dtype='float64')         #1D array
-rho =   fromfile(data_dir + "dens/"+ "dens{0:d}.raw".format(output),dtype='float32')         #1D array
+rho =   fromfile(data_dir + "dens/"+ "dens{0:d}.raw".format(output),dtype='float64')         #1D array
 #temp =  fromfile(data_dir + "gasTemperature{0:d}.raw".format(output),dtype='float64') #1D array
 #qplus = fromfile(data_dir + "gasQplus{0:d}.raw".format(output),dtype='float64') #1D array
-vrad =  fromfile(data_dir + "vrad/"+ "vrad{0:d}.raw".format(output),dtype='float32') #1D array
-vtheta= fromfile(data_dir + "vtheta/"+ "vtheta{0:d}.raw".format(output),dtype='float32') #1D array
+vrad =  fromfile(data_dir + "vrad/"+ "vrad{0:d}.raw".format(output),dtype='float64') #1D array
+vtheta= fromfile(data_dir + "vtheta/"+ "vtheta{0:d}.raw".format(output),dtype='float64') #1D array
 
 
 deltaRho = (rho-rho0) / rho0

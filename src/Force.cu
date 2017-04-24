@@ -4,23 +4,23 @@ extern string OUTPUTDIR;
 
 extern double ROCHESMOOTHING, THICKNESSSMOOTHING, FLARINGINDEX;
 
-extern float *CellAbscissa, *CellOrdinate, *forcesxi, *forcesyi, *forcesxo, *forcesyo;
+extern double *CellAbscissa, *CellOrdinate, *forcesxi, *forcesyi, *forcesxo, *forcesyo;
 
-extern float *Dens_d, *CellAbscissa_d, *CellOrdinate_d;
-extern float *fxi_d, *fxo_d, *fyi_d, *fyo_d;
+extern double *Dens_d, *CellAbscissa_d, *CellOrdinate_d;
+extern double *fxi_d, *fxo_d, *fyi_d, *fyo_d;
 
-extern float *Rmed, *Rmed_d, *Surf,  *Surf_d;
+extern double *Rmed, *Rmed_d, *Surf,  *Surf_d;
 
 extern int RocheSmoothing, size_grid, NRAD, NSEC, SelfGravity;
 
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float *Energy, int TimeStep,
-  float PhysicalTime, int dimfxy)
+__host__ void UpdateLog (Force *force, PlanetarySystem *sys, double *Dens, double *Energy, int TimeStep,
+  double PhysicalTime, int dimfxy)
 {
   FILE *out;
   double x, y, r, m, vx, vy, smoothing, a, rh;
-  float *globalforce;
+  double *globalforce;
   char filename[500];
   char filename2[500];
   int i, nb;
@@ -87,9 +87,9 @@ __host__ void UpdateLog (Force *force, PlanetarySystem *sys, float *Dens, float 
 __host__ Force *AllocateForce (int dimfxy)
 {
   Force *force;
-  float *globalforce;
+  double *globalforce;
   force = (Force *)malloc(sizeof(Force));
-  globalforce = (float *)malloc(sizeof(float)*4*dimfxy);
+  globalforce = (double *)malloc(sizeof(double)*4*dimfxy);
   for (int i = 0; i < 4*dimfxy; i++)
     globalforce[i] = 0.0;
   force->GlobalForce = globalforce;
@@ -98,10 +98,10 @@ __host__ Force *AllocateForce (int dimfxy)
 
 
 
-__host__ void ComputeForce (Force *force, float *Dens, float x, float y, float rsmoothing,
-  float mass, int dimfxy, float a, float rh)
+__host__ void ComputeForce (Force *force, double *Dens, double x, double y, double rsmoothing,
+  double mass, int dimfxy, double a, double rh)
 {
-  float *globalforce;
+  double *globalforce;
   int k;
 
   globalforce = force->GlobalForce;
@@ -109,10 +109,10 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
 
   for (k = 0; k < dimfxy; k++) {
 
-    gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(float)));
-    gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(float)));
-    gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(float)));
-    gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(float)));
+    gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(double)));
+    gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(double)));
+    gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(double)));
+    gpuErrchk(cudaMemset(fyo_d, 0, NRAD*NSEC*sizeof(double)));
 
     ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
       NSEC, NRAD, a, Rmed_d, dimfxy, rh, fxi_d, fxo_d, fyi_d, fyo_d, k);
@@ -136,9 +136,9 @@ __host__ void ComputeForce (Force *force, float *Dens, float x, float y, float r
 
 }
 
-__host__ float Compute_smoothing(float r)
+__host__ double Compute_smoothing(double r)
 {
-  float smooth;
+  double smooth;
   smooth = THICKNESSSMOOTHING * AspectRatioHost(r) * pow(r, 1.0+FLARINGINDEX);
   return smooth;
 }
