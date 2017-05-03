@@ -58,7 +58,7 @@ extern int *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
 int blocksize2D = 32;
-int blocksize1D = 256;
+int blocksize1D = 512;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
 int             TimeStep = 0, NbRestart = 0, verbose = NO;
@@ -196,7 +196,6 @@ __host__ int main (int argc, char *argv[])
   if(!IsPow2(NRAD+1)) nrad2pot = NearestPowerOf2(NRAD+1);
   if(!IsPow2(NSEC)) nsec2pot = NearestPowerOf2(NSEC);
   if(!IsPow2(2*(NRAD+1))) nrad2potSG = NearestPowerOf2(2*(NRAD+1));
-
 
   /* dim gridsize and blocksize of */
   dim3 dimG( nsec2pot/blocksize1D, 1);
