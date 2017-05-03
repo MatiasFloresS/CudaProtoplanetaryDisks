@@ -123,6 +123,14 @@ __host__ void ComputeForce (Force *force, double *Dens, double x, double y, doub
     globalforce[k + 2*dimfxy] = DeviceReduce(fyi_d, NRAD*NSEC);
     globalforce[k + 3*dimfxy] = DeviceReduce(fyo_d, NRAD*NSEC);
   }
+  /*for (k = 0; k < dimfxy; k++) {
+    printf("%.25g\n", globalforce[k]);
+    printf("%.25g\n", globalforce[k+dimfxy]);
+    printf("%.25g\n", globalforce[k+2*dimfxy]);
+    printf("%.25g\n", globalforce[k+3*dimfxy]);
+  }
+  exit(1);*/
+
 
   force->fx_inner = globalforce[0];
   force->fx_ex_inner = globalforce[dimfxy-1];

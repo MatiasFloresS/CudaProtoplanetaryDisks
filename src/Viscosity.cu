@@ -58,10 +58,12 @@ __host__ void ComputeViscousTerms (double *Vradial, double *Vazimutal, double *D
     Make1Dprofile (1);
   }
 
+  for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
+  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+
   ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vradial_d, Vazimutal_d, DRR_d, DPP_d, DivergenceVelocity_d,
     DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
-    TAURP_d, invRinf_d, Rmed_d, VISCOSITY, ViscosityAlpha, ALPHAVISCOSITY, CAVITYWIDTH, CAVITYRADIUS,
-    CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
+    TAURP_d, invRinf_d, Rmed_d, viscosity_array_d);
 
   gpuErrchk(cudaDeviceSynchronize());
 }
@@ -108,5 +110,5 @@ __host__ double AspectRatioHost(double r)
 
 __host__ void ComputeViscosity()
 {
-  
+
 }

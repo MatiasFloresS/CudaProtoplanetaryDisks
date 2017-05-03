@@ -24,6 +24,7 @@ extern double *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *Radii;
 extern double *Surf, *invSurf, *powRmed;
 extern double *DensStar, *VradInt,  *TemperInt, *Potential, *VthetaInt, *DensInt, *VradNew;
 extern double *VthetaNew, *EnergyInt, *EnergyNew, *VthetaRes, *TempShift;
+double *example;
 
 /* double host arrays */
 double *SigmaMed, *SigmaInf, *EnergyMed;
@@ -57,7 +58,7 @@ extern int *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
 int blocksize2D = 32;
-int blocksize1D = 256;
+int blocksize1D = 1024;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
 int             TimeStep = 0, NbRestart = 0, verbose = NO;
@@ -78,8 +79,12 @@ cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *
 
 __host__ int main (int argc, char *argv[])
 {
+  int device;
+  printf("enter gpu device: ");
+  scanf("%d", &device);
+
   //cudaSetDevice(1); Using gpu nvidia m4000 8 gb
-  cudaSetDevice(1); // Using gpu nvidia m4000 8gb
+  cudaSetDevice(device); // Using gpu nvidia m4000 8gb
 
   double     *Dens;
   double     *Vrad;
@@ -289,14 +294,14 @@ __host__ int main (int argc, char *argv[])
   EmptyPlanetSystemFile (sys);
   PhysicalTimeInitial = PhysicalTime;
 
-  MultiplyPolarGridbyConstant(Dens);
+  //MultiplyPolarGridbyConstant(Dens);
 
-  for (int i = 0; i <= 40; i++){
+  for (int i = 0; i <= NTOT; i++){
     InnerOutputCounter++;
 
     if (InnerOutputCounter == 1){
       InnerOutputCounter = 0;
-      //WriteBigPlanetSystemFile (sys, TimeStep);
+      WriteBigPlanetSystemFile (sys, TimeStep);
       //UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
     }
 
@@ -305,7 +310,7 @@ __host__ int main (int argc, char *argv[])
       TimeToWrite = YES;
       //DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
       //SendOutput (TimeStep, Dens, Vrad, Vtheta, Energy, Label);
-      //WritePlanetSystemFile (sys, TimeStep);
+      WritePlanetSystemFile (sys, TimeStep);
     }
     else TimeToWrite = NO;
     /* Algorithm loop begins here *
@@ -314,11 +319,16 @@ __host__ int main (int argc, char *argv[])
     /***********************/
     AlgoGas(force, Dens, Vrad, Vtheta, Energy, Label, sys, i);
   }
-  DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
+  //DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
 
-  binFile(Vrad, NRAD*NSEC, "gvrad");
+  //gpuErrchk(cudaMemcpy(Pressure, Pressure_d,           size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+
+  /*binFile(Vrad, NRAD*NSEC, "gvrad");
   binFile(Vtheta, NRAD*NSEC, "gvtheta");
   binFile(Dens, NRAD*NSEC, "gdens");
+  binFile(Energy, NRAD*NSEC, "genergy");
+  binFile(Temperature, NRAD*NSEC, "gtemp");
+  binFile(Pressure, NRAD*NSEC, "gpress");*/
 
   FreePlanetary (sys);
   FreeForce (force);
@@ -585,6 +595,8 @@ __host__ void DeviceToHostcudaMemcpy (double *Dens, double *Energy, double *Labe
   gpuErrchk(cudaMemcpy(Vtheta, Vtheta_d,           size_grid*sizeof(double), cudaMemcpyDeviceToHost));
   if (Adiabatic)
     gpuErrchk(cudaMemcpy(Energy, Energy_d,           size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+  if (Cooling)
+    gpuErrchk(cudaMemcpy(Qplus, Qplus_d,           size_grid*sizeof(double), cudaMemcpyDeviceToHost));
 }
 
 
@@ -617,6 +629,7 @@ __host__ void CreateArrays () // ordenar
     SG_Acct         = (double *)malloc(size_grid*sizeof(double));
   }
 
+  example           = (double *)malloc(NRAD*NSEC*sizeof(double));
   QStar           = (double *)malloc(size_grid*sizeof(double));
   Qbase           = (double *)malloc(size_grid*sizeof(double));
   array           = (double *)malloc(size_grid*sizeof(double));

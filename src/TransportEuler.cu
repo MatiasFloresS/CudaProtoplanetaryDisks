@@ -6,7 +6,7 @@ extern double OmegaFrame;
 
 extern double *Dens_d, *Vrad_d,  *Vtheta_d, *Label_d, *QStar_d, *Qbase_d, *Qbase2_d;
 extern double *DensInt_d, *DensStar_d, *array_d;
-extern double *DensStar, *QStar, *Qbase, *DensInt,  *Vazimutal_d;
+extern double *DensStar, *QStar, *Qbase, *DensInt,  *Vazimutal_d, *Energy_d;
 
 extern double *invdiffRmed_d, *Rinf_d, *Rmed_d, *invRmed_d, *Rsup_d, *invSurf_d,  *Surf_d;
 
@@ -29,7 +29,6 @@ __host__ void Transport (double *Dens, double *Vrad, double *Vtheta, double *Ene
 {
 
   ComputeLRMomenta(); // bien hasta aca
-
   //if (AdvecteLabel == YES) ComputeExtQty();
 
   /* No-Alternate Directionnal Splitting */
@@ -84,9 +83,13 @@ __host__ void ComputeStarRad(double *Vrad, double dt, int option)
   if(option == 0){
     StarRadKernel<<<dimGrid2, dimBlock2>>> (Dens_d, Vrad_d, DensStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d, dq_d);
     gpuErrchk(cudaDeviceSynchronize());
+    StarRadKernel2<<<dimGrid2, dimBlock2>>> (Dens_d, Vrad_d, DensStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d, dq_d);
+    gpuErrchk(cudaDeviceSynchronize());
   }
   else{
     StarRadKernel<<<dimGrid2, dimBlock2>>> (Work_d, Vrad_d, QRStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d, dq_d);
+    gpuErrchk(cudaDeviceSynchronize());
+    StarRadKernel2<<<dimGrid2, dimBlock2>>> (Work_d, Vrad_d, QRStar_d, dt, NRAD, NSEC, invdiffRmed_d, Rmed_d, dq_d);
     gpuErrchk(cudaDeviceSynchronize());
   }
 }
@@ -108,6 +111,7 @@ __host__ double VanLeerRadial (double *Vrad, double dt, int ReturnLost, int opti
   if(option == 1) DivisePolarGrid (RadMomM_d, DensInt_d, Work_d);
   if(option == 2) DivisePolarGrid (ThetaMomP_d, DensInt_d, Work_d);
   if(option == 3) DivisePolarGrid (ThetaMomM_d, DensInt_d, Work_d);
+  if(option == 4) DivisePolarGrid (Energy_d, DensInt_d, Work_d);
   if(option == 6) DivisePolarGrid (Dens_d, DensInt_d, Work_d);
   ComputeStarRad (Vrad, dt, 1);
 
@@ -132,6 +136,12 @@ __host__ double VanLeerRadial (double *Vrad, double dt, int ReturnLost, int opti
   if (option == 3) {
     VanLeerRadialKernel<<<dimGrid2, dimBlock2>>>(Rinf_d, Rsup_d, QRStar_d, DensStar_d, Vrad_d,
       LostByDisk_d, NSEC, NRAD, dt, OpenInner, ThetaMomM_d, invSurf_d);
+    gpuErrchk(cudaDeviceSynchronize());
+  }
+
+  if (option == 4) {
+    VanLeerRadialKernel<<<dimGrid2, dimBlock2>>>(Rinf_d, Rsup_d, QRStar_d, DensStar_d, Vrad_d,
+      LostByDisk_d, NSEC, NRAD, dt, OpenInner, Energy_d, invSurf_d);
     gpuErrchk(cudaDeviceSynchronize());
   }
 
@@ -179,7 +189,7 @@ __host__ void OneWindTheta (double *Dens, double *Vtheta, double *Energy, double
   AdvectSHIFT (RadMomM_d);
   AdvectSHIFT (ThetaMomP_d);
   AdvectSHIFT (ThetaMomM_d);
-  //if (Adiabatic) AdvectSHIFT (Energy);
+  if (Adiabatic) AdvectSHIFT (Energy_d);
   //if (AdvecteLabel) AdvectSHIFT (ExtLabel_d);
   AdvectSHIFT (Dens_d);
 }
@@ -229,7 +239,7 @@ __host__ void QuantitiesAdvection (double *Dens, double *Vazimutal_d, double *En
   VanLeerTheta (Vazimutal_d, ThetaMomM_d, dt);
 
   if (Adiabatic)
-    VanLeerTheta (Vazimutal_d, Energy, dt);
+    VanLeerTheta (Vazimutal_d, Energy_d, dt);
   if (AdvecteLabel)
     VanLeerTheta (Vazimutal_d, ExtLabel_d, dt);
   VanLeerTheta (Vazimutal_d, Dens_d, dt); /* MUST be the last line */
@@ -257,6 +267,7 @@ __host__ void ComputeStarTheta (double *Qbase_d, double *Vazimutal_d, double *QS
     gpuErrchk(cudaDeviceSynchronize());
 
     StarThetaKernel2<<<dimGrid2, dimBlock2>>>(Qbase_d, Rmed_d, Vazimutal_d, QStar_d, NRAD, NSEC, dq_d, dt);
+    gpuErrchk(cudaDeviceSynchronize());
 }
 
 

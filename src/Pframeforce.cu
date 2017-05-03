@@ -57,7 +57,7 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Ener
   NbPlanets = sys->nb;
 
   /* Indirect term star on gas here */
-  //ComputeIndirectTerm ();
+  ComputeIndirectTerm ();
 
   gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(double)));
   /* -- Gravitational potential from planet on gas -- */
@@ -252,8 +252,6 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
 __host__ void InitVelocities (double *Vrad, double *Vtheta)
 {
   if (SelfGravity) gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-
-  printf("OmegaFrame %.15g\n", OmegaFrame);
 
   InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(NSEC, NRAD, SelfGravity, Rmed_d,
   ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,

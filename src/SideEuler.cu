@@ -133,7 +133,7 @@ __host__ Pair ComputeAccel (Force *force, double *Dens, double x, double y, doub
   }
   else{
     acceleration.x = force->fx_inner+force->fx_outer;
-    acceleration.y = force->fx_inner+force->fy_outer;
+    acceleration.y = force->fy_inner+force->fy_outer;
   }
   return acceleration;
 }

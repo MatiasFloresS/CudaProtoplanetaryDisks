@@ -19,7 +19,13 @@ __global__ void Substep2Kernel (double *Dens, double *VradInt, double *VthetaInt
 
 __global__ void Substep3Kernel (double *Dens, double *Qplus, double *viscosity_array, double *TAURR, double *TAURP,double *TAUPP,
   double *DivergenceVelocity, int nrad, int nsec, double *Rmed, int Cooling, double *EnergyNew, double dt, double *EnergyMed,
-  double *SigmaMed, double *CoolingTimeMed, double *Energy, double ADIABATICINDEX, double *QplusMed);
+  double *SigmaMed, double *CoolingTimeMed, double *EnergyInt, double ADIABATICINDEX, double *QplusMed);
+
+__global__ void Substep3Kernel2 (double *Dens, double *Qplus, double *viscosity_array, double *TAURR, double *TAURP,double *TAUPP,
+  double *DivergenceVelocity, int nrad, int nsec, double *Rmed, int Cooling, double *EnergyNew, double dt, double *EnergyMed,
+  double *SigmaMed, double *CoolingTimeMed, double *EnergyInt, double ADIABATICINDEX, double *QplusMed);
+
+
 
 __global__ void UpdateVelocitiesKernel (double *VthetaInt, double *VradInt, double *invRmed, double *Rmed, double *Rsup,
   double *Rinf, double *invdiffRmed, double *invdiffRsup, double *Dens, double *invRinf, double *TAURR,
@@ -81,9 +87,7 @@ __host__ void Make1Dprofile (int option);
 
 __global__ void ViscousTermsKernel (double *Vradial, double *Vazimutal , double *DRR, double *DPP, double *DivergenceVelocity,
   double *DRP, double *invdiffRsup, double *invRmed, double *Rsup, double *Rinf, double *invdiffRmed, int nrad,
-  int nsec, double *TAURR, double *TAUPP, double *dens, double *TAURP, double *invRinf, double *Rmed, double VISCOSITY,
-  double ViscosityAlpha, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS, double CAVITYRATIO,
-  double PhysicalTime, double PhysicalTimeInitial, double ASPECTRATIO, double LAMBDADOUBLING);
+  int nsec, double *TAURR, double *TAUPP, double *dens, double *TAURP, double *invRinf, double *Rmed, double *viscosity_array_d);
 
 __global__ void LRMomentaKernel (double *RadMomP, double *RadMomM, double *ThetaMomP, double *ThetaMomM, double *Dens,
   double *Vrad, double *Vtheta, int nrad, int nsec, double *Rmed, double OmegaFrame);
@@ -93,6 +97,8 @@ __global__ void ExtQtyKernel (double *ExtLabel, double *Dens, double *Label, int
 __global__ void StarRadKernel (double *Qbase2, double *Vrad, double *QStar, double dt, int nrad, int nsec,
   double *invdiffRmed, double *Rmed, double *dq);
 
+__global__ void StarRadKernel2 (double *Qbase2, double *Vrad, double *QStar, double dt, int nrad, int nsec,
+  double *invdiffRmed, double *Rmed, double *dq);
 
 /* SG_ACCELERATION Kernels */
 __global__ void ComputeFFTKernel (double *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, double SGP_eps, int nrad, int nsec,
