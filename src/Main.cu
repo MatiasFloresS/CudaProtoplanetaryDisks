@@ -58,7 +58,7 @@ extern int *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
 int blocksize2D = 32;
-int blocksize1D = 1024;
+int blocksize1D = 256;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
 int             TimeStep = 0, NbRestart = 0, verbose = NO;
