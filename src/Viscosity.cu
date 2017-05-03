@@ -50,7 +50,7 @@ __host__ double FViscosity(double r)
   return viscosity;
 }
 
-__host__ void ComputeViscousTerms (double *Vradial, double *Vazimutal, double *Dens)
+__host__ void ComputeViscousTerms (double *Vradial_d, double *Vazimutal_d, double *Dens)
 {
 
   if (ViscosityAlpha){
@@ -64,7 +64,6 @@ __host__ void ComputeViscousTerms (double *Vradial, double *Vazimutal, double *D
   ViscousTermsKernel<<<dimGrid2, dimBlock2>>>(Vradial_d, Vazimutal_d, DRR_d, DPP_d, DivergenceVelocity_d,
     DRP_d, invdiffRsup_d, invRmed_d, Rsup_d, Rinf_d, invdiffRmed_d, NRAD, NSEC, TAURR_d, TAUPP_d, Dens_d,
     TAURP_d, invRinf_d, Rmed_d, viscosity_array_d);
-
   gpuErrchk(cudaDeviceSynchronize());
 }
 

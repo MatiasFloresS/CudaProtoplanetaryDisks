@@ -28,10 +28,10 @@ __host__ void ApplyBoundaryCondition (double *Dens, double *Energy, double *Vrad
 {
   if(OpenInner == YES) OpenBoundary ();
 
-  if (NonReflecting == YES){
+/*  if (NonReflecting == YES){
     if (Adiabatic) ComputeSoundSpeed ();
     NonReflectingBoundary (Dens, Energy, Vrad);
-  }
+  }*/
   if (Evanescent == YES) EvanescentBoundary (Vrad, Vtheta, Dens, Energy, step);
   if (OuterSourceMass == YES) printf("hola\n" );
 }
@@ -189,7 +189,6 @@ __host__ void ApplySubKeplerianBoundary(double *VthetaInt)
     VKepOut = sqrt(G*1.0/Rmed[NRAD-1] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)* \
       pow(AspectRatioHost(Rmed[NRAD-1]), 2.0)*pow(Rmed[NRAD-1], 2.0*FLARINGINDEX)));
   }
-
 
   ApplySubKeplerianBoundaryKernel<<<dimGrid, dimBlock>>>(VthetaInt_d, Rmed_d, OmegaFrame, NSEC, NRAD,
     VKepIn, VKepOut);

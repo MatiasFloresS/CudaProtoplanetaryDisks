@@ -206,14 +206,14 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
   }
 
   dt = DT / gastimestepcfl;
-  int cont = 0;
+  //int cont = 0;
   while (dtemp < 0.999999999*DT){
     MassTaper = PhysicalTime/(MASSTAPER*2.0*M_PI);
     MassTaper = (MassTaper > 1.0 ? 1.0 : pow(sin(MassTaper*M_PI/2.0), 2.0));
     if(IsDisk == YES){
       if (SloppyCFL == NO){
         gastimestepcfl = 1;
-        gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp);
+        gastimestepcfl = ConditionCFL(Vrad, Vtheta ,DT-dtemp); //revisar
         dt = (DT-dtemp)/(double)gastimestepcfl;
       }
       AccreteOntoPlanets(Dens, Vrad, Vtheta, dt, sys); // si existe acrecion entra
@@ -226,7 +226,7 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
 
     if (IsDisk == YES){
       /* Indirect term star's potential computed here */
-      DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
+      //DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
 
       /* Gravitational potential from star and planet(s) is computed and stored here */
       FillForcesArrays (sys, Dens, Energy);
@@ -260,7 +260,7 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
         printf("c");
       }
       else*/
-      printf(".");
+      //printf(".");
       //if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
       ComputePressureField ();
@@ -273,17 +273,15 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
       ApplyBoundaryCondition (Dens, Energy, Vrad, Vtheta, dt);
 
       if (Adiabatic){
-        gpuErrchk(cudaMemcpy(Vradial_d, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-        gpuErrchk(cudaMemcpy(Vazimutal_d, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-        ComputeViscousTerms (Vrad, Vtheta, Dens);
+        //gpuErrchk(cudaMemcpy(Vradial_d, Vrad_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
+        //gpuErrchk(cudaMemcpy(Vazimutal_d, Vtheta_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
+        ComputeViscousTerms (Vrad_d, Vtheta_d, Dens);
         //gpuErrchk(cudaMemcpy(Vrad_d, Vradial_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
         //gpuErrchk(cudaMemcpy(Vtheta_d, Vazimutal_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
 
         Substep3 (Dens, dt);
         ActualiseGasEnergy (Energy, EnergyNew);
       }
-
-
 
       Transport (Dens, Vrad, Vtheta, Energy, Label, dt);
       ApplyBoundaryCondition(Dens, Energy, Vrad, Vtheta, dt);
@@ -295,10 +293,10 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
     init = init + 1;
     //cont+=1;
     PhysicalTime += dt;
-    //if(cont==32) break;
+    //break;
 
   }
-  printf("\n" );
+  //printf("\n" );
 }
 
 
@@ -327,11 +325,9 @@ __host__ void Substep1 (double *Dens, double *Vrad, double *Vtheta, double dt, i
     gpuErrchk(cudaMemcpy(VthetaInt_d, Vazimutal_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
   }
 
-  gpuErrchk(cudaMemcpy(Vradial_d, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  gpuErrchk(cudaMemcpy(Vazimutal_d, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  ComputeViscousTerms (VradInt, VthetaInt, Dens);
-
-
+  //gpuErrchk(cudaMemcpy(Vradial_d, VradInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
+  //gpuErrchk(cudaMemcpy(Vazimutal_d, VthetaInt_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
+  ComputeViscousTerms (VradInt_d, VthetaInt_d, Dens);
   UpdateVelocitiesWithViscosity(VradInt, VthetaInt, Dens, dt);
 
 
@@ -493,14 +489,14 @@ __host__ void ComputeTemperatureField ()
 __host__ void ActualiseGasVtheta (double *Vtheta, double *VthetaNew)
 {
   gpuErrchk(cudaMemcpy(Vtheta_d, VthetaNew_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  gpuErrchk(cudaDeviceSynchronize());
+  //gpuErrchk(cudaDeviceSynchronize());
 }
 
 
 __host__ void ActualiseGasVrad (double *Vrad, double *VradNew)
 {
   gpuErrchk(cudaMemcpy(Vrad_d, VradNew_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  gpuErrchk(cudaDeviceSynchronize());
+  //gpuErrchk(cudaDeviceSynchronize());
 }
 
 
@@ -548,8 +544,6 @@ __host__ double CircumPlanetaryMass (double *Dens, PlanetarySystem *sys)
   double cont=0.0;
   xpl = sys->x[0];
   ypl = sys->y[0];
-
-  gpuErrchk(cudaMemset(mdcp0_d, 0, NRAD*NSEC*sizeof(double)));
 
   CircumPlanetaryMassKernel<<<dimGrid2, dimBlock2>>> (Dens_d, Surf_d, CellAbscissa_d, CellOrdinate_d, xpl, ypl, NRAD, NSEC, \
     HillRadius, mdcp0_d);

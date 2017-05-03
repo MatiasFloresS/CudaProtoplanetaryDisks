@@ -76,8 +76,6 @@ __host__ void OneWindRad (double *Dens, double *Vrad, double *Energy, double dt)
 
 }
 
-
-
 __host__ void ComputeStarRad(double *Vrad, double dt, int option)
 {
   if(option == 0){
@@ -99,7 +97,7 @@ __host__ void ComputeStarRad(double *Vrad, double dt, int option)
 __host__ void ActualiseGasDens(double *DensInt, double *Dens)
 {
   gpuErrchk(cudaMemcpy(DensInt_d, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  gpuErrchk(cudaDeviceSynchronize());
+  //gpuErrchk(cudaDeviceSynchronize());
 }
 
 
@@ -208,7 +206,6 @@ __host__ void ComputeResiduals (double *Vtheta, double dt)
 }
 
 
-
 __host__ void AdvectSHIFT (double *array_d)
 {
   AdvectSHIFTKernel<<<dimGrid2, dimBlock2>>> (array_d, TempShift_d, NSEC, NRAD, Nshift_d);
@@ -262,7 +259,7 @@ __host__ void VanLeerTheta (double *Vazimutal_d, double *Qbase_d, double dt)
 
 __host__ void ComputeStarTheta (double *Qbase_d, double *Vazimutal_d, double *QStar_d, double dt)
 {
-    gpuErrchk(cudaMemset(dq_d, 0, size_grid*sizeof(double)));
+    //gpuErrchk(cudaMemset(dq_d, 0, size_grid*sizeof(double)));
     StarThetaKernel<<<dimGrid2, dimBlock2>>> (Qbase_d, Rmed_d, NRAD, NSEC, dq_d, dt);
     gpuErrchk(cudaDeviceSynchronize());
 

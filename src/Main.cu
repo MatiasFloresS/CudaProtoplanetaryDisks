@@ -57,8 +57,8 @@ extern int *NoSplitAdvection_d;
 extern int *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
-int blocksize2D = 32;
-int blocksize1D = 512;
+int blocksize2D = 16;
+int blocksize1D = 256;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
 int             TimeStep = 0, NbRestart = 0, verbose = NO;
@@ -198,6 +198,7 @@ __host__ int main (int argc, char *argv[])
   if(!IsPow2(2*(NRAD+1))) nrad2potSG = NearestPowerOf2(2*(NRAD+1));
 
   /* dim gridsize and blocksize of */
+
   dim3 dimG( nsec2pot/blocksize1D, 1);
   dim3 dimB( blocksize1D, 1);
   dimGrid = dimG;
@@ -300,22 +301,24 @@ __host__ int main (int argc, char *argv[])
 
     if (InnerOutputCounter == 1){
       InnerOutputCounter = 0;
-      WriteBigPlanetSystemFile (sys, TimeStep);
+      //WriteBigPlanetSystemFile (sys, TimeStep);
       //UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
     }
 
     if (NINTERM * (TimeStep = (i / NINTERM)) == i){
       /* Outputs are done here */
+      printf("%d\n", i);
       TimeToWrite = YES;
       //DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
       //SendOutput (TimeStep, Dens, Vrad, Vtheta, Energy, Label);
-      WritePlanetSystemFile (sys, TimeStep);
+      //WritePlanetSystemFile (sys, TimeStep);
     }
     else TimeToWrite = NO;
     /* Algorithm loop begins here *
     /***********************/
     /* Hydrodynamical Part */
     /***********************/
+
     AlgoGas(force, Dens, Vrad, Vtheta, Energy, Label, sys, i);
   }
   //DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
@@ -327,8 +330,8 @@ __host__ int main (int argc, char *argv[])
   binFile(Dens, NRAD*NSEC, "gdens");
   binFile(Energy, NRAD*NSEC, "genergy");
   binFile(Temperature, NRAD*NSEC, "gtemp");
-  binFile(Pressure, NRAD*NSEC, "gpress");*/
-
+  binFile(Pressure, NRAD*NSEC, "gpress");
+*/
   FreePlanetary (sys);
   FreeForce (force);
 

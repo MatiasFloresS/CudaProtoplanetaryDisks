@@ -36,8 +36,8 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
   // i=0->nrad ,   j=0->nsec
   if (i<nrad && j<nsec){
 
-    supp_torque = IMPOSEDDISKDRIFT*0.5*pow(Rmed[i], -2.5+SIGMASLOPE);
-    dxtheta = 2.0*PI/(double)nsec*Rmed[i];
+    supp_torque = IMPOSEDDISKDRIFT*0.5*powf(Rmed[i], -2.5+SIGMASLOPE);
+    dxtheta = 2.0*PI/(float)nsec*Rmed[i];
     invdxtheta = 1.0/dxtheta;
 
     gradp = (Pressure[i*nsec + j] - Pressure[i*nsec + ((j-1)+nsec)%nsec])*2.0/(Dens[i*nsec +j] +Dens[i*nsec + ((j-1)+nsec)%nsec]) \
@@ -47,7 +47,6 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
 
     gradphi = (Potential[i*nsec+ j] - Potential[i*nsec + ((j-1)+nsec)%nsec])*invdxtheta;
     VthetaInt[i*nsec + j] =  Vtheta[i*nsec+j] - dt*(gradp+gradphi);
-
     VthetaInt[i*nsec + j] += dt*supp_torque;
   }
 }
@@ -177,7 +176,7 @@ __global__ void ComputeSoundSpeedKernel (double *SoundSpeed, double *Dens, doubl
         PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
       SoundSpeed[i*nsec + j] = AspectRatio*sqrt(G*1.0/Rmed[i])*pow(Rmed[i], FLARINGINDEX);
     }
-    else SoundSpeed[i*nsec + j] = sqrt(ADIABATICINDEX*(ADIABATICINDEX-1.0)*Energy[i*nsec + j]/Dens[i*nsec + j]);
+    else SoundSpeed[i*nsec + j] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0)*Energy[i*nsec + j]/Dens[i*nsec + j]);
   }
 }
 
@@ -671,7 +670,6 @@ __global__ void InitGasVelocitiesKernel (int nsec, int nrad, int SelfGravity, do
         CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
       else viscosity = FViscosityDevice(r, VISCOSITY, ViscosityAlpha, Rmed, ALPHAVISCOSITY, CAVITYWIDTH,
         CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
-
 
 
       if (i == nrad) Vrad[i*nsec + j] = 0.0;
@@ -1177,8 +1175,10 @@ __global__ void AdvectSHIFTKernel (double *array, double *TempShift, int nsec, i
 
   if (i<nrad && j<nsec){
     ji = j-Nshift[i];
-    while (ji < 0 ) ji += nsec;
-    while (ji >= nsec) ji -= nsec;
+    if (ji < 0) ji = ji%nsec + nsec;
+    if (ji >= nsec) ji = ji%nsec;
+    //while (ji < 0 ) ji += nsec;
+    //while (ji >= nsec) ji -= nsec;
 
     TempShift[i*nsec + j] = array[i*nsec + ji];
 

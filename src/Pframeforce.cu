@@ -59,7 +59,7 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Ener
   /* Indirect term star on gas here */
   ComputeIndirectTerm ();
 
-  gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(double)));
+  //gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(double)));
   /* -- Gravitational potential from planet on gas -- */
   for (k = 0; k < NbPlanets; k++){
     xplanet = sys->x[k];
@@ -257,7 +257,6 @@ __host__ void InitVelocities (double *Vrad, double *Vtheta)
   ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,
   IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame, Rinf_d, vt_cent_d, VISCOSITY, ALPHAVISCOSITY,
   CAVITYWIDTH, CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
-
   gpuErrchk(cudaDeviceSynchronize());
 
 }
