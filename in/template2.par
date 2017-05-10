@@ -14,7 +14,7 @@ ThicknessSmoothing 	0.6		Smoothing parameters in disk thickness
 ### Numerical method parameters
 
 Transport		FARGO
-InnerBoundary		RIGID		choose : OPEN or RIGID or NONREFLECTING
+InnerBoundary		OPEN		choose : OPEN or RIGID or NONREFLECTING
 Disk			YES
 OmegaFrame     		1.0
 Frame			GUIDING-CENTER
@@ -33,20 +33,20 @@ RadialSpacing 		LOGARITHM       Zone interfaces evenly spaced
 
 ### Output control parameters
 
-Ntot			100		Total number of time steps
+Ntot			10001		Total number of time steps
 Ninterm	 		20		Time steps between outputs
 DT			0.314159265359	Time step length. 2PI = 1 orbit
 
 OutputDir		out/
 
-SelfGravity	NO     #choose: Yes, Z or No
+SelfGravity	YES     #choose: Yes, Z or No
 
-Adiabatic	NO        #choose No for an isothermal eq. of state
+Adiabatic	YES        #choose No for an isothermal eq. of state
 
 AdiabaticIndex	1.4 #Default value: 1.4
 
-Cooling	NO           #choose: Yes or No
+Cooling	YES           #choose: Yes or No
 
 CoolingTime0	62.8 #Cooling time at r=1
 
-WriteQplus NO
+WriteQplus YES

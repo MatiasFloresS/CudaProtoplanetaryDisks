@@ -62,7 +62,7 @@ __global__ void ComputeForceKernel (double *CellAbscissa, double *CellOrdinate, 
   double y, double rsmoothing, int nsec, int nrad, double a, double *Rmed, int dimfxy, double rh, double *fxi,
   double *fxo, double *fyi, double *fyo, int k);
 
-__global__ void OpenBoundaryKernel (double *Vrad, double *Dens, double *Energy, int nsec, double *SigmaMed);
+__global__ void OpenBoundaryKernel (double *Vrad, double *Dens, double *Energy, int nsec, double SigmaMed);
 
 __global__ void ReduceCsKernel (double *SoundSpeed, double *cs0, double *cs1, double *csnrm1, double *csnrm2, int nsec, int nrad);
 
@@ -70,6 +70,9 @@ __global__ void ReduceMeanKernel (double *Dens, double *Energy, int nsec, double
   double *mean_energy2, int nrad);
 
 __global__ void NonReflectingBoundaryKernel (double *Dens, double *energy, int i_angle, int nsec, double *Vrad, double *SoundSpeed,
+  double SigmaMed, int nrad, double SigmaMed2, int i_angle2);
+
+__global__ void NonReflectingBoundaryKernel2 (double *Dens, double *energy, int i_angle, int nsec, double *Vrad, double *SoundSpeed,
   double SigmaMed, int nrad, double SigmaMed2, int i_angle2);
 
 __global__ void MinusMeanKernel (double *Dens, double *Energy, double SigmaMed, double mean_dens_r, double mean_dens_r2, double mean_energy_r,
@@ -101,21 +104,21 @@ __global__ void StarRadKernel2 (double *Qbase2, double *Vrad, double *QStar, dou
   double *invdiffRmed, double *Rmed, double *dq);
 
 /* SG_ACCELERATION Kernels */
-__global__ void ComputeFFTKernel (double *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, double SGP_eps, int nrad, int nsec,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, double *Dens, double *Rmed, double *Kr_aux, double *Kt_aux);
+__global__ void ComputeFFTKernel (double *Radii, cufftDoubleComplex *SGP_Kr, cufftDoubleComplex *SGP_Kt, double SGP_eps, int nrad, int nsec,
+  cufftDoubleComplex *SGP_Sr, cufftDoubleComplex *SGP_St, double *Dens, double *Rmed, double *Kr_aux, double *Kt_aux);
 
-__global__ void ComputeConvolutionKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, int nrad);
+__global__ void ComputeConvolutionKernel (cufftDoubleComplex *Gr, cufftDoubleComplex *Gphi, cufftDoubleComplex *SGP_Kr, cufftDoubleComplex *SGP_Kt,
+  cufftDoubleComplex *SGP_Sr, cufftDoubleComplex *SGP_St, int nsec, int nrad);
 
 __global__ void ComputeSgAccKernel (double *SG_Accr, double *SG_Acct, double *Dens , double SGP_rstep, double SGP_tstep,
-  double SGP_eps, int nrad, int nsec, double *Rmed, cufftComplex *Gr, cufftComplex *Gphi);
+  double SGP_eps, int nrad, int nsec, double *Rmed, cufftDoubleComplex *Gr, cufftDoubleComplex *Gphi);
 
 __global__ void Update_sgvelocityKernel (double *Vradial, double *Vazimutal, double *SG_Accr, double *SG_Acct, double *Rinf,
   double *Rmed, double *invdiffRmed, double dt, int nrad, int nsec);
 
 
 __global__ void Azimutalvelocity_withSGKernel (double *Vtheta, double *Rmed, double FLARINGINDEX, double SIGMASLOPE,
-  double ASPECTRATIO, double *GLOBAL_bufarray, int nrad, int nsec);
+  double ASPECTRATIO, double *axifield_d, int nrad, int nsec);
 
 __global__ void CrashKernel (double *array, int NRAD, int NSEC, int Crash);
 
@@ -173,6 +176,9 @@ __global__ void ConditionCFLKernel2D1 (double *Rsup, double *Rinf, double *Rmed,
 
 __global__ void ConditionCFLKernel2D2 (double *newDT, double *DT2D, double *DT1D, double *Vmoy, double *invRmed,
   int *CFL, int nsec, int nrad, double DeltaT);
+
+__global__ void ConditionCFLKernel2D3 (double *newDT, double *DT2D, double *DT1D, double *Vmoy, double *invRmed,
+    int *CFL, int nsec, int nrad, double DeltaT);
 
 __global__ void ApplySubKeplerianBoundaryKernel(double *VthetaInt, double *Rmed, double OmegaFrame, int nsec,
   int nrad, double VKepIn, double VKepOut);

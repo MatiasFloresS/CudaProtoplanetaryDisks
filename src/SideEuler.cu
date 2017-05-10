@@ -15,6 +15,8 @@ extern double *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *mean_dens_d, *mean_en
 extern double *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array_d;
 extern double *Vtheta_d, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d, *VthetaInt_d, *Work_d, *DensInt_d, *Qbase_d;
 
+extern double *GLOBAL_AxiSGAccr, *axifield_d;
+
 double  mean_dens_r, mean_energy_r, mean_dens_r2, mean_energy_r2, cs0_r, cs1_r, csnrm1_r, *CellAbscissa,        \
 csnrm2_r, *CellAbscissa_d, *CellOrdinate, *CellOrdinate_d, *Vmoy_d;
 
@@ -28,10 +30,10 @@ __host__ void ApplyBoundaryCondition (double *Dens, double *Energy, double *Vrad
 {
   if(OpenInner == YES) OpenBoundary ();
 
-/*  if (NonReflecting == YES){
+  if (NonReflecting == YES){
     if (Adiabatic) ComputeSoundSpeed ();
     NonReflectingBoundary (Dens, Energy, Vrad);
-  }*/
+  }
   if (Evanescent == YES) EvanescentBoundary (Vrad, Vtheta, Dens, Energy, step);
   if (OuterSourceMass == YES) printf("hola\n" );
 }
@@ -56,6 +58,10 @@ __host__ void NonReflectingBoundary (double *Dens, double *Energy, double *Vrad)
   i_angle2 = (int)(dangle2/2.0/PI*(double)NSEC+.5);
 
   NonReflectingBoundaryKernel<<<dimGrid, dimBlock>>>(Dens_d, Energy_d, i_angle, NSEC, Vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
+  SigmaMed[NRAD-2], i_angle2);
+  gpuErrchk(cudaDeviceSynchronize());
+
+  NonReflectingBoundaryKernel2<<<dimGrid, dimBlock>>>(Dens_d, Energy_d, i_angle, NSEC, Vrad_d, SoundSpeed_d, SigmaMed[1], NRAD,
   SigmaMed[NRAD-2], i_angle2);
   gpuErrchk(cudaDeviceSynchronize());
 
@@ -117,7 +123,7 @@ __host__ void EvanescentBoundary (double *Vrad, double *Vtheta, double *Dens, do
 
 __host__ void OpenBoundary ()
 {
-  OpenBoundaryKernel<<<dimGrid, dimBlock>>> (Vrad_d, Dens_d, Energy_d, NSEC, SigmaMed);
+  OpenBoundaryKernel<<<dimGrid, dimBlock>>> (Vrad_d, Dens_d, Energy_d, NSEC, SigmaMed[0]);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -188,6 +194,16 @@ __host__ void ApplySubKeplerianBoundary(double *VthetaInt)
       pow(AspectRatioHost(Rmed[0]), 2.0)*pow(Rmed[0], 2.0*FLARINGINDEX)));
     VKepOut = sqrt(G*1.0/Rmed[NRAD-1] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)* \
       pow(AspectRatioHost(Rmed[NRAD-1]), 2.0)*pow(Rmed[NRAD-1], 2.0*FLARINGINDEX)));
+  }
+  else{
+    Make1Dprofile (1);
+    gpuErrchk(cudaMemcpy(GLOBAL_AxiSGAccr, axifield_d, NRAD*sizeof(double), cudaMemcpyDeviceToHost));
+
+    VKepIn = sqrt(G*1.0/Rmed[0] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX) * \
+      pow(AspectRatioHost(Rmed[0]), 2.0)*pow(Rmed[0], 2.0*FLARINGINDEX)) - Rmed[0]*GLOBAL_AxiSGAccr[0]);
+    VKepOut = sqrt(G*1.0/Rmed[NRAD-1] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)* \
+      pow(AspectRatioHost(Rmed[NRAD-1]), 2.0)*pow(Rmed[NRAD-1], 2.0*FLARINGINDEX)) - Rmed[NRAD-1]*GLOBAL_AxiSGAccr[NRAD-1]);
+
   }
 
   ApplySubKeplerianBoundaryKernel<<<dimGrid, dimBlock>>>(VthetaInt_d, Rmed_d, OmegaFrame, NSEC, NRAD,

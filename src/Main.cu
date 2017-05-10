@@ -72,7 +72,7 @@ dim3 dimGrid2, dimBlock2, dimGrid, dimBlock, dimGrid3, dimGrid4;
 
 cufftHandle planf, planb;
 
-cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *Gr_d, *Gphi_d, *SGP_Kt_d,       \
+cufftDoubleComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc, *Gr_d, *Gphi_d, *SGP_Kt_d,       \
 *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
 
 
@@ -178,12 +178,12 @@ __host__ int main (int argc, char *argv[])
 
   /* Si elige la opcion SelfGravity, se crean los planes 2D de la cufft */
   if (SelfGravity){
-    if ((cufftPlan2d(&planf, 2*NRAD, NSEC, CUFFT_C2C)) != CUFFT_SUCCESS){
+    if ((cufftPlan2d(&planf, 2*NRAD, NSEC, CUFFT_Z2Z)) != CUFFT_SUCCESS){
       printf("cufft plan error\n");
       exit(-1);
     }
 
-    if ((cufftPlan2d(&planb, 2*NRAD, NSEC , CUFFT_C2C)) != CUFFT_SUCCESS){
+    if ((cufftPlan2d(&planb, 2*NRAD, NSEC , CUFFT_Z2Z)) != CUFFT_SUCCESS){
       printf("cufft plan error\n");
       exit(-1);
     }
@@ -255,7 +255,7 @@ __host__ int main (int argc, char *argv[])
 
   if (SelfGravity){
     SGP_eps = THICKNESSSMOOTHING * ASPECTRATIO;
-    SGP_rstep = (double)(log(Radii[NRAD]/Radii[0])/(double)NRAD);
+    SGP_rstep = log(Radii[NRAD]/Radii[0])/(double)NRAD;
     SGP_tstep = 2.0*PI/(double)NSEC;
 
     /* If SelfGravity = YES or Z, planets are initialized feeling disk
@@ -305,12 +305,13 @@ __host__ int main (int argc, char *argv[])
       //UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
     }
 
+    //if(i%100 == 0) printf("step: %d\n", i);
     if (NINTERM * (TimeStep = (i / NINTERM)) == i){
       /* Outputs are done here */
-      printf("%d\n", i);
+      //printf("%d\n", i);
       TimeToWrite = YES;
-      //DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
-      //SendOutput (TimeStep, Dens, Vrad, Vtheta, Energy, Label);
+      DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
+      SendOutput (TimeStep, Dens, Vrad, Vtheta, Energy, Label);
       //WritePlanetSystemFile (sys, TimeStep);
     }
     else TimeToWrite = NO;
@@ -648,18 +649,18 @@ __host__ void Cudamalloc (double *Label, double *Dens, double *Vrad, double *Vth
   /* cudaMalloc SelfGravity*/
 
   if (SelfGravity){
-    gpuErrchk(cudaMalloc((void**)&SGP_Kt_d,  2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_Kr_d,  2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_St_d,  2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_Sr_d,  2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_Kt_dc, 2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_Kr_dc, 2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_St_dc, 2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&SGP_Sr_dc, 2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&Gr_dc,     2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&Gphi_dc,   2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&Gr_d,      2*size_grid*sizeof(cufftComplex)));
-    gpuErrchk(cudaMalloc((void**)&Gphi_d,    2*size_grid*sizeof(cufftComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_Kt_d,  2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_Kr_d,  2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_St_d,  2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_Sr_d,  2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_Kt_dc, 2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_Kr_dc, 2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_St_dc, 2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&SGP_Sr_dc, 2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&Gr_dc,     2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&Gphi_dc,   2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&Gr_d,      2*size_grid*sizeof(cufftDoubleComplex)));
+    gpuErrchk(cudaMalloc((void**)&Gphi_d,    2*size_grid*sizeof(cufftDoubleComplex)));
     gpuErrchk(cudaMalloc((void**)&Kr_aux_d,  2*size_grid*sizeof(double)));
     gpuErrchk(cudaMalloc((void**)&Kt_aux_d,  2*size_grid*sizeof(double)));
     gpuErrchk(cudaMalloc((void**)&SG_Accr_d, size_grid*sizeof(double)));

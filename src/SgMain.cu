@@ -2,8 +2,8 @@
 
 extern dim3 dimGrid2, dimBlock2, dimGrid3;
 
-extern cufftComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc;
-extern cufftComplex *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
+extern cufftDoubleComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi_dc;
+extern cufftDoubleComplex *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_St_d;
 
 extern int NSEC, NRAD, size_grid;
 
@@ -114,28 +114,28 @@ __host__ void update_sgvelocity (double DeltaT)
 
 __host__ void ExecuteExeC2Cforward ()
 {
-  if ((cufftExecC2C(planf, (cufftComplex *)SGP_St_d, (cufftComplex *)SGP_St_dc, CUFFT_FORWARD))!= \
+  if ((cufftExecZ2Z(planf, (cufftDoubleComplex *)SGP_St_d, (cufftDoubleComplex *)SGP_St_dc, CUFFT_FORWARD))!= \
     CUFFT_SUCCESS){
       printf("cufft execC2C error\n");
       exit(-1);
   }
   gpuErrchk(cudaDeviceSynchronize());
 
-  if ((cufftExecC2C(planf,(cufftComplex *)SGP_Kt_d, (cufftComplex *)SGP_Kt_dc, CUFFT_FORWARD))!= \
+  if ((cufftExecZ2Z(planf,(cufftDoubleComplex *)SGP_Kt_d, (cufftDoubleComplex *)SGP_Kt_dc, CUFFT_FORWARD))!= \
     CUFFT_SUCCESS){
       printf("cufft execC2C error\n");
       exit(-1);
   }
   gpuErrchk(cudaDeviceSynchronize());
 
-  if ((cufftExecC2C(planf, (cufftComplex *)SGP_Sr_d, (cufftComplex *)SGP_Sr_dc, CUFFT_FORWARD))!= \
+  if ((cufftExecZ2Z(planf, (cufftDoubleComplex *)SGP_Sr_d, (cufftDoubleComplex *)SGP_Sr_dc, CUFFT_FORWARD))!= \
     CUFFT_SUCCESS){
       printf("cufft execC2C error\n");
       exit(-1);
   }
   gpuErrchk(cudaDeviceSynchronize());
 
-  if ((cufftExecC2C(planf, (cufftComplex *)SGP_Kr_d, (cufftComplex *)SGP_Kr_dc, CUFFT_FORWARD))!= \
+  if ((cufftExecZ2Z(planf, (cufftDoubleComplex *)SGP_Kr_d, (cufftDoubleComplex *)SGP_Kr_dc, CUFFT_FORWARD))!= \
     CUFFT_SUCCESS){
       printf("cufft execC2C error\n");
       exit(-1);
@@ -146,21 +146,20 @@ __host__ void ExecuteExeC2Cforward ()
 
 __host__ void ExecuteExeC2Cbackward ()
 {
-  if ((cufftExecC2C(planb, (cufftComplex *)Gphi_dc, (cufftComplex *)Gphi_d, CUFFT_INVERSE))!= \
+  if ((cufftExecZ2Z(planb, (cufftDoubleComplex *)Gphi_dc, (cufftDoubleComplex *)Gphi_d, CUFFT_INVERSE))!= \
     CUFFT_SUCCESS){
       printf("cufft execC2C error\n");
       exit(-1);
   }
   gpuErrchk(cudaDeviceSynchronize());
 
-  if ((cufftExecC2C(planb, (cufftComplex *)Gr_dc, (cufftComplex *)Gr_d, CUFFT_INVERSE))!= \
+  if ((cufftExecZ2Z(planb, (cufftDoubleComplex *)Gr_dc, (cufftDoubleComplex *)Gr_d, CUFFT_INVERSE))!= \
     CUFFT_SUCCESS){
       printf("cufft execC2C error\n");
       exit(-1);
   }
   gpuErrchk(cudaDeviceSynchronize());
 }
-
 
 
 

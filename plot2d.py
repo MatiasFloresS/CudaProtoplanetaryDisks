@@ -205,7 +205,7 @@ gradP_acc_r = gradp_acc_r.reshape(nrad-1,nsec)
 gradP_acc_theta = gradp_acc_theta.reshape(nrad-1,nsec)
 graP_module = grap_module.reshape(nrad-1,nsec)
  
-print min(toomre_q)
+#print min(toomre_q)
 
 #print shape(dPress)
 #print shape(DR)
@@ -243,6 +243,7 @@ ylabel('y [AU]', fontsize=20)
 cb = plt.colorbar()
 #plt.colorbar(format='%.0e')
 cb.set_label('log Density [$\\rm g$ $\\rm cm^{-2}$]', size=20)
+
 
 figure(21)
 pcolormesh(xi,yi,(DeltaT))
@@ -336,7 +337,7 @@ cb.set_label('log Pressure field [$g$ $cm^{-1}$ $s^{-2}$]')
 figure(11)
 pcolormesh(xi,yi,-Vrad*vel_unit_cgs)
 title("sine")
-clim(-30,0)
+#clim(-30,0)
 xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
@@ -384,8 +385,4 @@ cb.set_label('grad P module')
 
 
 show()
-
-
-
-
 

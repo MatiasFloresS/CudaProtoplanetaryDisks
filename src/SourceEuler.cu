@@ -11,7 +11,7 @@ extern double SIGMA0, SIGMASLOPE, IMPOSEDDISKDRIFT, DT, MASSTAPER;
 extern double TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
 extern double LAMBDADOUBLING;
 
-extern double SGP_eps, PhysicalTime, PhysicalTimeInitial, mdcp;
+extern double SGP_eps, PhysicalTime, PhysicalTimeInitial, mdcp, *axifield_d;
 
 extern double *GLOBAL_bufarray, *vt_int, *SigmaInf, *CoolingTimeMed, *QplusMed , *viscosity_array;
 extern double *SG_Accr, *array, *Qplus, *SigmaMed,  *EnergyMed, *CellOrdinate, *CellAbscissa;
@@ -330,8 +330,6 @@ __host__ void Substep1 (double *Dens, double *Vrad, double *Vtheta, double dt, i
   ComputeViscousTerms (VradInt_d, VthetaInt_d, Dens);
   UpdateVelocitiesWithViscosity(VradInt, VthetaInt, Dens, dt);
 
-
-
   if (!Evanescent)
     ApplySubKeplerianBoundary(VthetaInt);
 
@@ -442,7 +440,7 @@ __host__ void Init_azimutalvelocity_withSG (double *Vtheta)
   Make1Dprofile(1);
 
   Azimutalvelocity_withSGKernel<<<dimGrid2, dimBlock2>>>(Vtheta_d, Rmed_d, FLARINGINDEX, SIGMASLOPE, ASPECTRATIO,
-    GLOBAL_bufarray_d, NRAD, NSEC);
+    axifield_d, NRAD, NSEC);
   gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -489,14 +487,14 @@ __host__ void ComputeTemperatureField ()
 __host__ void ActualiseGasVtheta (double *Vtheta, double *VthetaNew)
 {
   gpuErrchk(cudaMemcpy(Vtheta_d, VthetaNew_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  //gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaDeviceSynchronize());
 }
 
 
 __host__ void ActualiseGasVrad (double *Vrad, double *VradNew)
 {
   gpuErrchk(cudaMemcpy(Vrad_d, VradNew_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  //gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaDeviceSynchronize());
 }
 
 
@@ -524,11 +522,18 @@ __host__ int ConditionCFL (double *Vrad, double *Vtheta , double DeltaT)
   gpuErrchk(cudaMemset(DT2D_d, 0, NRAD*NSEC*sizeof(double)));
   gpuErrchk(cudaMemset(DT1D_d, 0, NRAD*sizeof(double)));
   gpuErrchk(cudaMemset(CFL_d, 0, sizeof(int)));
+
+
   ConditionCFLKernel2D1<<<dimGrid2, dimBlock2>>>(Rsup_d, Rinf_d, Rmed_d, NSEC, NRAD,
     Vresidual_d, Vtheta_d, Vmoy_d, FastTransport, SoundSpeed_d, Vrad_d, DT2D_d);
   gpuErrchk(cudaDeviceSynchronize());
 
+
   ConditionCFLKernel2D2<<<dimGrid4, dimBlock>>>(newDT_d, DT2D_d, DT1D_d, Vmoy_d, invRmed_d,
+    CFL_d, NSEC, NRAD, DeltaT);
+  gpuErrchk(cudaDeviceSynchronize());
+
+  ConditionCFLKernel2D3<<<dimGrid4, dimBlock>>>(newDT_d, DT2D_d, DT1D_d, Vmoy_d, invRmed_d,
     CFL_d, NSEC, NRAD, DeltaT);
   gpuErrchk(cudaDeviceSynchronize());
 

@@ -36,14 +36,14 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
   // i=0->nrad ,   j=0->nsec
   if (i<nrad && j<nsec){
 
-    supp_torque = IMPOSEDDISKDRIFT*0.5*powf(Rmed[i], -2.5+SIGMASLOPE);
-    dxtheta = 2.0*PI/(float)nsec*Rmed[i];
+    supp_torque = IMPOSEDDISKDRIFT*0.5*pow(Rmed[i], -2.5+SIGMASLOPE);
+    dxtheta = 2.0*PI/(double)nsec*Rmed[i];
     invdxtheta = 1.0/dxtheta;
 
     gradp = (Pressure[i*nsec + j] - Pressure[i*nsec + ((j-1)+nsec)%nsec])*2.0/(Dens[i*nsec +j] +Dens[i*nsec + ((j-1)+nsec)%nsec]) \
     *invdxtheta;
 
-    if (ZMPlus) gradp *= 1; //gradp *= SG_aniso_coeff;  Definir mas adelante SG_aniso_coeff
+    //if (ZMPlus) gradp *= 1; //gradp *= SG_aniso_coeff;  Definir mas adelante SG_aniso_coeff
 
     gradphi = (Potential[i*nsec+ j] - Potential[i*nsec + ((j-1)+nsec)%nsec])*invdxtheta;
     VthetaInt[i*nsec + j] =  Vtheta[i*nsec+j] - dt*(gradp+gradphi);
@@ -74,6 +74,7 @@ __global__ void Substep3Kernel (double *Dens, double *Qplus, double *viscosity_a
   }
 
 }
+
 
 __global__ void Substep3Kernel2 (double *Dens, double *Qplus, double *viscosity_array, double *TAURR, double *TAURP,double *TAUPP,
   double *DivergenceVelocity, int nrad, int nsec, double *Rmed, int Cooling, double *EnergyNew, double dt, double *EnergyMed,
@@ -176,7 +177,7 @@ __global__ void ComputeSoundSpeedKernel (double *SoundSpeed, double *Dens, doubl
         PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
       SoundSpeed[i*nsec + j] = AspectRatio*sqrt(G*1.0/Rmed[i])*pow(Rmed[i], FLARINGINDEX);
     }
-    else SoundSpeed[i*nsec + j] = sqrtf(ADIABATICINDEX*(ADIABATICINDEX-1.0)*Energy[i*nsec + j]/Dens[i*nsec + j]);
+    else SoundSpeed[i*nsec + j] = sqrt(ADIABATICINDEX*(ADIABATICINDEX-1.0)*Energy[i*nsec + j]/Dens[i*nsec + j]);
   }
 }
 
@@ -476,7 +477,7 @@ __global__ void kernel(double *Dens, double *VradInt, double *VthetaInt, double 
 }
 
 
-__global__ void OpenBoundaryKernel (double *Vrad, double *Dens, double *Energy, int nsec, double *SigmaMed)
+__global__ void OpenBoundaryKernel (double *Vrad, double *Dens, double *Energy, int nsec, double SigmaMed)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = 1;
@@ -484,7 +485,7 @@ __global__ void OpenBoundaryKernel (double *Vrad, double *Dens, double *Energy, 
   if(j < nsec){
     Dens[(i-1)*nsec + j] = Dens[i*nsec + j]; // copy first ring into ghost ring
     Energy[(i-1)*nsec + j] = Energy[i*nsec + j];
-    if (Vrad[(i+1)*nsec + j] > 0.0 || (Dens[i*nsec + j] < SigmaMed[0]))
+    if (Vrad[(i+1)*nsec + j] > 0.0 || (Dens[i*nsec + j] < SigmaMed))
       Vrad[i*nsec + j] = 0.0; // we just allow outflow [inwards]
     else
       Vrad[i*nsec +j] = Vrad[(i+1)*nsec + j];
@@ -550,10 +551,6 @@ __global__ void NonReflectingBoundaryKernel (double *Dens, double *Energy, int i
       Dens[j+i_angle] = Dens[i*nsec + j];
       Energy[j+i_angle] = Energy[i*nsec + j];
     }
-    __syncthreads();
-
-    Vrad_med = -SoundSpeed[i*nsec + j]*(Dens[i*nsec + j]-SigmaMed)/SigmaMed;
-    Vrad[i*nsec + j] = 2.0*Vrad_med-Vrad[(i+1)*nsec + j];
   }
 
   i = nrad-1;
@@ -570,11 +567,23 @@ __global__ void NonReflectingBoundaryKernel (double *Dens, double *Energy, int i
       Dens[i*nsec + j] = Dens[j-i_angle2 + (i-1)*nsec];
       Energy[i*nsec + j] = Energy[j-i_angle2 + (i-1)*nsec];
     }
-    __syncthreads();
-
-    Vrad_med = SoundSpeed[i*nsec + j]*(Dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
-    Vrad[i*nsec + j] = 2.*Vrad_med - Vrad[(i-1)*nsec + j];
   }
+}
+
+__global__ void NonReflectingBoundaryKernel2 (double *Dens, double *Energy, int i_angle, int nsec, double *Vrad, double *SoundSpeed,
+  double SigmaMed, int nrad, double SigmaMed2, int i_angle2)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+  int i = 1;
+  double Vrad_med;
+
+  Vrad_med = -SoundSpeed[i*nsec + j]*(Dens[i*nsec + j]-SigmaMed)/SigmaMed;
+  Vrad[i*nsec + j] = 2.0*Vrad_med-Vrad[(i+1)*nsec + j];
+  i = nrad-1;
+
+  Vrad_med = SoundSpeed[i*nsec + j]*(Dens[(i-1)*nsec + j]-SigmaMed2)/SigmaMed2;
+  Vrad[i*nsec + j] = 2.*Vrad_med - Vrad[(i-1)*nsec + j];
+
 }
 
 
@@ -835,8 +844,8 @@ __global__ void StarRadKernel2 (double *Qbase2, double *Vrad, double *QStar, dou
     QStar[j] = QStar[j+nsec*nrad] = 0.0;
 }
 
-__global__ void ComputeFFTKernel (double *Radii, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt, double SGP_eps, int nrad, int nsec,
-cufftComplex *SGP_Sr, cufftComplex *SGP_St, double *Dens, double *Rmed, double *Kr_aux, double *Kt_aux)
+__global__ void ComputeFFTKernel (double *Radii, cufftDoubleComplex *SGP_Kr, cufftDoubleComplex *SGP_Kt, double SGP_eps, int nrad, int nsec,
+cufftDoubleComplex *SGP_Sr, cufftDoubleComplex *SGP_St, double *Dens, double *Rmed, double *Kr_aux, double *Kt_aux)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -856,7 +865,7 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, double *Dens, double *Rmed, double *
     if (i<nrad){
       var = Dens[i*nsec + j] * sqrt(Rmed[i]/Rmed[0]);
       SGP_Sr[i*nsec + j].x = var;
-      SGP_St[i*nsec + j].x = var*(Rmed[i]/Rmed[0]);
+      SGP_St[i*nsec + j].x = var*Rmed[i]/Rmed[0];
     }
     else{
       SGP_Sr[i*nsec + j].x = 0.;
@@ -866,8 +875,8 @@ cufftComplex *SGP_Sr, cufftComplex *SGP_St, double *Dens, double *Rmed, double *
 }
 
 
-__global__ void ComputeConvolutionKernel (cufftComplex *Gr, cufftComplex *Gphi, cufftComplex *SGP_Kr, cufftComplex *SGP_Kt,
-  cufftComplex *SGP_Sr, cufftComplex *SGP_St, int nsec, int nrad)
+__global__ void ComputeConvolutionKernel (cufftDoubleComplex *Gr, cufftDoubleComplex *Gphi, cufftDoubleComplex *SGP_Kr, cufftDoubleComplex *SGP_Kt,
+  cufftDoubleComplex *SGP_Sr, cufftDoubleComplex *SGP_St, int nsec, int nrad)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -889,7 +898,7 @@ __global__ void ComputeConvolutionKernel (cufftComplex *Gr, cufftComplex *Gphi, 
 
 
 __global__ void ComputeSgAccKernel (double *SG_Accr, double *SG_Acct, double *Dens , double SGP_rstep, double SGP_tstep,
-  double SGP_eps, int nrad, int nsec, double *Rmed, cufftComplex *Gr, cufftComplex *Gphi)
+  double SGP_eps, int nrad, int nsec, double *Rmed, cufftDoubleComplex *Gr, cufftDoubleComplex *Gphi)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -902,7 +911,7 @@ __global__ void ComputeSgAccKernel (double *SG_Accr, double *SG_Acct, double *De
     normacct = normaccr;
     normaccr /= sqrt(divRmed);
     normacct /= (divRmed * sqrt(divRmed));
-    SG_Acct[i*nsec + j] = Gphi[i*nsec + j].x * normaccr;
+    SG_Acct[i*nsec + j] = Gphi[i*nsec + j].x * normacct;
 
     SG_Accr[i*nsec + j] = Gr[i*nsec + j].x * normaccr;
     SG_Accr[i*nsec + j] += G*Dens[i*nsec + j]*SGP_rstep*SGP_tstep / SGP_eps;
@@ -925,13 +934,13 @@ __global__ void Update_sgvelocityKernel (double *Vradial, double *Vazimutal, dou
     (Rmed[i] - Rinf[i]) * SG_Accr[(i-1)*nsec + j]) *invdiffRmed[i]; // caso !SGZeroMode
 
     /* We compute VTHETA - half-centered in radius - from centered-in-cell azimutal sg acceleration. */
-    Vazimutal[i*nsec + j] = 0.5 * dt * (SG_Acct[i*nsec + j] + SG_Acct[i*nsec + (j-1)%nsec]);
+    Vazimutal[i*nsec + j] += 0.5 * dt * (SG_Acct[i*nsec + j] + SG_Acct[i*nsec + (j-1)%nsec]);
   }
 }
 
 
 __global__ void Azimutalvelocity_withSGKernel (double *Vtheta, double *Rmed, double FLARINGINDEX, double SIGMASLOPE,
-  double ASPECTRATIO, double *GLOBAL_bufarray, int nrad, int nsec)
+  double ASPECTRATIO, double *axifield_d, int nrad, int nsec)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -941,7 +950,7 @@ __global__ void Azimutalvelocity_withSGKernel (double *Vtheta, double *Rmed, dou
     invr = 1./Rmed[i];
     omegakep = sqrt(G*1.0*invr*invr*invr);
     omega = sqrt(omegakep*omegakep* (1.0 - (1.+SIGMASLOPE-2.0*FLARINGINDEX)*pow(ASPECTRATIO,2.0)* \
-      pow(Rmed[i],2.0*FLARINGINDEX)) - invr*GLOBAL_bufarray[i]);
+      pow(Rmed[i],2.0*FLARINGINDEX)) - invr*axifield_d[i]);
 
     Vtheta[i*nsec + j] = Rmed[i]*omega;
   }
@@ -1013,11 +1022,11 @@ __global__ void EvanescentBoundaryKernel(double *Rmed, double *Vrad, double *Vth
 
 __global__ void DivisePolarGridKernel (double *Qbase, double *DensInt, double *Work, int nrad, int nsec)
 {
-  int j = threadIdx.x + blockDim.x*blockIdx.x;
-  int i = threadIdx.y + blockDim.y*blockIdx.y;
+  int i = threadIdx.x + blockDim.x*blockIdx.x; //512
+  int j = threadIdx.y + blockDim.y*blockIdx.y; //256
 
-  if (i<=nrad && j<nsec)
-    Work[i*nsec + j] = Qbase[i*nsec + j]/(DensInt[i*nsec + j] + 1e-20);
+  if (i<=nsec && j<nrad)
+    Work[i*nrad + j] = Qbase[i*nrad + j]/(DensInt[i*nrad + j] + 1e-20);
 }
 
 
@@ -1175,10 +1184,10 @@ __global__ void AdvectSHIFTKernel (double *array, double *TempShift, int nsec, i
 
   if (i<nrad && j<nsec){
     ji = j-Nshift[i];
-    if (ji < 0) ji = ji%nsec + nsec;
-    if (ji >= nsec) ji = ji%nsec;
-    //while (ji < 0 ) ji += nsec;
-    //while (ji >= nsec) ji -= nsec;
+    //if (ji < 0) ji = ji%nsec + nsec;
+    //if (ji >= nsec) ji = ji%nsec;
+    while (ji < 0 ) ji += nsec;
+    while (ji >= nsec) ji -= nsec;
 
     TempShift[i*nsec + j] = array[i*nsec + ji];
 
@@ -1327,24 +1336,33 @@ __global__ void ConditionCFLKernel2D2 (double *newDT, double *DT2D, double *DT1D
   if (i<nrad-1){
     dt = 2.0*PI*CFLSECURITY/(double)nsec/fabs(Vmoy[i]*invRmed[i]-Vmoy[i+1]*invRmed[i+1]);
     DT1D[i] = dt; // array nrad size dt
-    __syncthreads();
-
-    if (i == 1){ // one thread
-      newdt = newDT[1];
-      for (k = 2; k < nrad; k++)
-        if (newDT[k] < newdt) newdt = newDT[k]; // min dt
-
-      for (k = 0; k < nrad-1; k++) {
-        if (DT1D[k] < newdt)
-          newdt = DT1D[k];
-      }
-
-      if (DeltaT < newdt)
-        newdt = DeltaT;
-      CFL[0] = (int)(ceil(DeltaT/newdt));
-    }
   }
 }
+
+__global__ void ConditionCFLKernel2D3 (double *newDT, double *DT2D, double *DT1D, double *Vmoy, double *invRmed,
+  int *CFL, int nsec, int nrad, double DeltaT)
+{
+  int j = threadIdx.x + blockDim.x*blockIdx.x;
+
+  double newdt;
+  if (j == 0){
+    newdt = newDT[1];
+    for (int i=2; i<nrad; i++){
+      if (newDT[i] < newdt)
+        newdt = newDT[i];
+    }
+
+    for (int i = 0; i < nrad-1; i++) {
+      if (DT1D[i] < newdt)
+        newdt = DT1D[i];
+    }
+
+    if (DeltaT < newdt)
+      newdt = DeltaT;
+    CFL[0] = (int)(ceil(DeltaT/newdt));
+  }
+}
+
 
 
 __device__ double max2(double a, double b)

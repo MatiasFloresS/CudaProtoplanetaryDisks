@@ -97,7 +97,7 @@ __host__ void ComputeStarRad(double *Vrad, double dt, int option)
 __host__ void ActualiseGasDens(double *DensInt, double *Dens)
 {
   gpuErrchk(cudaMemcpy(DensInt_d, Dens_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
-  //gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaDeviceSynchronize());
 }
 
 
