@@ -9,7 +9,7 @@ extern double *CellAbscissa, *CellOrdinate, *forcesxi, *forcesyi, *forcesxo, *fo
 extern double *Dens_d, *CellAbscissa_d, *CellOrdinate_d;
 extern double *fxi_d, *fxo_d, *fyi_d, *fyo_d;
 
-extern double *Rmed, *Rmed_d, *Surf,  *Surf_d;
+extern double *Rmed, *Rmed_d, *Surf,  *Surf_d, *example;
 
 extern int RocheSmoothing, size_grid, NRAD, NSEC, SelfGravity;
 
@@ -105,10 +105,9 @@ __host__ void ComputeForce (Force *force, double *Dens, double x, double y, doub
   int k;
 
   globalforce = force->GlobalForce;
-
+  double valor;
 
   for (k = 0; k < dimfxy; k++) {
-
     gpuErrchk(cudaMemset(fxi_d, 0, NRAD*NSEC*sizeof(double)));
     gpuErrchk(cudaMemset(fxo_d, 0, NRAD*NSEC*sizeof(double)));
     gpuErrchk(cudaMemset(fyi_d, 0, NRAD*NSEC*sizeof(double)));
@@ -117,6 +116,26 @@ __host__ void ComputeForce (Force *force, double *Dens, double x, double y, doub
     ComputeForceKernel<<<dimGrid2, dimBlock2>>>(CellAbscissa_d, CellOrdinate_d, Surf_d, Dens_d, x, y, rsmoothing,
       NSEC, NRAD, a, Rmed_d, dimfxy, rh, fxi_d, fxo_d, fyi_d, fyo_d, k);
     gpuErrchk(cudaDeviceSynchronize());
+
+    /*valor = 0.0;
+    gpuErrchk(cudaMemcpy(example, fxi_d,           (NRAD*NSEC)*sizeof(double), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < NRAD*NSEC; i++) valor += example[i];
+    globalforce[k] = valor;
+
+    valor = 0.0;
+    gpuErrchk(cudaMemcpy(example, fxo_d,           (NRAD*NSEC)*sizeof(double), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < NRAD*NSEC; i++) valor += example[i];
+    globalforce[k+dimfxy] = valor;
+
+    valor = 0.0;
+    gpuErrchk(cudaMemcpy(example, fyi_d,           (NRAD*NSEC)*sizeof(double), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < NRAD*NSEC; i++) valor += example[i];
+    globalforce[k+2*dimfxy] = valor;
+
+    gpuErrchk(cudaMemcpy(example, fyo_d,           (NRAD*NSEC)*sizeof(double), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < NRAD*NSEC; i++) valor += example[i];
+    globalforce[k+3*dimfxy] = valor;*/
+
 
     globalforce[k]            = DeviceReduce(fxi_d, NRAD*NSEC);
     globalforce[k + dimfxy]   = DeviceReduce(fxo_d, NRAD*NSEC);
@@ -141,6 +160,15 @@ __host__ void ComputeForce (Force *force, double *Dens, double x, double y, doub
   force->fy_outer = globalforce[3*dimfxy];
   force->fy_ex_outer = globalforce[4*dimfxy-1];
   force->GlobalForce = globalforce;
+
+  /*printf("%.30g\n", globalforce[0]);
+  printf("%.30g\n", globalforce[dimfxy-1]);
+  printf("%.30g\n", globalforce[dimfxy]);
+  printf("%.30g\n", globalforce[2*dimfxy-1]);
+  printf("%.30g\n", globalforce[2*dimfxy]);
+  printf("%.30g\n", globalforce[3*dimfxy-1]);
+  printf("%.30g\n", globalforce[3*dimfxy]);
+  printf("%.30g\n", globalforce[4*dimfxy-1]);*/
 
 }
 

@@ -57,7 +57,7 @@ extern int *NoSplitAdvection_d;
 extern int *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
-int blocksize2D = 16;
+int blocksize2D = 32;
 int blocksize1D = 256;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
@@ -79,12 +79,13 @@ cufftDoubleComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi
 
 __host__ int main (int argc, char *argv[])
 {
-  int device;
-  printf("enter gpu device: ");
-  scanf("%d", &device);
+  //int device;
+  //printf("enter gpu device: ");
+  //scanf("%d", &device);
+
 
   //cudaSetDevice(1); Using gpu nvidia m4000 8 gb
-  cudaSetDevice(device); // Using gpu nvidia m4000 8gb
+  cudaSetDevice(0); // Using gpu nvidia m4000 8gb
 
   double     *Dens;
   double     *Vrad;
@@ -244,7 +245,9 @@ __host__ int main (int argc, char *argv[])
   sys = InitPlanetarySystem (configplanet);
 
   /* Gas density initialization */
+
   InitGasDensity (Dens);
+
 
   /* If energy equation is taken into account, we initialize the gas
      thermal energy  */
@@ -281,15 +284,13 @@ __host__ int main (int argc, char *argv[])
   OmegaFrame = OMEGAFRAME;
   if (Corotating) OmegaFrame = GetPsysInfo (sys, FREQUENCY);
 
-  printf("OmegaFrame%.15g\n",OmegaFrame );
-
   /* Only gas velocities remain to be initialized */
   Initialization (Dens, Vrad, Vtheta, Energy, Label, sys);
 
   /* Initial gas_density is used to compute the circumplanetary mass with initial
      density field */
 
-  mdcp = CircumPlanetaryMass (Dens, sys);
+  //mdcp = CircumPlanetaryMass (Dens, sys);
 
   EmptyPlanetSystemFile (sys);
   PhysicalTimeInitial = PhysicalTime;
@@ -305,7 +306,6 @@ __host__ int main (int argc, char *argv[])
       //UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
     }
 
-    //if(i%100 == 0) printf("step: %d\n", i);
     if (NINTERM * (TimeStep = (i / NINTERM)) == i){
       /* Outputs are done here */
       //printf("%d\n", i);
@@ -806,6 +806,9 @@ __host__ void Cudamalloc (double *Label, double *Dens, double *Vrad, double *Vth
   gpuErrchk(cudaMemcpy(Surf_d, Surf,               (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(invSurf_d, invSurf,         (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(Dens_d, Dens,               size_grid*sizeof(double), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed,             (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+
+  if (Adiabatic) gpuErrchk(cudaMemcpy(EnergyMed_d, EnergyMed,           (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
 
 }
 

@@ -89,7 +89,7 @@ vel_unit_cgs = au_in_cm/Timeunit_in_seconds  #cm/s
 nrad = 128 #128 #500
 nsec = 384 # 256 #1500
 Rmin = 0.4
-Rmax = 2.5
+Rmax = 1.8
 
 r = np.linspace(Rmin, Rmax, nrad)
 
@@ -127,7 +127,7 @@ rho0 =   fromfile(data_dir + "dens/" + "dens{0:d}.raw".format(0),dtype='float64'
 temp0 = fromfile(data_dir + "temperature/" +"temperature{0:d}.raw".format(0),dtype='float64')         #1D array
 rho =   fromfile(data_dir + "dens/" +"dens{0:d}.raw".format(output),dtype='float64')         #1D array
 temp =  fromfile(data_dir + "temperature/" +"temperature{0:d}.raw".format(output),dtype='float64') #1D array
-qplus = fromfile(data_dir + "qplus/" +"qplus{0:d}.raw".format(output),dtype='float64') #1D array
+#qplus = fromfile(data_dir + "qplus/" +"qplus{0:d}.raw".format(output),dtype='float64') #1D array
 vrad =  fromfile(data_dir + "vrad/" +"vrad{0:d}.raw".format(output),dtype='float64') #1D array
 vtheta= fromfile(data_dir + "vtheta/" +"vtheta{0:d}.raw".format(output),dtype='float64') #1D array
 
@@ -174,7 +174,7 @@ for i in range(0,nrad-1):
 gradp_acc_r = array(gradp_acc_r)   #*(densINcgs*vel_unit_cgs**2.0)/au_in_cm
 gradp_acc_theta = array(gradp_acc_theta)
 
-print max(gradp_acc_theta)
+#print max(gradp_acc_theta)
 grap_module = sqrt(gradp_acc_r**2.0 + gradp_acc_theta**2.0) 
 
 gradp_acc_r_unit = gradp_acc_r/grap_module 
@@ -187,7 +187,7 @@ DeltaT    = deltaT.reshape(nrad,nsec)
 DeltaP = delta_p.reshape(nrad,nsec)
 
 Temp =         temp.reshape(nrad,nsec)
-Qplus =        qplus.reshape(nrad,nsec)
+#Qplus =        qplus.reshape(nrad,nsec)
 Vrad =         vrad.reshape(nrad,nsec)
 Vtheta =       vtheta.reshape(nrad,nsec)
 Centr_acc =    centr_acc.reshape(nrad,nsec)
@@ -244,7 +244,7 @@ cb = plt.colorbar()
 #plt.colorbar(format='%.0e')
 cb.set_label('log Density [$\\rm g$ $\\rm cm^{-2}$]', size=20)
 
-
+'''
 figure(21)
 pcolormesh(xi,yi,(DeltaT))
 #clim(1.2,2.25) #clim(25, 240)
@@ -277,16 +277,16 @@ xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
 cb.set_label('Aspect Ratio')
-
+'''
 
 figure(4)
-pcolormesh(xi,yi,(Tempunit*Temp))
+pcolormesh(xi,yi,(Temp*Tempunit))
 #clim(log10(50),log10(500))
 xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
 cb.set_label('Temperature [K]')
-
+'''
 figure(5)
 pcolormesh(xi,yi, log10(Qplus*QplusUnit))
 cb = plt.colorbar()
@@ -311,7 +311,7 @@ cb.set_label('Cooling Time [yr]')
 
 figure(8)
 pcolormesh(xi,yi,(Cross_time))
-clim(0,30)
+#clim(0,30)
 xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
@@ -332,7 +332,7 @@ xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
 cb.set_label('log Pressure field [$g$ $cm^{-1}$ $s^{-2}$]')
-
+'''
 
 figure(11)
 pcolormesh(xi,yi,-Vrad*vel_unit_cgs)
@@ -349,7 +349,7 @@ xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
 cb.set_label('Azimuthal Velocity')
-
+'''
 figure(13)
 pcolormesh(xi,yi, Centr_acc * (vel_unit_cgs**2.0/au_in_cm) )
 xlabel('x [AU]', fontsize=16)
@@ -379,7 +379,7 @@ xlabel('x [AU]', fontsize=16)
 ylabel('y [AU]', fontsize=16)
 cb = plt.colorbar()
 cb.set_label('grad P module')
-
+'''
 # figure(17)
 # vector_field(Vrad, Vtheta)
 

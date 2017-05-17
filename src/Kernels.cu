@@ -1011,10 +1011,12 @@ __global__ void EvanescentBoundaryKernel(double *Rmed, double *Vrad, double *Vth
         energy0 = EnergyMed[i];
 
         Vrad[i*nsec + j] = (Vrad[i*nsec + j] + lambda*vrad0)/(1.0+lambda);
+
         Vtheta[i*nsec + j] = (Vtheta[i*nsec + j] + lambda*vtheta0)/(1.0+lambda);
+
         Dens[i*nsec + j] = (Dens[i*nsec + j] + lambda*dens0)/(1.0+lambda);
-        /*if (Adiabatic)
-          Energy[i*nsec + j] = (Energy[i*nsec + j] + lambda*energy0)/(1.0+lambda);*/
+        if (Adiabatic)
+          Energy[i*nsec + j] = (Energy[i*nsec + j] + lambda*energy0)/(1.0+lambda);
       }
     }
 }
@@ -1251,7 +1253,7 @@ __global__ void FillForcesArraysKernel (double *Rmed, int nsec, int nrad, double
     if (k == 0) {
      /* -- Gravitational potential from star on gas -- */
      pot = -G*1.0*InvDistance; /* Direct term from star */
-     //pot -=  IndirectTerm.x*x + IndirectTerm.y*y; /* Indirect term from star */
+     pot -=  IndirectTerm.x*x + IndirectTerm.y*y; /* Indirect term from star */
      Potential[i*nsec + j] += pot;
     }
   }

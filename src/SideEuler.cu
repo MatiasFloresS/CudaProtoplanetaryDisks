@@ -101,6 +101,7 @@ __host__ void ReduceMean (double *Dens, double *Energy)
 
 __host__ void EvanescentBoundary (double *Vrad, double *Vtheta, double *Dens, double *Energy, double step)
 {
+  
   double Tin, Tout, DRMIN, DRMAX;
   /* Orbital period at inner and outer boundary */
   Tin = 2.0*PI*pow(Rmed[0],3./2);;

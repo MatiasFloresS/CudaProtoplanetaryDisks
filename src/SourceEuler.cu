@@ -58,7 +58,7 @@ __host__ void FillPolar1DArrays ()
   FILE *input, *output;
   int i,j;
   double drrsep, temporary;
-  double *Radii2, *Rmed2;
+  //double *Radii2, *Rmed2;
   string InputName, OutputName;
   drrsep = (RMAX-RMIN)/(double)NRAD;
   InputName = OUTPUTDIR + "radii.dat";
@@ -66,8 +66,8 @@ __host__ void FillPolar1DArrays ()
 
   /* Creo los arreglos de FillPolar1DArrays */
   Radii       = (double *)malloc((NRAD+1)*sizeof(double));
-  Radii2       = (double *)malloc((NRAD+1)*sizeof(double));
-  Rmed2       = (double *)malloc((NRAD+1)*sizeof(double));
+  //Radii2       = (double *)malloc((NRAD+1)*sizeof(double));
+  //Rmed2       = (double *)malloc((NRAD+1)*sizeof(double));
   Rinf        = (double *)malloc((NRAD+1)*sizeof(double));
   Rmed        = (double *)malloc((NRAD+1)*sizeof(double));
   Rsup        = (double *)malloc((NRAD+1)*sizeof(double));
@@ -88,14 +88,14 @@ __host__ void FillPolar1DArrays ()
   InputCharName[sizeof(InputCharName)-1]=0;
 
   input = fopen (InputCharName, "r");
+
   if (input == NULL){
     printf("Warning : no `radii.dat' file found. Using default.\n");
     if (LogGrid == YES){
       for (i = 0; i <= NRAD; i++){
         /* Usamos doubles para calcular los valores de los arrays, luego
            los pasamos a double */
-        Radii2[i] = (double)RMIN*exp((double)i/(double)NRAD*log((double)RMAX/(double)RMIN));
-        Radii[i] = (double) Radii2[i];
+        Radii[i] = (double)RMIN*exp((double)i/(double)NRAD*log((double)RMAX/(double)RMIN));
       }
     }
     else {
@@ -112,24 +112,23 @@ __host__ void FillPolar1DArrays ()
   }
 
   for (i = 0; i < NRAD; i++){
-    Rinf[i] = Radii2[i];
-    Rsup[i] = Radii2[i+1];
-    Rmed2[i] = 2.0/3.0*(Radii2[i+1]*Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]*Radii2[i]);
-    Rmed2[i] = Rmed2[i] / (Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i]);
-    Rmed[i] = (double) Rmed2[i];
-    Surf[i] = PI*(Radii2[i+1]*Radii2[i+1]-Radii2[i]*Radii2[i])/(double)NSEC;
+    Rinf[i] = Radii[i];
+    Rsup[i] = Radii[i+1];
+    Rmed[i] = 2.0/3.0*(Radii[i+1]*Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]*Radii[i]);
+    Rmed[i] = Rmed[i] / (Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i]);
+    Surf[i] = PI*(Radii[i+1]*Radii[i+1]-Radii[i]*Radii[i])/(double)NSEC;
     invRmed[i] = 1.0/Rmed[i];
     invSurf[i] = 1.0/Surf[i];
-    invdiffRsup[i] = 1.0/(Radii2[i+1]-Radii2[i]);
-    invRinf[i] = 1.0/Radii2[i];
+    invdiffRsup[i] = 1.0/(Radii[i+1]-Radii[i]);
+    invRinf[i] = 1.0/Radii[i];
   }
 
-  Rinf[NRAD] = Radii2[NRAD];
+  Rinf[NRAD] = Radii[NRAD];
 
   for (i = 0; i < NRAD; i++) {
-    if (i > 0 )invdiffRmed[i] = 1.0/(Rmed2[i]-Rmed2[i-1]);
+    if (i > 0 )invdiffRmed[i] = 1.0/(Rmed[i]-Rmed[i-1]);
 
-    powRmed[i] = pow(Rmed2[i],-2.5+SIGMASLOPE);
+    powRmed[i] = pow(Rmed[i],-2.5+SIGMASLOPE);
   }
 
   /* string to char OutputName */
@@ -226,7 +225,7 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
 
     if (IsDisk == YES){
       /* Indirect term star's potential computed here */
-      //DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
+      DiskOnPrimaryAcceleration = ComputeAccel (force, Dens, 0.0, 0.0, 0.0, 0.0);
 
       /* Gravitational potential from star and planet(s) is computed and stored here */
       FillForcesArrays (sys, Dens, Energy);
@@ -260,7 +259,7 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
         printf("c");
       }
       else*/
-      //printf(".");
+      printf(".");
       //if (ZMPlus) compute_anisotropic_pressurecoeff(sys);
 
       ComputePressureField ();
@@ -287,16 +286,16 @@ __host__ void AlgoGas (Force *force, double *Dens, double *Vrad, double *Vtheta,
       ApplyBoundaryCondition(Dens, Energy, Vrad, Vtheta, dt);
       ComputeTemperatureField ();
 
-      mdcp1 = CircumPlanetaryMass (Dens, sys);
-      exces_mdcp = mdcp1 - mdcp;
+      //mdcp1 = CircumPlanetaryMass (Dens, sys);
+      //exces_mdcp = mdcp1 - mdcp;
     }
     init = init + 1;
     //cont+=1;
     PhysicalTime += dt;
-    //break;
+
 
   }
-  //printf("\n" );
+  printf("\n" );
 }
 
 
@@ -507,8 +506,6 @@ __host__ void ActualiseGasEnergy (double *Energy, double *EnergyNew)
 
 __host__ void Substep1cudamalloc (double *Vrad, double *Vtheta)
 {
-  gpuErrchk(cudaMemcpy(EnergyMed_d, EnergyMed,           (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(SigmaMed_d, SigmaMed,             (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(QplusMed_d, QplusMed,             (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(CoolingTimeMed_d, CoolingTimeMed, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
 }
@@ -554,18 +551,7 @@ __host__ double CircumPlanetaryMass (double *Dens, PlanetarySystem *sys)
     HillRadius, mdcp0_d);
   gpuErrchk(cudaDeviceSynchronize());
 
-  // reduction mdcp
-  /*gpuErrchk(cudaMemcpy(example, mdcp0_d,  NRAD*NSEC*sizeof(double), cudaMemcpyDeviceToHost));
-  for (int i = 0; i < NRAD*NSEC; i++) {
-    cont = cont + example[i];
-  }*/
   mdcp0 = DeviceReduce(mdcp0_d, NRAD*NSEC);
-  /*if(mdcp0 == cont) printf("hola\n" );
-  else{
-    printf("mdcp0 %.20g\n", mdcp0);
-    printf("cont %.20g\n", cont);
-    printf("diff %.20g\n", mdcp0-cont);
-  }*/
 
   return mdcp0;
 }

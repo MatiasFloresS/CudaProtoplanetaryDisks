@@ -121,6 +121,7 @@ __host__ void ReadVariables(char *filename)
         valuei = (int) temp;
         for (i = 0; i < strlen(nm); i++)
           nm[i] = (char) toupper(nm[i]);
+        printf("%s\n", stringval);
         SearchVariable(nm, stringval);
       }
     }

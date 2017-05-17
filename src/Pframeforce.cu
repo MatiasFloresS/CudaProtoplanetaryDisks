@@ -82,7 +82,7 @@ __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Ener
 __host__ void ComputeIndirectTerm ()
 {
   IndirectTerm.x = -DiskOnPrimaryAcceleration.x;
-  IndirectTerm.x = -DiskOnPrimaryAcceleration.y;
+  IndirectTerm.y = -DiskOnPrimaryAcceleration.y;
   if (!Indirect_Term){
     IndirectTerm.x = 0.0;
     IndirectTerm.y = 0.0;
@@ -153,8 +153,8 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
       dtheta = omega*dt;
       sys->x[i] = r*cos(theta+dtheta);
       sys->y[i] = r*sin(theta+dtheta);
-      sys->vx[i] = vx*cos(theta+dtheta) - vy*sin(dtheta+theta);
-      sys->vy[i] = vx*sin(theta+dtheta) + vx*cos(dtheta+theta);
+      sys->vx[i] = vx*cos(dtheta+theta) - vy*sin(dtheta+theta);
+      sys->vy[i] = vx*sin(dtheta+theta) + vy*cos(dtheta+theta);
     }
   }
   if (PhysicalTime < RELEASEDATE){
