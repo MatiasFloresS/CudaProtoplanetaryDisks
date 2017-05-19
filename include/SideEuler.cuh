@@ -1,0 +1,15 @@
+__host__ void ApplyBoundaryCondition (double *Dens, double *Energy, double *Vrad, double *Vtheta, double step);
+__host__ void NonReflectingBoundary (double *Dens, double *Energy, double *Vrad);
+__host__ void ReduceMean (double *Dens, double *Energy);
+__host__ void ReduceCs ();
+__host__ void MinusMean (double *Dens, double *Energy);
+__host__ void EvanescentBoundary (double *Vrad, double *Vtheta, double *Dens, double *Energy, double step);
+__host__ void Cscudamalloc ();
+__host__ void Meancudamalloc ();
+__host__ void OpenBoundary ();
+__host__ Pair ComputeAccel (Force *force, double *Dens, double x, double y, double rsmoothing, double mass);
+__host__ void DivisePolarGrid (double *Qbase_d, double *DensInt_d, double *Work_d);
+__host__ void InitComputeAccel ();
+__host__ void InitComputeAccelDevice ();
+__host__ void CorrectVtheta (double *Vtheta, double domega);
+__host__ void ApplySubKeplerianBoundary(double *VthetaInt);
