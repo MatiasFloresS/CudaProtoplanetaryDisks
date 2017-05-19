@@ -14,7 +14,7 @@ ThicknessSmoothing 	0.6		Smoothing parameters in disk thickness
 ### Numerical method parameters
 
 Transport		FARGO
-InnerBoundary		OPEN		choose : OPEN or RIGID or NONREFLECTING
+InnerBoundary		EVANESCENT		choose : OPEN or RIGID or NONREFLECTING
 Disk			YES
 OmegaFrame     		1.0
 Frame			GUIDING-CENTER
@@ -27,7 +27,7 @@ Nrad			128		Radial number of zones
 Nsec			384		Azimuthal number of zones (sectors)
 Rmin			0.4		Inner boundary radius
 Rmax			2.5		Outer boundary radius
-RadialSpacing 		LOGARITHM       Zone interfaces evenly spaced
+RadialSpacing 		A       Zone interfaces evenly spaced
 
 
 
@@ -39,7 +39,7 @@ DT			0.314159265359	Time step length. 2PI = 1 orbit
 
 OutputDir		out/
 
-SelfGravity	YES     #choose: Yes, Z or No
+SelfGravity	NO     #choose: Yes, Z or No
 
 Adiabatic	YES        #choose No for an isothermal eq. of state
 

@@ -1,9 +1,9 @@
 #include "Main.cuh"
 
 extern int NRAD, NSEC;
-extern double *Rinf, *Rsup;
+extern float *Rinf, *Rsup;
 
-__host__ void AccreteOntoPlanets (double *Dens, double *Vrad, double *Vtheta, double dt, PlanetarySystem *sys)
+__host__ void AccreteOntoPlanets (float *Dens, float *Vrad, float *Vtheta, float dt, PlanetarySystem *sys)
 {
 
   double RRoche, Rplanet, distance;

@@ -8,7 +8,7 @@ SigmaSlope		0.0		Slope of surface density profile.
 
 ### Planet parameters
 
-PlanetConfig		in/Jup.cfg
+PlanetConfig		in/Jup2.cfg
 ThicknessSmoothing 	0.6		Smoothing parameters in disk thickness
 
 ### Numerical method parameters
@@ -23,8 +23,8 @@ IndirectTerm		YES
 
 ### Mesh parameters
 
-Nrad			400		Radial number of zones
-Nsec			900		Azimuthal number of zones (sectors)
+Nrad			128		Radial number of zones
+Nsec			384		Azimuthal number of zones (sectors)
 Rmin			3.2		Inner boundary radius
 Rmax			7.2		Outer boundary radius
 RadialSpacing 		LOGARITHM      Zone interfaces evenly spaced

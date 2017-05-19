@@ -1,10 +1,10 @@
 #include "Main.cuh"
 
-extern double *Radii, ECCENTRICITY;
-static double Xplanet, Yplanet;
+extern float *Radii, ECCENTRICITY;
+static float Xplanet, Yplanet;
 extern int GuidingCenter;
-double HillRadius;
-extern double *Rmed;
+float HillRadius;
+extern float *Rmed;
 
 
 
@@ -171,7 +171,7 @@ __host__ void ListPlanets (PlanetarySystem *sys)
 
 
 
-__host__ double GetPsysInfo (PlanetarySystem *sys, int action)
+__host__ float GetPsysInfo (PlanetarySystem *sys, int action)
 {
 
   double d1, d2, cross;
@@ -245,7 +245,7 @@ __host__ double GetPsysInfo (PlanetarySystem *sys, int action)
 
 
 
-__host__ void RotatePsys (PlanetarySystem *sys, double angle) /* Rotate by angle '-angle' */
+__host__ void RotatePsys (PlanetarySystem *sys, float angle) /* Rotate by angle '-angle' */
 {
   int i, nb;
   double sint, cost, xt, yt;

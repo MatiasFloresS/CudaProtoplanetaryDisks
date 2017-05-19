@@ -4,28 +4,31 @@
 extern int NRAD, NSEC, size_grid, RocheSmoothing;
 extern int ForcedCircular, Indirect_Term, SelfGravity, Cooling, CentrifugalBalance;
 
-extern double *SigmaMed, *EnergyMed, *Pressure, *SoundSpeed, *Potential;
-extern double *viscosity_array, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
+extern float *SigmaMed, *EnergyMed;
+extern float *Pressure, *SoundSpeed;
+extern float *viscosity_array, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
 
-extern double *Potential_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
-extern double *viscosity_array_d, *vt_cent_d, *Vtheta_d, *SigmaInf_d;
+extern float *Pressure_d, *SoundSpeed_d;
+extern float *viscosity_array_d, *vt_cent_d, *SigmaInf_d, *SG_Accr_d;
 
-extern double ROCHESMOOTHING, ASPECTRATIO, FLARINGINDEX;
-extern double SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT,  RELEASEDATE, RELEASERADIUS;
-extern double VISCOSITY, ALPHAVISCOSITY, CAVITYWIDTH, CAVITYRADIUS, CAVITYRATIO;
-extern double LAMBDADOUBLING;
+extern float *Vrad_d, *Vtheta_d, *Potential, *Potential_d;
 
-extern double MassTaper, ViscosityAlpha, PhysicalTime, PhysicalTimeInitial;
+extern float ROCHESMOOTHING, ASPECTRATIO, FLARINGINDEX;
+extern float SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT,  RELEASEDATE, RELEASERADIUS;
+extern float VISCOSITY, ALPHAVISCOSITY, CAVITYWIDTH, CAVITYRADIUS, CAVITYRATIO;
+extern float LAMBDADOUBLING;
+
+extern float MassTaper, ViscosityAlpha, PhysicalTime, PhysicalTimeInitial;
 
 extern Pair DiskOnPrimaryAcceleration;
 static Pair IndirectTerm;
 
-extern double *q0, *PlanetMasses, *q1;
-extern double *Rinf_d, *Rmed, *Rmed_d, *Radii;
-extern double  OmegaFrame;
+extern float *q0, *PlanetMasses, *q1;
+extern float *Rinf_d, *Rmed, *Rmed_d, *Radii;
+extern float  OmegaFrame;
 extern dim3 dimGrid2, dimBlock2;
 
-__host__ void InitGasDensity (double *Dens)
+__host__ void InitGasDensity (float *Dens)
 {
   int i, j;
   FillSigma ();
@@ -38,7 +41,7 @@ __host__ void InitGasDensity (double *Dens)
 
 
 
-__host__ void InitGasEnergy (double *Energy)
+__host__ void InitGasEnergy (float *Energy)
 {
   FillEnergy ();
   for (int i = 0; i < NRAD; i++){
@@ -50,16 +53,17 @@ __host__ void InitGasEnergy (double *Energy)
 
 
 
-__host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Energy)
+__host__ void FillForcesArrays (PlanetarySystem *sys, float *Dens, float *Energy)
 {
   int NbPlanets, k;
-  double xplanet, yplanet, mplanet, PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
+  double xplanet, yplanet, mplanet;
+  float PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
   NbPlanets = sys->nb;
 
   /* Indirect term star on gas here */
   ComputeIndirectTerm ();
 
-  //gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(double)));
+  //gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(float)));
   /* -- Gravitational potential from planet on gas -- */
   for (k = 0; k < NbPlanets; k++){
     xplanet = sys->x[k];
@@ -90,10 +94,10 @@ __host__ void ComputeIndirectTerm ()
 }
 
 
-__host__ void AdvanceSystemFromDisk (Force *force, double *Dens, double *Energy, PlanetarySystem *sys, double dt)
+__host__ void AdvanceSystemFromDisk (Force *force, float *Dens, float *Energy, PlanetarySystem *sys, float dt)
 {
   int NbPlanets, k;
-  double m, x, y, r, smoothing;
+  float m, x, y, r, smoothing;
   Pair gamma;
   NbPlanets = sys->nb;
 
@@ -117,7 +121,7 @@ __host__ void AdvanceSystemFromDisk (Force *force, double *Dens, double *Energy,
 }
 
 
-__host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
+__host__ void AdvanceSystemRK5 (PlanetarySystem *sys, float dt)
 {
   int nb, i , k;
   int *feelothers;
@@ -182,9 +186,9 @@ __host__ void AdvanceSystemRK5 (PlanetarySystem *sys, double dt)
 
 }
 
-__host__ void InitGasVelocities (double *Vrad, double *Vtheta)
+__host__ void InitGasVelocities (float *Vrad, float *Vtheta)
 {
-  double r1, t1, r2, t2, r, ri;
+  float r1, t1, r2, t2, r, ri;
   int i;
 
   /* Pressure is already initialized: cf initeuler in SourceEuler.c ...
@@ -194,7 +198,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     /* vt_int \equiv Romega = grad(P)/sigma + \partial(phi)/\partial(r) - acc_sg_radial
     ./bin/fargoGPU  -b in/template.par */
 
-    gpuErrchk(cudaMemcpy(Pressure, Pressure_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(Pressure, Pressure_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
     Make1Dprofile(1);
 
     /* global axisymmetric pressure field */
@@ -205,7 +209,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     /* Case of a disk with self-gravity */
     if ( SelfGravity ) // Better test with CL rigid!
     {
-      gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+      gpuErrchk(cudaMemcpy(SG_Accr, SG_Accr_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
       Make1Dprofile(1);
 
       for (i = 1; i < NRAD; i++)
@@ -214,7 +218,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     }
 
     for (i = 1; i < NRAD; i++)
-      vt_int[i] = sqrt(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
+      vt_int[i] = sqrtf(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
 
     t1 = vt_cent[0] = vt_int[1]+.75*(vt_int[1]-vt_int[2]);
     r1 = ConstructSequence (vt_cent, vt_int, NRAD);
@@ -231,7 +235,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     Init_azimutalvelocity_withSG (Vtheta);
 
   if (ViscosityAlpha){
-    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(float), cudaMemcpyDeviceToHost));
     Make1Dprofile(1);
   }
 
@@ -249,9 +253,9 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
 }
 
 
-__host__ void InitVelocities (double *Vrad, double *Vtheta)
+__host__ void InitVelocities (float *Vrad, float *Vtheta)
 {
-  //if (SelfGravity) gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+  //if (SelfGravity) gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(float), cudaMemcpyHostToDevice));
 
   InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(NSEC, NRAD, SelfGravity, Rmed_d,
   ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,

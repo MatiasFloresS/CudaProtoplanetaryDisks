@@ -2,17 +2,17 @@
 
 extern int NRAD;
 
-extern double *QplusMed, *SigmaMed, *SigmaInf, *EnergyMed, *CoolingTimeMed, *QplusMed;
-extern double *Rinf, *Rmed, ScalingFactor;
+extern float *QplusMed, *SigmaMed, *SigmaInf, *EnergyMed, *CoolingTimeMed, *QplusMed;
+extern float *Rinf, *Rmed, ScalingFactor;
 
-extern double CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, ADIABATICINDEX;
-extern double ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
+extern float CAVITYRATIO, CAVITYRADIUS, SIGMASLOPE, SIGMA0, ADIABATICINDEX;
+extern float ASPECTRATIO, FLARINGINDEX, COOLINGTIME0;
 
 
 /* Surface density */
-__host__ double Sigma(double r)
+__host__ float Sigma(float r)
 {
-  double cavity = 1.0;
+  float cavity = 1.0;
   if (r < CAVITYRADIUS) cavity = 1.0/CAVITYRATIO;
   /* This is *not* a steady state */
   /* profile, if a cavity is defined. It first needs */
@@ -34,9 +34,9 @@ __host__ void FillSigma ()
 
 
 /* Thermal energy */
-__host__ double Energy(double r)
+__host__ float Energy(float r)
 {
-  double energy0;
+  float energy0;
   if (ADIABATICINDEX == 1.0){
     fprintf(stderr, "The adiabatic index must differ from unity to initialized \
     the gas internal energy. I must exit.\n");
@@ -59,9 +59,9 @@ __host__ void FillEnergy ()
 
 
 
-__host__ double CoolingTime(double r)
+__host__ float CoolingTime(float r)
 {
-  double ct0;
+  float ct0;
   ct0 = COOLINGTIME0*pow(r,2.0+2.0*FLARINGINDEX);
   return ct0;
 }
@@ -76,9 +76,9 @@ __host__ void FillQplus()
   for (int i = 0; i < NRAD; i++) QplusMed[i] = Qplusinit(Rmed[i]);
 }
 
-__host__ double Qplusinit(double r)
+__host__ float Qplusinit(float r)
 {
-  double qp0, viscosity;
+  float qp0, viscosity;
   viscosity = FViscosity(r);
   qp0 = 2.25*viscosity*SIGMA0*pow(r,-SIGMASLOPE-3.0);
   return qp0;
