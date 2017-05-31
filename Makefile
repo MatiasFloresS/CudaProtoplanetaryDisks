@@ -1,8 +1,8 @@
-
 CFLAGS = -c -w
 CUFFTFLAG = -lcufft
 LDFLAGS = -lcuda -lcudart
 INC_DIRS = -Iinclude
+OPENMP_FLAGS = -Xcompiler -fopenmp -lgomp
 
 SMS ?= 30 35 37 50 52
 
@@ -27,12 +27,12 @@ main: build/Main.o build/Viscosity.o build/Interpret.o build/SourceEuler.o build
 	build/RungeKutta.o build/SgMain.o build/LowTasks.o build/Kernels.o
 	@ echo "Linking"
 	@ mkdir -p bin
-	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG)
+	@ nvcc build/*.o -o bin/fargoGPU $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG) $(OPENMP_FLAGS)
 
 build/Main.o: src/Main.cu
 	@ echo "Building Main"
 	@ mkdir -p build
-	@ nvcc $(CFLAGS) $(INC_DIRS) src/Main.cu -o build/Main.o $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG)
+	@ nvcc $(CFLAGS) $(INC_DIRS) src/Main.cu -o build/Main.o $(LDFLAGS) $(CUFFTFLAG) $(ARCHFLAG) $(OPENMP_FLAGS)
 
 build/Viscosity.o: src/Viscosity.cu
 	@ echo "Building Viscosity"

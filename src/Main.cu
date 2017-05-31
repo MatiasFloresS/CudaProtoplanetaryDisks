@@ -2,14 +2,19 @@
 #include "Param.cuh"
 
 /* extern double device arrays */
-extern double *SigmaInf_d, *Vrad_d, *CellAbscissa_d, *CellOrdinate_d;
-extern double *Temperature_d, *Energy_d, *Vtheta_d, *Pressure_d, *SoundSpeed_d;
+extern double *SigmaInf_d, *CellAbscissa_d, *CellOrdinate_d;
+extern double *Pressure_d, *SoundSpeed_d;
 extern double *viscosity_array_d, *QStar_d, *ExtLabel_d, *dq_d, *DRP_d, *vt_cent_d;
-extern double *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d, *Work_d, *QRStar_d;
+extern double *QRStar_d;
 extern double *DivergenceVelocity_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
-extern double *TemperInt_d, *DensStar_d, *VradInt_d, *LostByDisk_d, *VthetaRes_d, *VMed_d;
-extern double *TempShift_d, *Vmoy_d, *newDT_d, *DT1D_d, *DT2D_d, *Vresidual_d, *Vazimutal_d;
-extern double *Vradial_d;
+extern double *DensStar_d, *LostByDisk_d, *VMed_d;
+extern double *Vmoy_d, *newDT_d, *DT1D_d, *DT2D_d;
+
+extern double *RadMomP_d, *RadMomM_d, *ThetaMomP_d, *ThetaMomM_d, *TempShift_d;
+extern double *Vrad_d, *Energy_d, *Vtheta_d, *VthetaRes_d, *VradInt_d, *Vresidual_d, *Vazimutal_d, *Vradial_d;
+extern double *VradInt, *VthetaInt, *VradNew, *VthetaNew, *VthetaRes, *EnergyInt, *EnergyNew, *DensInt, *TemperInt_d;
+extern double *Temperature, *TemperInt, *Temperature_d, *RadMomP, *RadMomM, *ThetaMomP, *ThetaMomM, *Work_d, *Work;
+extern double *TempShift, *Pressure, *SoundSpeed;
 
 /* extern double values */
 extern double OMEGAFRAME;
@@ -17,13 +22,14 @@ extern double PhysicalTimeInitial, PhysicalTime;
 extern double THICKNESSSMOOTHING;
 
 /* extern double host arrays */
-extern double *Pressure, *CellAbscissa, *CellOrdinate, *Temperature, *vt_cent;
-extern double *SoundSpeed, *Kr_aux, *Kt_aux, *RadMomP, *RadMomM;
-extern double *ThetaMomP, *ThetaMomM, *Work, *QRStar, *ExtLabel, *dq, *DivergenceVelocity;
+extern double *CellAbscissa, *CellOrdinate, *vt_cent;
+extern double *Kr_aux, *Kt_aux;
+extern double *QRStar, *ExtLabel, *dq, *DivergenceVelocity;
 extern double *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP, *Radii;
 extern double *Surf, *invSurf, *powRmed;
-extern double *DensStar, *VradInt,  *TemperInt, *Potential, *VthetaInt, *DensInt, *VradNew;
-extern double *VthetaNew, *EnergyInt, *EnergyNew, *VthetaRes, *TempShift;
+extern double *DensStar;
+extern double *Potential;
+
 double *example;
 
 /* double host arrays */
@@ -34,13 +40,16 @@ double *mean_energy, *mean_energy2, *array, *mdcp0;
 double *SG_Accr, *SG_Acct, *GLOBAL_AxiSGAccr;
 
 /* double device arrays */
-double *DensInt_d, *Surf_d, *Potential_d, *VthetaInt_d, *powRmed_d, *invSurf_d;
-double *VthetaNew_d, *VradNew_d, *EnergyInt_d, *Qplus_d, *EnergyNew_d;
+double *Surf_d, *powRmed_d, *invSurf_d;
+double *Qplus_d;
 double *EnergyMed_d, *SigmaMed_d, *CoolingTimeMed_d, *QplusMed_d, *gridfield_d, *GLOBAL_bufarray_d;
 double *Label_d, *QStar_d, *Qbase_d, *Qbase2_d, *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d;
 double *mean_dens_d2, *mean_energy_d, *mean_energy_d2;
-double *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *Dens_d, *fxi_d, *fxo_d, *fyi_d, *fyo_d;
+double *SGP_Kr, *SGP_Kt, *Radii_d, *SGP_St, *SGP_Sr, *fxi_d, *fxo_d, *fyi_d, *fyo_d;
 double *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *array_d, *mdcp0_d, *axifield_d, *GLOBAL_AxiSGAccr_d;
+
+
+double *Dens_d, *VthetaInt_d, *VthetaNew_d, *VradNew_d, *EnergyInt_d, *EnergyNew_d, *DensInt_d, *Potential_d;
 
 double mdcp, SGP_tstep, SGP_eps, SGP_rstep;
 
@@ -57,7 +66,7 @@ extern int *NoSplitAdvection_d;
 extern int *Nshift_d;
 
 int nrad2pot, nsec2pot, size_grid, nrad2potSG, nsec2potplus, *CFL_d, *CFL;
-int blocksize2D = 32;
+int blocksize2D = 16;
 int blocksize1D = 256;
 
 int         TimeToWrite, Restart = NO; // OpenInner = NO;
@@ -79,13 +88,13 @@ cufftDoubleComplex *SGP_Kt_dc, *SGP_Kr_dc, *SGP_St_dc, *SGP_Sr_dc, *Gr_dc, *Gphi
 
 __host__ int main (int argc, char *argv[])
 {
-  //int device;
-  //printf("enter gpu device: ");
-  //scanf("%d", &device);
+  int device;
+  printf("enter gpu device: ");
+  scanf("%d", &device);
 
 
   //cudaSetDevice(1); Using gpu nvidia m4000 8 gb
-  cudaSetDevice(0); // Using gpu nvidia m4000 8gb
+  cudaSetDevice(device); // Using gpu nvidia m4000 8gb
 
   double     *Dens;
   double     *Vrad;
@@ -296,13 +305,13 @@ __host__ int main (int argc, char *argv[])
   PhysicalTimeInitial = PhysicalTime;
 
   //MultiplyPolarGridbyConstant(Dens);
-
+  double start = omp_get_wtime();
   for (int i = 0; i <= NTOT; i++){
     InnerOutputCounter++;
 
     if (InnerOutputCounter == 1){
       InnerOutputCounter = 0;
-      //WriteBigPlanetSystemFile (sys, TimeStep);
+      WriteBigPlanetSystemFile (sys, TimeStep);
       //UpdateLog(force, sys, Dens, Energy, TimeStep, PhysicalTime, dimfxy);
     }
 
@@ -312,7 +321,7 @@ __host__ int main (int argc, char *argv[])
       TimeToWrite = YES;
       DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
       SendOutput (TimeStep, Dens, Vrad, Vtheta, Energy, Label);
-      //WritePlanetSystemFile (sys, TimeStep);
+      WritePlanetSystemFile (sys, TimeStep);
     }
     else TimeToWrite = NO;
     /* Algorithm loop begins here *
@@ -322,6 +331,10 @@ __host__ int main (int argc, char *argv[])
 
     AlgoGas(force, Dens, Vrad, Vtheta, Energy, Label, sys, i);
   }
+
+  double finish = omp_get_wtime();
+
+  printf("%g\n", finish-start);
   //DeviceToHostcudaMemcpy(Dens, Energy, Label, Temperature, Vrad, Vtheta); // Traigo los valores desde la GPU
 
   //gpuErrchk(cudaMemcpy(Pressure, Pressure_d,           size_grid*sizeof(double), cudaMemcpyDeviceToHost));
@@ -611,7 +624,7 @@ __host__ void CreateArrays () // ordenar
   SigmaMed          = (double *)malloc((NRAD+1)*sizeof(double));
   SigmaInf          = (double *)malloc((NRAD+1)*sizeof(double));
   vt_int            = (double *)malloc((NRAD+1)*sizeof(double));
-  GLOBAL_bufarray   = (double *)malloc((NRAD+1)*sizeof(double));
+  GLOBAL_bufarray   = (double *)malloc((NRAD)*sizeof(double));
   GLOBAL_AxiSGAccr  = (double *)malloc((NRAD+1)*sizeof(double));
   QplusMed          = (double *)malloc((NRAD+1)*sizeof(double));
   CoolingTimeMed    = (double *)malloc((NRAD+1)*sizeof(double));
@@ -665,9 +678,9 @@ __host__ void Cudamalloc (double *Label, double *Dens, double *Vrad, double *Vth
     gpuErrchk(cudaMalloc((void**)&Kt_aux_d,  2*size_grid*sizeof(double)));
     gpuErrchk(cudaMalloc((void**)&SG_Accr_d, size_grid*sizeof(double)));
     gpuErrchk(cudaMalloc((void**)&SG_Acct_d, size_grid*sizeof(double)));
-    gpuErrchk(cudaMalloc((void**)&axifield_d, NRAD*sizeof(double)));
   }
 
+  gpuErrchk(cudaMalloc((void**)&axifield_d, NRAD*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&Vradial_d,   size_grid*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&Vazimutal_d, size_grid*sizeof(double)));
 
@@ -748,11 +761,12 @@ __host__ void Cudamalloc (double *Label, double *Dens, double *Vrad, double *Vth
 
   gpuErrchk(cudaMalloc((void**)&Qplus_d,            size_grid*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&EnergyNew_d,        size_grid*sizeof(double)));
-  gpuErrchk(cudaMalloc((void**)&GLOBAL_bufarray_d,  (NRAD+1)*sizeof(double)));
+  gpuErrchk(cudaMalloc((void**)&GLOBAL_bufarray_d,  (NRAD)*sizeof(double)));
 
   gpuErrchk(cudaMemset(Qplus_d, 0,            size_grid*sizeof(double)));
   gpuErrchk(cudaMemset(EnergyNew_d, 0,        size_grid*sizeof(double)));
-  gpuErrchk(cudaMemset(GLOBAL_bufarray_d, 0,  (NRAD+1)*sizeof(double)));
+  gpuErrchk(cudaMemset(GLOBAL_bufarray_d, 0,  (NRAD)*sizeof(double)));
+  gpuErrchk(cudaMemset(axifield_d, 0,  (NRAD)*sizeof(double)));
 
 
   /* cudaMalloc polar grid */
@@ -816,7 +830,7 @@ __host__ void binFile(double *array, int sizeArray, char *name)
 {
   FILE *f;
   char filename[100];
-  sprintf(filename, "../output/%s.raw",name);
+  sprintf(filename, "../output/%s.dat",name);
   f = fopen(filename, "w");
   fwrite(array, sizeof(double), sizeArray, f);
   fclose(f);

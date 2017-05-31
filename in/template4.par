@@ -23,7 +23,7 @@ IndirectTerm		YES
 
 ### Mesh parameters
 
-Nrad			4096		Radial number of zones
+Nrad			2048		Radial number of zones
 Nsec			4096		Azimuthal number of zones (sectors)
 Rmin			0.4		Inner boundary radius
 Rmax			2.5		Outer boundary radius
@@ -33,8 +33,8 @@ RadialSpacing 		LOGARITHM      Zone interfaces evenly spaced
 
 ### Output control parameters
 
-Ntot			10001		Total number of time steps
-Ninterm	 		20		Time steps between outputs
+Ntot			101		Total number of time steps
+Ninterm	 		1		Time steps between outputs
 DT			0.314159265359	Time step length. 2PI = 1 orbit
 OutputDir		out/
 

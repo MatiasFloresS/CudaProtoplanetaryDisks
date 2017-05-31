@@ -1,0 +1,45 @@
+##################
+### Gas parameters
+##################                
+AspectRatio     	0.0297109 		# disc aspect ratio H/R at R=1 (code's unit of length)
+Sigma0          	0.83e-6   		# disc surface density  at R=1 (code's unit of length)
+SigmaSlope      	1.0      		# NB: Sigma0(R) scales as R^-SigmaSlope
+FlaringIndex    	0.142857    		# NB: H/R scales as R^FlaringIndex
+AlphaViscosity  	1e-4     		# disc viscosity
+
+SelfGravity     	NO     		# do we include disc self-gravity (SG)?
+
+Adiabatic 	 	YES	 		# do we include an energy equation?
+AdiabaticIndex  	1.4      		# gamma = ratio of specific heats
+Cooling			YES		choose: Yes or No
+CoolingTime0		31.4		Cooling time at r=1
+
+##################
+### Star and planet parameters
+##################
+PlanetConfig    	in/2p.cfg 		# file contains planet parameters
+ForcedCircular  	NO			# do we keep planets on fixed circular orbits?
+ThicknessSmoothing 	0.6			# planet potential softening length to pressure scale height ratio
+Transport       	FARGO			# FARGO handling of CFL timestep (otherwise set to STANDARD)
+
+##################
+### Grid parameters
+##################			
+Nrad            	200			# Number of grid cells along radial direction
+Nsec            	600			# Number of grid cells along azimuthal direction
+Rmin            	1.0			# Grid's inner edge
+Rmax            	80.0			# Grid's outer edge
+InnerBoundary   	EVANESCENT			# Boundary condition at inner and outer edges
+RadialSpacing   	A     			# Type L for logarithmic radial spacing of the cells
+Disk            	YES			# do we include the disc?
+OmegaFrame      	0.0			# Frame's angular frequency
+Frame           	F		# Type C for a frame corotating with a planet
+IndirectTerm    	YES			# do we include the indirect acceleration?
+
+##################			
+### Outputs control parameters
+##################
+Ntot		 	6000			# NtotxDT/2Pi sets the total number of orbits (at R=1)
+Ninterm          	1			# Ninterm*DT/2pi sets the time in orbits between outputs
+DT		 	15.89534122527376	
+OutputDir        	out/			# Name of outputs directory (local)

@@ -4,18 +4,17 @@ extern int NSEC, size_grid, NRAD;
 
 extern double TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO, ASPECTRATIO, LAMBDADOUBLING;
 extern double VISCOSITY, CAVITYRATIO, CAVITYRADIUS, CAVITYWIDTH, ALPHAVISCOSITY;
-
 extern double ViscosityAlpha;
 
-extern double *SoundSpeed_d, *Vrad_d, *Vtheta_d,  *Dens_d;
-extern double *viscosity_array_d,  *VthetaInt_d, *VradInt_d;
-extern double *Vradial_d, *Vazimutal_d;
-
-extern double *SoundSpeed,  *GLOBAL_bufarray,  *viscosity_array, *VradInt;
-extern double *VthetaInt;
-
+extern double *SoundSpeed_d, *SoundSpeed;
+extern double *viscosity_array_d;
+extern double *GLOBAL_bufarray,  *viscosity_array;
 extern double *invdiffRmed_d, *Rinf_d, *invRinf_d, *invRmed_d, *Rmed_d, *invRmed, *Rmed;
 extern double *invdiffRsup_d, *Rsup_d, *Rsup;
+
+
+extern double *Dens_d, *Vrad_d, *Vtheta_d, *Vradial_d, *Vazimutal_d, *VradInt, *VthetaInt_d, *VradInt_d, *VthetaInt;
+
 
 double *DivergenceVelocity, *DRP, *DRR, *DPP, *TAURR, *TAURP, *TAUPP;
 double *DivergenceVelocity_d, *DRP_d, *DRR_d, *DPP_d, *TAURR_d, *TAURP_d, *TAUPP_d;
@@ -54,7 +53,7 @@ __host__ void ComputeViscousTerms (double *Vradial_d, double *Vazimutal_d, doubl
 {
 
   if (ViscosityAlpha){
-    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+    //gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
     Make1Dprofile (1);
   }
 
@@ -105,9 +104,4 @@ __host__ double AspectRatioHost(double r)
     aspectratio *= exp((rmax-r)/(rmax-rmin)*log(TRANSITIONRATIO));
   }
   return aspectratio;
-}
-
-__host__ void ComputeViscosity()
-{
-
 }

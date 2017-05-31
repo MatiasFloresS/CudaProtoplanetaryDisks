@@ -7,13 +7,13 @@ extern cufftDoubleComplex *Gr_d, *Gphi_d, *SGP_Kt_d, *SGP_Kr_d, *SGP_Sr_d, *SGP_
 
 extern int NSEC, NRAD, size_grid;
 
-extern double *Vrad_d, *Vtheta_d, *Dens_d;
-extern double *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d, *Vradial_d, *Vazimutal_d;
-extern double *VthetaInt_d, *VradInt_d, *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
+extern double *Vrad_d, *Vtheta_d, *Dens_d, *Vradial_d, *Vazimutal_d, *VthetaInt_d, *VradInt_d;
+
+
+extern double *Kr_aux_d, *Kt_aux_d, *SG_Acct_d, *SG_Accr_d;
+extern double *SG_Accr, *GLOBAL_AxiSGAccr, *axifield_d;
 extern double *GLOBAL_AxiSGAccr, *Radii;
-
 extern double *invdiffRmed_d, *Rinf_d, *Rmed, *Rmed_d,  *Radii_d;
-
 extern double SGP_eps, SGP_rstep, SGP_tstep, ECCENTRICITY;
 
 extern cufftHandle planf, planb;
@@ -65,7 +65,7 @@ __host__ void compute_kernel ()
     for (j = 0; j < NSEC; j++){
       theta = 2.0*PI*(double)j  / (double)NSEC;
       Kr = 1.0 + SGP_eps*SGP_eps - cos(theta)*exp(-u);
-      base = SGP_eps*SGP_eps*exp(u) + 2.0*(cosh(u) - cos(theta)) ;
+      base = SGP_eps*SGP_eps*exp(u) + 2.0*(coshf(u) - cos(theta)) ;
       Kr *= pow(base , -1.5);
 
       Kt = sin(theta);

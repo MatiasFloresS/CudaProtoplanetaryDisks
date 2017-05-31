@@ -4,11 +4,14 @@
 extern int NRAD, NSEC, size_grid, RocheSmoothing;
 extern int ForcedCircular, Indirect_Term, SelfGravity, Cooling, CentrifugalBalance;
 
-extern double *SigmaMed, *EnergyMed, *Pressure, *SoundSpeed, *Potential;
+extern double *SigmaMed, *EnergyMed;
+extern double *Pressure, *SoundSpeed;
 extern double *viscosity_array, *GLOBAL_bufarray, *vt_int, *SG_Accr, *vt_cent;
 
-extern double *Potential_d, *Pressure_d, *SoundSpeed_d, *SG_Accr_d, *Vrad_d;
-extern double *viscosity_array_d, *vt_cent_d, *Vtheta_d, *SigmaInf_d;
+extern double *Pressure_d, *SoundSpeed_d;
+extern double *viscosity_array_d, *vt_cent_d, *SigmaInf_d, *SG_Accr_d;
+
+extern double *Vrad_d, *Vtheta_d, *Potential, *Potential_d;
 
 extern double ROCHESMOOTHING, ASPECTRATIO, FLARINGINDEX;
 extern double SIGMASLOPE, SIGMA0, IMPOSEDDISKDRIFT,  RELEASEDATE, RELEASERADIUS;
@@ -53,13 +56,14 @@ __host__ void InitGasEnergy (double *Energy)
 __host__ void FillForcesArrays (PlanetarySystem *sys, double *Dens, double *Energy)
 {
   int NbPlanets, k;
-  double xplanet, yplanet, mplanet, PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
+  double xplanet, yplanet, mplanet;
+  double PlanetDistance, InvPlanetDistance3, RRoche, smooth, smoothing;
   NbPlanets = sys->nb;
 
   /* Indirect term star on gas here */
   ComputeIndirectTerm ();
+  gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(double)));
 
-  //gpuErrchk(cudaMemset(Potential_d, 0, size_grid*sizeof(double)));
   /* -- Gravitational potential from planet on gas -- */
   for (k = 0; k < NbPlanets; k++){
     xplanet = sys->x[k];
@@ -214,7 +218,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     }
 
     for (i = 1; i < NRAD; i++)
-      vt_int[i] = sqrt(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
+      vt_int[i] = sqrtf(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
 
     t1 = vt_cent[0] = vt_int[1]+.75*(vt_int[1]-vt_int[2]);
     r1 = ConstructSequence (vt_cent, vt_int, NRAD);
@@ -231,7 +235,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     Init_azimutalvelocity_withSG (Vtheta);
 
   if (ViscosityAlpha){
-    gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
+    //gpuErrchk(cudaMemcpy(SoundSpeed, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToHost));
     Make1Dprofile(1);
   }
 
@@ -253,10 +257,14 @@ __host__ void InitVelocities (double *Vrad, double *Vtheta)
 {
   //if (SelfGravity) gpuErrchk(cudaMemcpy(vt_cent_d, vt_cent,     (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
 
+  for (int i = 0; i < NRAD; i++) viscosity_array[i] = FViscosity(Rmed[i]);
+  viscosity_array[NRAD] = FViscosity(Rmed[NRAD-1]);
+
+  gpuErrchk(cudaMemcpy(viscosity_array_d, viscosity_array, (NRAD+1)*sizeof(double), cudaMemcpyHostToDevice));
+
   InitGasVelocitiesKernel<<<dimGrid2, dimBlock2>>>(NSEC, NRAD, SelfGravity, Rmed_d,
-  ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, CentrifugalBalance, Vrad_d, Vtheta_d, ViscosityAlpha,
-  IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d, OmegaFrame, Rinf_d, vt_cent_d, VISCOSITY, ALPHAVISCOSITY,
-  CAVITYWIDTH, CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
+  ASPECTRATIO, FLARINGINDEX, SIGMASLOPE, Vrad_d, Vtheta_d, IMPOSEDDISKDRIFT, SIGMA0, SigmaInf_d,
+  OmegaFrame, Rinf_d, ViscosityAlpha, viscosity_array_d);
   gpuErrchk(cudaDeviceSynchronize());
 
 }

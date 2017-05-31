@@ -9,7 +9,7 @@ inline void gpuAssert (cudaError_t code, const char *file, int line, bool abort=
    }
 }
 
-__global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt, double *invdiffRmed, double *Potencial,
+__global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt, double *invdiffRmed, double *Potenial,
   double *Rinf, double *invRinf, double *Vrad, double *VthetaInt, double *Vtheta, double *Rmed, double dt,
   int nrad, int nsec, double OmegaFrame, int ZMPlus, double IMPOSEDDISKDRIFT, double SIGMASLOPE);
 
@@ -81,10 +81,8 @@ __global__ void MinusMeanKernel (double *Dens, double *Energy, double SigmaMed, 
 __global__ void Make1DprofileKernel (double *device_out2, double *gridfield, double *axifield, int nsec, int nrad);
 
 __global__ void InitGasVelocitiesKernel (int nsec, int nrad, int SelfGravity, double *Rmed,
-  double ASPECTRATIO, double FLARINGINDEX, double SIGMASLOPE, int CentrifugalBalance, double *Vrad, double *Vtheta,
-  double ViscosityAlpha, double IMPOSEDDISKDRIFT, double SIGMA0, double *SigmaInf, double OmegaFrame, double *Rinf,
-  double *vt_cent, double VISCOSITY, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS,
-  double CAVITYRATIO, double PhysicalTime, double PhysicalTimeInitial, double LAMBDADOUBLING);
+  double ASPECTRATIO, double FLARINGINDEX, double SIGMASLOPE, double *Vrad, double *Vtheta,
+  double IMPOSEDDISKDRIFT, double SIGMA0, double *SigmaInf, double OmegaFrame, double *Rinf, int ViscosityAlpha, double *viscosity_array);
 
 __host__ void Make1Dprofile (int option);
 

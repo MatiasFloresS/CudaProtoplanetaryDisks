@@ -3,7 +3,7 @@
 extern int OpenInner, NSEC, size_grid, NonReflecting, Adiabatic, NRAD;
 extern int Evanescent, SelfGravity, ExcludeHill, dimfxy, OuterSourceMass;
 
-extern double *SigmaMed, *SoundSpeed, *EnergyMed, *mean_dens, *mean_energy;
+extern double *SigmaMed, *EnergyMed, *mean_dens, *mean_energy;
 extern double *cs0, *cs1, *csnrm1, *csnrm2, *mean_dens2, *mean_energy2, *viscosity_array;
 
 extern double ADIABATICINDEX, FLARINGINDEX, SIGMASLOPE, ASPECTRATIO;
@@ -11,9 +11,11 @@ extern double TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS;
 extern double LAMBDADOUBLING;
 extern double  PhysicalTime, PhysicalTimeInitial;
 
-extern double *Vrad_d, *Dens_d, *Energy_d, *SoundSpeed_d, *mean_dens_d, *mean_energy_d;
+extern double *Vrad_d, *Dens_d, *Energy_d, *Vtheta_d, *VthetaInt_d, *DensInt_d, *Work_d, *SoundSpeed, *SoundSpeed_d;
+
+extern double *mean_dens_d, *mean_energy_d;
 extern double *cs0_d, *cs1_d, *csnrm1_d, *csnrm2_d, *mean_dens_d2, *mean_energy_d2, *viscosity_array_d;
-extern double *Vtheta_d, *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d, *VthetaInt_d, *Work_d, *DensInt_d, *Qbase_d;
+extern double *SigmaMed_d, *EnergyMed_d, *GLOBAL_bufarray_d, *Qbase_d;
 
 extern double *GLOBAL_AxiSGAccr, *axifield_d;
 
@@ -101,7 +103,7 @@ __host__ void ReduceMean (double *Dens, double *Energy)
 
 __host__ void EvanescentBoundary (double *Vrad, double *Vtheta, double *Dens, double *Energy, double step)
 {
-  
+
   double Tin, Tout, DRMIN, DRMAX;
   /* Orbital period at inner and outer boundary */
   Tin = 2.0*PI*pow(Rmed[0],3./2);;
@@ -172,8 +174,6 @@ __host__ void InitComputeAccelDevice()
 {
   gpuErrchk(cudaMalloc((void**)&CellAbscissa_d, size_grid*sizeof(double)));
   gpuErrchk(cudaMalloc((void**)&CellOrdinate_d, size_grid*sizeof(double)));
-  //gpuErrchk(cudaMemcpy(CellAbscissa_d, CellAbscissa, size_grid*sizeof(double), cudaMemcpyHostToDevice));
-  //gpuErrchk(cudaMemcpy(CellOrdinate_d, CellOrdinate, size_grid*sizeof(double), cudaMemcpyHostToDevice));
 }
 
 

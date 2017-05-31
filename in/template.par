@@ -33,7 +33,7 @@ RadialSpacing 		LOGARITHM      Zone interfaces evenly spaced
 
 ### Output control parameters
 
-Ntot			21		Total number of time steps
+Ntot			1001		Total number of time steps
 Ninterm	 		20		Time steps between outputs
 DT			0.314159265359	Time step length. 2PI = 1 orbit
 OutputDir		out/

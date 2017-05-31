@@ -8,6 +8,7 @@
 #include <cufft.h>
 #include "math_constants.h"
 #include "cuda_runtime.h"
+#include <omp.h>
 
 #include "Fondam.cuh"
 #include "Types.cuh"

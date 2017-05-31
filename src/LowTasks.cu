@@ -1,6 +1,7 @@
 #include "Main.cuh"
 
-extern double *Dens_d, ScalingFactor;
+extern double *Dens_d;
+extern double ScalingFactor;
 extern int NRAD, NSEC, size_grid;
 
 extern dim3 dimGrid2, dimBlock2;

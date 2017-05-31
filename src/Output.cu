@@ -9,16 +9,18 @@ extern double mdcp, exces_mdcp, PhysicalTime, LostMass;
 
 extern double RMAX;
 
-extern double *Temperature, *Qplus, *DivergenceVelocity, mdcp1;
+extern double *Qplus, *DivergenceVelocity, mdcp1;
 
 static double Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual;
 extern double OmegaFrame;
+
+extern double *Temperature;
 
 __host__ void WriteDim ()
 {
   char filename[200];
   string input;
-  input = OUTPUTDIR +"dims.raw";
+  input = OUTPUTDIR +"dims.dat";
   strncpy(filename, input.c_str(), sizeof(filename));
   filename[sizeof(filename)-1]=0;
   FILE *dim;
@@ -45,7 +47,7 @@ __host__ void EmptyPlanetSystemFile(PlanetarySystem *sys)
   name[sizeof(name)-1] = 0;
 
   for (i = 0; i < n; i++){
-    sprintf (name2, "%s%d.raw", name,i);
+    sprintf (name2, "%s%d.dat", name,i);
     output = fopen (name2, "w");
     if (output == NULL){
       fprintf(stderr, "Can't write %s file. Aborting\n", name2);
@@ -94,10 +96,10 @@ __host__ void WriteBigPlanetFile (int TimeStep, int n)
   input = OUTPUTDIR +"bigplanet";
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
-  sprintf (name2, "%s%d.raw", name,n);
+  sprintf (name2, "%s%d.dat", name,n);
   output = fopen (name2, "a");
   if (output == NULL){
-    fprintf(stderr, "Can't write 'bigplanet.raw' file. Aborting.\n");
+    fprintf(stderr, "Can't write 'bigplanet.dat' file. Aborting.\n");
     exit(1);
   }
   fprintf (output, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n",
@@ -112,13 +114,13 @@ __host__ void WritePlanetFile (int TimeStep, int n)
   char name2[256];
   string input;
   input = OUTPUTDIR + "planet";
-  printf("Updating 'planet%d.raw'... ",n);
+  printf("Updating 'planet%d.dat'... ",n);
   strncpy(name, input.c_str(), sizeof(name));
   name[sizeof(name)-1] = 0;
-  sprintf (name2, "%s%d.raw", name, n);
+  sprintf (name2, "%s%d.dat", name, n);
   output = fopen (name2, "a");
   if (output == NULL){
-    fprintf(stderr, "Can't write 'planet%d,raw' file. Aborting.\n", n);
+    fprintf(stderr, "Can't write 'planet%d,dat' file. Aborting.\n", n);
     exit(1);
   }
   fprintf (output, "%d\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\t%.18g\n",
@@ -161,7 +163,7 @@ __host__ void WriteDiskPolar(double *array, char *inputname, int number)
   strncpy(nameinput, input2.c_str(), sizeof(nameinput));
   name[sizeof(name)-1] = 0;
   nameinput[sizeof(nameinput)-1] = 0;
-  sprintf (name2, "%s%d.raw", name, number);
+  sprintf (name2, "%s%d.dat", name, number);
 
   // mkdir ("/some/directory") ... etc
   struct stat st = {0};
@@ -172,7 +174,7 @@ __host__ void WriteDiskPolar(double *array, char *inputname, int number)
     fprintf(stderr, "Unable to open '%s'\n", name2);
     exit(1);
   }
-  printf("Writting '%s%d.raw'... ", nameinput, number);
+  printf("Writting '%s%d.dat'... ", nameinput, number);
   fwrite(array, sizeof(double), NRAD*NSEC, dump);
   fclose(dump);
   printf("done\n");

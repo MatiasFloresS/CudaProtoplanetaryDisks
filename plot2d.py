@@ -86,10 +86,10 @@ vel_unit_cgs = au_in_cm/Timeunit_in_seconds  #cm/s
 
 
 # grid specification
-nrad = 400 #128 #500
-nsec = 900 # 256 #1500
-Rmin = 3.2
-Rmax = 7.2
+nrad = 200 #128 #500
+nsec = 600 # 256 #1500
+Rmin = 1.0
+Rmax = 80.0
 
 r = np.linspace(Rmin, Rmax, nrad)
 

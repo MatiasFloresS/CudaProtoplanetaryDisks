@@ -2,7 +2,7 @@
 
 extern int blocksize2, size_grid, NRAD, NSEC;
 
-extern double *GLOBAL_bufarray;
+extern double *GLOBAL_bufarray, *SoundSpeed_d;
 extern double *gridfield_d, *GLOBAL_bufarray_d, *axifield_d, *SG_Accr_d, *GLOBAL_AxiSGAccr_d;
 
 extern double ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRATIO, TRANSITIONRADIUS, LAMBDADOUBLING;
@@ -16,7 +16,8 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
-  double gradp, gradphi, vt2, vradint, vradint2, supp_torque, dxtheta, invdxtheta;
+  double gradp, gradphi, vradint, vradint2, supp_torque, dxtheta, invdxtheta;
+  double vt2;
 
   // i=1->nrad , j=0->nsec
   if (i > 0 && i<nrad && j<nsec){
@@ -36,7 +37,7 @@ __global__ void Substep1Kernel (double *Pressure, double *Dens, double *VradInt,
   // i=0->nrad ,   j=0->nsec
   if (i<nrad && j<nsec){
 
-    supp_torque = IMPOSEDDISKDRIFT*0.5*pow(Rmed[i], -2.5+SIGMASLOPE);
+    supp_torque = IMPOSEDDISKDRIFT*0.5*powf(Rmed[i], -2.5+SIGMASLOPE);
     dxtheta = 2.0*PI/(double)nsec*Rmed[i];
     invdxtheta = 1.0/dxtheta;
 
@@ -89,8 +90,8 @@ __global__ void Substep3Kernel2 (double *Dens, double *Qplus, double *viscosity_
 
     if (viscosity_array[nrad-1] != 0.0) {
       /* power-law extrapolation */
-      Qplus[i*nsec + j] = Qplus[(i+1)*nsec + j]*exp(log(Qplus[(i+1)*nsec + j]/Qplus[(i+2)*nsec + j]) * \
-        log(Rmed[i]/Rmed[i+1]) / log(Rmed[i+1]/Rmed[i+2]));
+      Qplus[i*nsec + j] = Qplus[(i+1)*nsec + j]*exp(logf(Qplus[(i+1)*nsec + j]/Qplus[(i+2)*nsec + j]) * \
+        logf(Rmed[i]/Rmed[i+1]) / logf(Rmed[i+1]/Rmed[i+2]));
     }
     else
       Qplus[i*nsec + j] = 0.0;
@@ -175,9 +176,10 @@ __global__ void ComputeSoundSpeedKernel (double *SoundSpeed, double *Dens, doubl
     if (!Adiabatic){
       AspectRatio = AspectRatioDevice(Rmed[i], ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO,
         PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
-      SoundSpeed[i*nsec + j] = AspectRatio*sqrt(G*1.0/Rmed[i])*pow(Rmed[i], FLARINGINDEX);
+      SoundSpeed[i*nsec + j] = AspectRatio*sqrt(G*1.0/Rmed[i])*powf(Rmed[i], FLARINGINDEX);
     }
     else SoundSpeed[i*nsec + j] = sqrt(ADIABATICINDEX*(ADIABATICINDEX-1.0)*Energy[i*nsec + j]/Dens[i*nsec + j]);
+
   }
 }
 
@@ -626,7 +628,7 @@ __host__ void Make1Dprofile (int option)
 
   /* GLOBAL AxiSGAccr option */
   if (option == 1){
-    gpuErrchk(cudaMemcpy(gridfield_d, SG_Accr_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
+    gpuErrchk(cudaMemcpy(gridfield_d, SoundSpeed_d, size_grid*sizeof(double), cudaMemcpyDeviceToDevice));
     //gpuErrchk(cudaMemcpy(GLOBAL_AxiSGAccr_d, axifield_d, NRAD*sizeof(double), cudaMemcpyDeviceToHost));
 
   }
@@ -638,16 +640,14 @@ __host__ void Make1Dprofile (int option)
 
   Make1DprofileKernel<<<dimGrid4, dimBlock>>>(gridfield_d, axifield_d, NSEC, NRAD);
   gpuErrchk(cudaDeviceSynchronize());
+  gpuErrchk(cudaMemcpy(GLOBAL_bufarray, axifield_d, NRAD*sizeof(double), cudaMemcpyDeviceToHost));
 
 }
 
-
 /* LISTO */
 __global__ void InitGasVelocitiesKernel (int nsec, int nrad, int SelfGravity, double *Rmed,
-  double ASPECTRATIO, double FLARINGINDEX, double SIGMASLOPE, int CentrifugalBalance, double *Vrad, double *Vtheta,
-  double ViscosityAlpha, double IMPOSEDDISKDRIFT, double SIGMA0, double *SigmaInf, double OmegaFrame, double *Rinf,
-  double *vt_cent, double VISCOSITY, double ALPHAVISCOSITY, double CAVITYWIDTH, double CAVITYRADIUS,
-  double CAVITYRATIO, double PhysicalTime, double PhysicalTimeInitial, double LAMBDADOUBLING)
+  double ASPECTRATIO, double FLARINGINDEX, double SIGMASLOPE, double *Vrad, double *Vtheta,
+  double IMPOSEDDISKDRIFT, double SIGMA0, double *SigmaInf, double OmegaFrame, double *Rinf, int ViscosityAlpha, double *viscosity_array)
 {
     int j = threadIdx.x + blockDim.x*blockIdx.x;
     int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -666,27 +666,20 @@ __global__ void InitGasVelocitiesKernel (int nsec, int nrad, int SelfGravity, do
 
       if (!SelfGravity){
         omega = sqrt(G*1.0/r/r/r);
-        Vtheta[i*nsec + j] = omega*r*sqrt(1.0-pow(ASPECTRATIO,2.0)*pow(r,2.0*FLARINGINDEX)* \
+        Vtheta[i*nsec + j] = omega*r*sqrt(1.0-powf(ASPECTRATIO,2.0)*powf(r,2.0*FLARINGINDEX)* \
         (1.+SIGMASLOPE-2.0*FLARINGINDEX));
       }
-
       Vtheta[i*nsec + j ] -= OmegaFrame*r;
 
 
       //if (CentrifugalBalance) Vtheta[i*nsec + j] = vt_cent[i];
 
-      if (i == nrad) viscosity = FViscosityDevice(r, VISCOSITY, ViscosityAlpha, Rmed, ALPHAVISCOSITY, CAVITYWIDTH,
-        CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
-      else viscosity = FViscosityDevice(r, VISCOSITY, ViscosityAlpha, Rmed, ALPHAVISCOSITY, CAVITYWIDTH,
-        CAVITYRADIUS, CAVITYRATIO, PhysicalTime, PhysicalTimeInitial, ASPECTRATIO, LAMBDADOUBLING);
-
-
       if (i == nrad) Vrad[i*nsec + j] = 0.0;
       else {
         Vrad[i*nsec + j] = IMPOSEDDISKDRIFT*SIGMA0/SigmaInf[i]/ri;
 
-        if (ViscosityAlpha) Vrad[i*nsec+j] -= 3.0*viscosity/r*(-SIGMASLOPE+2.0*FLARINGINDEX+1.0);
-        else Vrad[i*nsec+j] -= 3.0*viscosity/r*(-SIGMASLOPE+.5);
+        if (ViscosityAlpha) Vrad[i*nsec+j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+2.0*FLARINGINDEX+1.0);
+        else Vrad[i*nsec+j] -= 3.0*viscosity_array[i]/r*(-SIGMASLOPE+.5);
 
       }
 
@@ -845,7 +838,7 @@ __global__ void StarRadKernel2 (double *Qbase2, double *Vrad, double *QStar, dou
 }
 
 __global__ void ComputeFFTKernel (double *Radii, cufftDoubleComplex *SGP_Kr, cufftDoubleComplex *SGP_Kt, double SGP_eps, int nrad, int nsec,
-cufftDoubleComplex *SGP_Sr, cufftDoubleComplex *SGP_St, double *Dens, double *Rmed, double *Kr_aux, double *Kt_aux)
+  cufftDoubleComplex *SGP_Sr, cufftDoubleComplex *SGP_St, double *Dens, double *Rmed, double *Kr_aux, double *Kt_aux)
 {
   int j = threadIdx.x + blockDim.x*blockIdx.x;
   int i = threadIdx.y + blockDim.y*blockIdx.y;
@@ -949,8 +942,8 @@ __global__ void Azimutalvelocity_withSGKernel (double *Vtheta, double *Rmed, dou
   if (i<nrad && j<nsec){
     invr = 1./Rmed[i];
     omegakep = sqrt(G*1.0*invr*invr*invr);
-    omega = sqrt(omegakep*omegakep* (1.0 - (1.+SIGMASLOPE-2.0*FLARINGINDEX)*pow(ASPECTRATIO,2.0)* \
-      pow(Rmed[i],2.0*FLARINGINDEX)) - invr*axifield_d[i]);
+    omega = sqrt(omegakep*omegakep* (1.0 - (1.+SIGMASLOPE-2.0*FLARINGINDEX)*powf(ASPECTRATIO,2.0)* \
+      powf(Rmed[i],2.0*FLARINGINDEX)) - invr*axifield_d[i]);
 
     Vtheta[i*nsec + j] = Rmed[i]*omega;
   }
@@ -995,14 +988,14 @@ __global__ void EvanescentBoundaryKernel(double *Rmed, double *Vrad, double *Vth
         if(!SelfGravity){
           AspectRatio = AspectRatioDevice(Rmed[i], ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO,
             PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
-          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*pow(AspectRatio,2.0) * \
-          pow(Rmed[i],2.0*FLARINGINDEX)));
+          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*powf(AspectRatio,2.0) * \
+          powf(Rmed[i],2.0*FLARINGINDEX)));
         }
         if (SelfGravity){
           AspectRatio = AspectRatioDevice(Rmed[i], ASPECTRATIO, TRANSITIONWIDTH, TRANSITIONRADIUS, TRANSITIONRATIO,
             PhysicalTime, PhysicalTimeInitial, LAMBDADOUBLING);
-          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*pow(AspectRatio,2.0) * \
-          pow(Rmed[i],2.0*FLARINGINDEX)) - Rmed[i]*GLOBAL_bufarray[i]);
+          vtheta0 = sqrt(G*1.0/Rmed[i] * (1.0 - (1.0+SIGMASLOPE-2.0*FLARINGINDEX)*powf(AspectRatio,2.0) * \
+          powf(Rmed[i],2.0*FLARINGINDEX)) - Rmed[i]*GLOBAL_bufarray[i]);
         }
         /* this could be refined if CentrifugalBalance is used... */
         vtheta0 -= Rmed[i]*OmegaFrame;
@@ -1248,7 +1241,7 @@ __global__ void FillForcesArraysKernel (double *Rmed, int nsec, int nrad, double
     pot = -G*mplanet/distancesmooth; /* Direct term from planet */
     if (Indirect_Term == YES)
       pot += G*mplanet*InvPlanetDistance3*(x*xplanet+y*yplanet); /* Indirect term from planet */
-    Potential[i*nsec + j] = pot;
+    Potential[i*nsec + j] += pot;
 
     if (k == 0) {
      /* -- Gravitational potential from star on gas -- */
@@ -1393,31 +1386,31 @@ __device__ double AspectRatioDevice(double r, double ASPECTRATIO, double TRANSIT
   rmax *= scale;
   if (r < rmin) aspectratio *= TRANSITIONRATIO;
   if ((r >= rmin) && (r <= rmax)){
-    aspectratio *= exp((rmax-r)/(rmax-rmin)*log(TRANSITIONRATIO));
+    aspectratio *= exp((rmax-r)/(rmax-rmin)*logf(TRANSITIONRATIO));
   }
   return aspectratio;
 }
 
-__device__ double FViscosityDevice(double r, double VISCOSITY, int ViscosityAlpha, double *Rmed, double ALPHAVISCOSITY,
+/*__device__ double FViscosityDevice(double r, double VISCOSITY, int ViscosityAlpha, double *Rmed, double ALPHAVISCOSITY,
   double CAVITYWIDTH, double CAVITYRADIUS, double CAVITYRATIO, double PhysicalTime, double PhysicalTimeInitial,
   double ASPECTRATIO, double LAMBDADOUBLING)
 {
   double viscosity, rmin, rmax, scale;
   int i = 0;
   viscosity = VISCOSITY;
-  // if (ViscosityAlpha){
-  //   while (Rmed[i] < r) i++;
-  //   viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * pow(r, 1.5);
-  // }
+  if (ViscosityAlpha){
+     while (Rmed[i] < r) i++;
+     viscosity = ALPHAVISCOSITY*GLOBAL_bufarray[i] * GLOBAL_bufarray[i] * powf(r, 1.5);
+  }
   rmin = CAVITYRADIUS-CAVITYWIDTH*ASPECTRATIO;
   rmax = CAVITYRADIUS+CAVITYWIDTH*ASPECTRATIO;
   scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
   rmin *= scale;
   rmax *= scale;
   if (r < rmin) viscosity *= CAVITYRATIO;
-  if ((r >= rmin) && (r <= rmax)) viscosity *= exp((rmax-r)/(rmax-rmin)*log(CAVITYRATIO));
+  if ((r >= rmin) && (r <= rmax)) viscosity *= exp((rmax-r)/(rmax-rmin)*logf(CAVITYRATIO));
   return viscosity;
-}
+}*/
 
 
 __global__ void ApplySubKeplerianBoundaryKernel(double *VthetaInt, double *Rmed, double OmegaFrame, int nsec,
