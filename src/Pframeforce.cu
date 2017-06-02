@@ -218,7 +218,7 @@ __host__ void InitGasVelocities (double *Vrad, double *Vtheta)
     }
 
     for (i = 1; i < NRAD; i++)
-      vt_int[i] = sqrtf(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
+      vt_int[i] = sqrt(vt_int[i]*Radii[i]) - Radii[i]*OmegaFrame;
 
     t1 = vt_cent[0] = vt_int[1]+.75*(vt_int[1]-vt_int[2]);
     r1 = ConstructSequence (vt_cent, vt_int, NRAD);
