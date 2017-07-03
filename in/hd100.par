@@ -37,7 +37,7 @@ IndirectTerm    	YES			# do we include the indirect acceleration?
 ##################			
 ### Outputs control parameters
 ##################
-Ntot		 	6000			# NtotxDT/2Pi sets the total number of orbits (at R=1)
+Ntot		 	500			# NtotxDT/2Pi sets the total number of orbits (at R=1)
 Ninterm          	1			# Ninterm*DT/2pi sets the time in orbits between outputs
 DT		 	15.89534122527376	
 OutputDir        	out/			# Name of outputs directory (local)
